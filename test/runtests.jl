@@ -91,4 +91,6 @@ using Test
     @test format(f"{:d}", 99999) == "99999"
     @test format(f"{:X}", 99999) == "1869F"
     @test format(f"{:x}", 99999) == "1869f"
+
+    @test format(f"{:s}", "abc") == "abc"
 end

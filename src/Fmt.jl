@@ -308,6 +308,10 @@ function parse_spec(fmt::String, i::Int)
         # integer type
         type = c
         c = fmt[i+=1]
+    elseif c == 's'
+        # string type
+        type = c
+        c = fmt[i+=1]
     end
 
     @assert c == '}'
