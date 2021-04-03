@@ -22,4 +22,18 @@ using Test
     @test format(f"x = {x}, y = {y}", x = 2, y = 3) == "x = 2, y = 3"
     @test format(f"x = {x}, y = {y}", y = 3, x = 2) == "x = 2, y = 3"
     @test format(f"x = {x}, y = {y}, z = {x}", x = 2, y = 3) == "x = 2, y = 3, z = 2"
+
+    @test format(f"{:0}", 123) == "123"
+    @test format(f"{:1}", 123) == "123"
+    @test format(f"{:2}", 123) == "123"
+    @test format(f"{:3}", 123) == "123"
+    @test format(f"{:4}", 123) == " 123"
+    @test format(f"{:5}", 123) == "  123"
+
+    @test format(f"{:0}", "abc") == "abc"
+    @test format(f"{:1}", "abc") == "abc"
+    @test format(f"{:2}", "abc") == "abc"
+    @test format(f"{:3}", "abc") == "abc"
+    @test format(f"{:4}", "abc") == "abc "
+    @test format(f"{:5}", "abc") == "abc  "
 end

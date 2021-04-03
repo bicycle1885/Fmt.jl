@@ -9,7 +9,11 @@ end
 argument(::Type{Field{arg, _}}) where {arg, _} = arg
 
 function formatfield(out::IO, field::Field, x)
-    print(out, x)
+    print(out, rpad(x, field.width))
+end
+
+function formatfield(out::IO, field::Field, x::Integer)
+    print(out, lpad(x, field.width))
 end
 
 function genformat(fmt, positionals, keywords)
@@ -74,7 +78,7 @@ function parse_field(fmt::String, i::Int, serial::Int)
         i += 1
         width = 0
         while isdigit(fmt[i])
-            width = 10*width + Int(fmt[i] - '-')
+            width = 10*width + Int(fmt[i] - '0')
             i += 1
         end
     end
