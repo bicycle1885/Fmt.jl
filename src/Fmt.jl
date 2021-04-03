@@ -67,6 +67,8 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Integer)
         p = decimal(data, p, u)
     elseif f.type == 'X' || f.type == 'x'
         p = hexadecimal(data, p, u, f.type == 'X')
+    elseif f.type == 'b'
+        p = binary(data, p, u)
     elseif f.type == 'o'
         p = octal(data, p, u)
     else
@@ -79,6 +81,17 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Integer)
 end
 
 const Z = UInt8('0')
+
+function binary(data::Vector{UInt8}, p::Int, x::Unsigned)
+    m = n = ndigits(x, base = 2)
+    while n > 0
+        r = (x & 0x1) % UInt8
+        data[p+n-1] = r + Z
+        x >>= 1
+        n -= 1
+    end
+    return p + m
+end
 
 function octal(data::Vector{UInt8}, p::Int, x::Unsigned)
     m = n = ndigits(x, base = 8)
@@ -160,7 +173,7 @@ function formatsize(f::Field, x::AbstractString)
 end
 
 function formatsize(f::Field, x::Integer)
-    base = f.type == 'X' || f.type == 'x' ? 16 : f.type == 'o' ? 8 : 10
+    base = f.type == 'X' || f.type == 'x' ? 16 : f.type == 'o' ? 8 : f.type == 'b' ? 2 : 10
     w = ndigits(x; base) + (x < 0 || f.sign ≠ SIGN_MINUS)
     f.width == WIDTH_UNSPECIFIED && return w
     return ncodeunits(f.fill) * max(f.width - w, 0) + w
@@ -291,7 +304,7 @@ function parse_spec(fmt::String, i::Int)
         c = fmt[i]
     end
 
-    if c in ('d', 'X', 'x', 'o')
+    if c in ('d', 'X', 'x', 'o', 'b')
         # integer type
         type = c
         c = fmt[i+=1]
