@@ -23,11 +23,27 @@ end
 argument(::Type{Field{arg, _}}) where {arg, _} = arg
 
 function formatfield(out::IO, field::Field, x)
-    print(out, field.align == ALIGN_RIGHT ? lpad(x, field.width) : rpad(x, field.width))
+    if field.width == WIDTH_UNSPECIFIED
+        print(out, x)
+    else
+        if field.align == ALIGN_RIGHT
+            print(out, lpad(x, field.width, field.fill))
+        else
+            print(out, rpad(x, field.width, field.fill))
+        end
+    end
 end
 
 function formatfield(out::IO, field::Field, x::Integer)
-    print(out, field.align == ALIGN_LEFT ? rpad(x, field.width) : lpad(x, field.width))
+    if field.width == WIDTH_UNSPECIFIED
+        print(out, x)
+    else
+        if field.align == ALIGN_LEFT
+            print(out, rpad(x, field.width, field.fill))
+        else
+            print(out, lpad(x, field.width, field.fill))
+        end
+    end
 end
 
 function genformat(fmt, positionals, keywords)
@@ -97,17 +113,29 @@ function parse_field(fmt::String, i::Int, serial::Int)
 end
 
 function parse_spec(fmt::String, i::Int)
-    c = fmt[i]  # the first character after ':'
     fill = FILL_UNSPECIFIED
     align = ALIGN_UNSPECIFIED
     width = WIDTH_UNSPECIFIED
-    if c ∈ ('<', '>')
+    c = fmt[i]  # the first character after ':'
+    if c ∉ ('{', '}') && nextind(fmt, i) ≤ lastindex(fmt) && fmt[nextind(fmt, i)] ∈ ('<', '>')
+        # fill + align
+        fill = c
+        i = nextind(fmt, i)
+        align = fmt[i] == '<' ? ALIGN_LEFT : ALIGN_RIGHT
+        i += 1
+        c = fmt[i]
+    elseif c ∈ ('<', '>')
+        # align
+        fill = ' '
         align = c == '<' ? ALIGN_LEFT : ALIGN_RIGHT
         i += 1
         c = fmt[i]
     end
     if isdigit(c)
         # width
+        if fill == FILL_UNSPECIFIED
+            fill = ' '
+        end
         width = 0
         while isdigit(fmt[i])
             width = 10*width + Int(fmt[i] - '0')

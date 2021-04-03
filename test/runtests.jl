@@ -32,6 +32,10 @@ using Test
 
     @test format(f"{:<5}", 123) == "123  "
     @test format(f"{:>5}", 123) == "  123"
+    @test format(f"{:_<5}", 123) == "123__"
+    @test format(f"{:_>5}", 123) == "__123"
+    @test format(f"{:<<5}", 123) == "123<<"
+    @test format(f"{:>>5}", 123) == ">>123"
 
     @test format(f"{:0}", "abc") == "abc"
     @test format(f"{:1}", "abc") == "abc"
@@ -42,4 +46,8 @@ using Test
 
     @test format(f"{:<5}", "abc") == "abc  "
     @test format(f"{:>5}", "abc") == "  abc"
+    @test format(f"{:_<5}", "abc") == "abc__"
+    @test format(f"{:_>5}", "abc") == "__abc"
+    @test format(f"{:<<5}", "abc") == "abc<<"
+    @test format(f"{:>>5}", "abc") == ">>abc"
 end
