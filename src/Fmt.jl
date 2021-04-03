@@ -60,7 +60,11 @@ function formatsize(f::Field, x::AbstractString)
     return size + max(f.width - length(x), 0)
 end
 
-formatsize(f::Field, x::Integer) = max(f.width, ndigits(x) + (x < 0))
+function formatsize(f::Field, x::Integer)
+    w = ndigits(x) + (x < 0)
+    f.width == WIDTH_UNSPECIFIED && return w
+    return ncodeunits(f.fill) * max(f.width - w, 0) + w
+end
 
 function genformat(fmt, positionals, keywords)
     code_size = Expr(:block)  # compute data size

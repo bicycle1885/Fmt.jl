@@ -56,4 +56,11 @@ using Test
     @test format(f"{:2}", "αβ") == "αβ"
     @test format(f"{:3}", "αβ") == "αβ "
     @test format(f"{:4}", "αβ") == "αβ  "
+
+    @test format(f"{:┉<0}", 123) == "123"
+    @test format(f"{:┉<1}", 123) == "123"
+    @test format(f"{:┉<2}", 123) == "123"
+    @test format(f"{:┉<3}", 123) == "123"
+    @test format(f"{:┉<4}", 123) == "123┉"
+    @test format(f"{:┉<5}", 123) == "123┉┉"
 end
