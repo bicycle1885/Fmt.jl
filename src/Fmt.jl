@@ -96,7 +96,7 @@ end
 function octal(data::Vector{UInt8}, p::Int, x::Unsigned)
     m = n = ndigits(x, base = 8)
     while n > 0
-        r = (x & 0x07) % UInt8
+        r = (x & 0x7) % UInt8
         data[p+n-1] = r + Z
         x >>= 3
         n -= 1
@@ -109,14 +109,14 @@ const DECIMAL_DIGITS = [let (d, r) = divrem(x, 10); ((d + Z) << 8) % UInt16 + (r
 function decimal(data::Vector{UInt8}, p::Int, x::Unsigned)
     m = n = ndigits(x)
     while n ≥ 2
-        x, r = divrem(x, 100)
+        x, r = divrem(x, 0x64)  # 0x64 = 100
         dd = DECIMAL_DIGITS[(r % Int) + 1]
         data[p+n-1] =  dd       % UInt8
         data[p+n-2] = (dd >> 8) % UInt8
         n -= 2
     end
     if n > 0
-        data[p] = (rem(x, 10) % UInt8) + Z
+        data[p] = (rem(x, 0xa) % UInt8) + Z
     end
     return p + m
 end
@@ -135,7 +135,7 @@ function hexadecimal(data::Vector{UInt8}, p::Int, x::Unsigned, uppercase::Bool)
     m = n = ndigits(x, base = 16)
     hexdigits = uppercase ? HEXADECIMAL_DIGITS_UPPERCASE : HEXADECIMAL_DIGITS_LOWERCASE
     while n ≥ 2
-        x, r = divrem(x, 256)
+        x, r = divrem(x, 0x100)  # 0x100 = 256
         xx = hexdigits[(r % Int) + 1]
         data[p+n-1] =  xx       % UInt8
         data[p+n-2] = (xx >> 8) % UInt8
@@ -143,7 +143,7 @@ function hexadecimal(data::Vector{UInt8}, p::Int, x::Unsigned, uppercase::Bool)
     end
     if n > 0
         A = uppercase ? UInt8('A') : UInt8('a')
-        r = rem(x, 16) % UInt8
+        r = rem(x, 0x10) % UInt8
         data[p] = r < 0xa ? r + Z : r - 0xa + A
     end
     return p + m
