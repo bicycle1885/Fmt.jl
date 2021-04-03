@@ -36,23 +36,59 @@ function formatfield(data::Vector{UInt8}, p::Int, field::Field, x::Any)
     end
     n = ncodeunits(s)
     copyto!(data, p, codeunits(s), 1, n)
-    return n
+    return p + n
 end
 
 function formatfield(data::Vector{UInt8}, p::Int, field::Field, x::Integer)
-    # TODO: optimize
-    if field.width == WIDTH_UNSPECIFIED
-        s = string(x)
-    else
-        if field.align == ALIGN_LEFT
-            s = rpad(x, field.width, field.fill)
-        else
-            s = lpad(x, field.width, field.fill)
-        end
+    width = ndigits(x) + (x < 0)
+    padwidth = max(field.width - width, 0)
+    if field.align != ALIGN_LEFT
+        p = pad(data, p, field.fill, padwidth)
     end
-    n = ncodeunits(s)
-    copyto!(data, p, codeunits(s), 1, n)
-    return n
+    if x < 0
+        data[p] = UInt8('-')
+        p += 1
+    end
+    p = decimal(data, p, unsigned(abs(x)))
+    if field.align == ALIGN_LEFT
+        p = pad(data, p, field.fill, padwidth)
+    end
+    return p
+end
+
+const Z = UInt8('0')
+const DECIMAL_DIGITS = [let (d, r) = divrem(x, 10); ((d + Z) << 8) % UInt16 + (r + Z) % UInt8; end for x in 0:99]
+
+function decimal(data::Vector{UInt8}, p::Int, x::Unsigned)
+    m = n = ndigits(x)
+    while n ≥ 2
+        x, r = divrem(x, 100)
+        dd = DECIMAL_DIGITS[(r % Int) + 1]
+        data[p+n-1] =  dd       % UInt8
+        data[p+n-2] = (dd >> 8) % UInt8
+        n -= 2
+    end
+    if n > 0
+        data[p] = (rem(x, 10) % UInt8) + Z
+    end
+    return p + m
+end
+
+function pad(data::Vector{UInt8}, p::Int, fill::Char, w::Int)
+    m = ncodeunits(fill)
+    x = reinterpret(UInt32, fill) >> 8(4 - m)
+    while w > 0
+        n = m
+        y = x
+        while n > 0
+            data[p+n-1] = y % UInt8
+            y >>= 8
+            n -= 1
+        end
+        p += m
+        w -= 1
+    end
+    return p
 end
 
 function formatsize(f::Field, x::AbstractString)
@@ -88,7 +124,7 @@ function genformat(fmt, positionals, keywords)
                 arg = :(keywords[$(QuoteNode(arg))])
             end
             size = :(s += formatsize(fmt[$i], $arg))
-            data = :(p += formatfield(data, p, fmt[$i], $arg))
+            data = :(p  = formatfield(data, p, fmt[$i], $arg))
         end
         push!(code_size.args, size)
         push!(code_data.args, data)
