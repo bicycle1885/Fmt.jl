@@ -70,4 +70,14 @@ using Test
     @test format(f"{:┉<3}", "abc") == "abc"
     @test format(f"{:┉<4}", "abc") == "abc┉"
     @test format(f"{:┉<5}", "abc") == "abc┉┉"
+
+    @test format(f"{:-}",  0) ==  "0"
+    @test format(f"{:+}",  0) == "+0"
+    @test format(f"{: }",  0) == " 0"
+    @test format(f"{:-}",  3) ==  "3"
+    @test format(f"{:-}", -3) == "-3"
+    @test format(f"{:+}",  3) == "+3"
+    @test format(f"{:+}", -3) == "-3"
+    @test format(f"{: }",  3) == " 3"
+    @test format(f"{: }", -3) == "-3"
 end

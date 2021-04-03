@@ -6,20 +6,24 @@ using Base: StringVector
 
 const FILL_UNSPECIFIED = reinterpret(Char, 0xFFFFFFFF)
 @enum Alignment::UInt8 ALIGN_UNSPECIFIED ALIGN_LEFT ALIGN_RIGHT
+@enum Sign::UInt8 SIGN_PLUS SIGN_MINUS SIGN_SPACE
+const SIGN_UNSPECIFIED = SIGN_MINUS
 const WIDTH_UNSPECIFIED = -1
 
 struct Field{arg, T}
     fill::Char
     align::Alignment
+    sign::Sign
     width::Int  # minimum width
 end
 
 function Field{arg, T}(;
         fill = FILL_UNSPECIFIED,
         align = ALIGN_UNSPECIFIED,
+        sign = SIGN_UNSPECIFIED,
         width = WIDTH_UNSPECIFIED,
         ) where {arg, T}
-    return Field{arg, T}(fill, align, width)
+    return Field{arg, T}(fill, align, sign, width)
 end
 
 argument(::Type{Field{arg, _}}) where {arg, _} = arg
@@ -39,19 +43,25 @@ function formatfield(data::Vector{UInt8}, p::Int, field::Field, x::Any)
     return p + n
 end
 
-function formatfield(data::Vector{UInt8}, p::Int, field::Field, x::Integer)
-    width = ndigits(x) + (x < 0)
-    padwidth = max(field.width - width, 0)
-    if field.align != ALIGN_LEFT
-        p = pad(data, p, field.fill, padwidth)
+function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Integer)
+    width = ndigits(x) + (x < 0 || f.sign ≠ SIGN_MINUS)
+    padwidth = max(f.width - width, 0)
+    if f.align != ALIGN_LEFT
+        p = pad(data, p, f.fill, padwidth)
     end
-    if x < 0
+    if x ≥ 0 && f.sign == SIGN_SPACE
+        data[p] = UInt8(' ')
+        p += 1
+    elseif x ≥ 0 && f.sign == SIGN_PLUS
+        data[p] = UInt8('+')
+        p += 1
+    elseif x < 0
         data[p] = UInt8('-')
         p += 1
     end
     p = decimal(data, p, unsigned(abs(x)))
-    if field.align == ALIGN_LEFT
-        p = pad(data, p, field.fill, padwidth)
+    if f.align == ALIGN_LEFT
+        p = pad(data, p, f.fill, padwidth)
     end
     return p
 end
@@ -98,7 +108,7 @@ function formatsize(f::Field, x::AbstractString)
 end
 
 function formatsize(f::Field, x::Integer)
-    w = ndigits(x) + (x < 0)
+    w = ndigits(x) + (x < 0 || f.sign ≠ SIGN_MINUS)
     f.width == WIDTH_UNSPECIFIED && return w
     return ncodeunits(f.fill) * max(f.width - w, 0) + w
 end
@@ -178,8 +188,8 @@ function parse_field(fmt::String, i::Int, serial::Int)
     end
     # check spec
     if fmt[i] == ':'
-        fill, align, width, i = parse_spec(fmt, i + 1)
-        return Field{arg, Any}(;fill, align, width), i + 1, serial
+        fill, align, sign, width, i = parse_spec(fmt, i + 1)
+        return Field{arg, Any}(;fill, align, sign, width), i + 1, serial
     else
         return Field{arg, Any}(), i + 1, serial
     end
@@ -188,8 +198,10 @@ end
 function parse_spec(fmt::String, i::Int)
     fill = FILL_UNSPECIFIED
     align = ALIGN_UNSPECIFIED
+    sign = SIGN_UNSPECIFIED
     width = WIDTH_UNSPECIFIED
     c = fmt[i]  # the first character after ':'
+
     if c ∉ ('{', '}') && nextind(fmt, i) ≤ lastindex(fmt) && fmt[nextind(fmt, i)] ∈ ('<', '>')
         # fill + align
         fill = c
@@ -204,6 +216,14 @@ function parse_spec(fmt::String, i::Int)
         i += 1
         c = fmt[i]
     end
+
+    if c ∈ ('-', '+', ' ')
+        # sign
+        sign = c == '-' ? SIGN_MINUS : c == '+' ? SIGN_PLUS : SIGN_SPACE
+        i += 1
+        c = fmt[i]
+    end
+
     if isdigit(c)
         # width
         if fill == FILL_UNSPECIFIED
@@ -215,8 +235,9 @@ function parse_spec(fmt::String, i::Int)
             i += 1
         end
     end
+
     @assert fmt[i] == '}'
-    return fill, align, width, i
+    return fill, align, sign, width, i
 end
 
 macro f_str(s)
