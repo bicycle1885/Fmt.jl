@@ -23,11 +23,11 @@ end
 argument(::Type{Field{arg, _}}) where {arg, _} = arg
 
 function formatfield(out::IO, field::Field, x)
-    print(out, rpad(x, field.width))
+    print(out, field.align == ALIGN_RIGHT ? lpad(x, field.width) : rpad(x, field.width))
 end
 
 function formatfield(out::IO, field::Field, x::Integer)
-    print(out, lpad(x, field.width))
+    print(out, field.align == ALIGN_LEFT ? rpad(x, field.width) : lpad(x, field.width))
 end
 
 function genformat(fmt, positionals, keywords)
@@ -101,6 +101,11 @@ function parse_spec(fmt::String, i::Int)
     fill = FILL_UNSPECIFIED
     align = ALIGN_UNSPECIFIED
     width = WIDTH_UNSPECIFIED
+    if c ∈ ('<', '>')
+        align = c == '<' ? ALIGN_LEFT : ALIGN_RIGHT
+        i += 1
+        c = fmt[i]
+    end
     if isdigit(c)
         # width
         width = 0
