@@ -50,4 +50,10 @@ using Test
     @test format(f"{:_>5}", "abc") == "__abc"
     @test format(f"{:<<5}", "abc") == "abc<<"
     @test format(f"{:>>5}", "abc") == ">>abc"
+
+    @test format(f"{:0}", "αβ") == "αβ"
+    @test format(f"{:1}", "αβ") == "αβ"
+    @test format(f"{:2}", "αβ") == "αβ"
+    @test format(f"{:3}", "αβ") == "αβ "
+    @test format(f"{:4}", "αβ") == "αβ  "
 end

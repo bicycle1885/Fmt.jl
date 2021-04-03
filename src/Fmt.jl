@@ -55,7 +55,10 @@ function formatfield(data::Vector{UInt8}, p::Int, field::Field, x::Integer)
     return n
 end
 
-formatsize(f::Field, x::AbstractString) = max(f.width, ncodeunits(x) * sizeof(codeunit(x)))
+function formatsize(f::Field, x::AbstractString)
+    size = ncodeunits(x) * sizeof(codeunit(x)) 
+    return size + max(f.width - length(x), 0)
+end
 
 formatsize(f::Field, x::Integer) = max(f.width, ndigits(x) + (x < 0))
 
