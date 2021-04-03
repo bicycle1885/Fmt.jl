@@ -2,8 +2,22 @@ module Fmt
 
 export @f_str, format
 
+const FILL_UNSPECIFIED = reinterpret(Char, 0xFFFFFFFF)
+@enum Alignment::UInt8 ALIGN_UNSPECIFIED ALIGN_LEFT ALIGN_RIGHT
+const WIDTH_UNSPECIFIED = -1
+
 struct Field{arg, T}
+    fill::Char
+    align::Alignment
     width::Int  # minimum width
+end
+
+function Field{arg, T}(;
+        fill = FILL_UNSPECIFIED,
+        align = ALIGN_UNSPECIFIED,
+        width = WIDTH_UNSPECIFIED,
+        ) where {arg, T}
+    return Field{arg, T}(fill, align, width)
 end
 
 argument(::Type{Field{arg, _}}) where {arg, _} = arg
@@ -61,7 +75,7 @@ function parse_field(fmt::String, i::Int, serial::Int)
     c = fmt[i]  # the first character after '{'
     if c == '}'
         serial += 1
-        return Field{serial, Any}(-1), i + 1, serial
+        return Field{serial, Any}(), i + 1, serial
     elseif isdigit(c)
         arg = Int(c - '0')
         i += 1
@@ -73,7 +87,7 @@ function parse_field(fmt::String, i::Int, serial::Int)
         arg = serial
     end
     c = fmt[i]
-    width = -1
+    width = WIDTH_UNSPECIFIED
     if c == ':'
         i += 1
         width = 0
@@ -83,7 +97,7 @@ function parse_field(fmt::String, i::Int, serial::Int)
         end
     end
     @assert fmt[i] == '}'
-    return Field{arg, Any}(width), i + 1, serial
+    return Field{arg, Any}(width = width), i + 1, serial
 end
 
 macro f_str(s)
