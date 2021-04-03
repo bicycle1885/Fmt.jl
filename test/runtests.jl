@@ -81,9 +81,11 @@ using Test
     @test format(f"{: }",  3) == " 3"
     @test format(f"{: }", -3) == "-3"
 
+    @test format(f"{:o}", 42) == "52"
     @test format(f"{:d}", 42) == "42"
     @test format(f"{:X}", 42) == "2A"
     @test format(f"{:x}", 42) == "2a"
+    @test format(f"{:o}", 99999) == "303237"
     @test format(f"{:d}", 99999) == "99999"
     @test format(f"{:X}", 99999) == "1869F"
     @test format(f"{:x}", 99999) == "1869f"
