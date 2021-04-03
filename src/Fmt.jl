@@ -2,37 +2,73 @@ module Fmt
 
 export @f_str, format
 
-struct Format
-    spec::String
+struct Field{arg, T}
 end
 
-function format(fmt::Format, args...)
-    buf = IOBuffer()
-    spec = fmt.spec
-    last = lastindex(spec)
-    i = k = 1
-    while i ≤ last
-        c = spec[i]
-        if c == '{'
-            if i == last || spec[i+1] ≠ '}'
-                error("unpaired placeholder '{'")
-            end
-            print(buf, args[k])
-            i += 1
-            k += 1
+argument(::Type{Field{arg, _}}) where {arg, _} = arg
+
+function formatfield(out::IO, field::Field, x)
+    print(out, x)
+end
+
+function genformat(fmt, positionals, keywords)
+    body = Expr(:block)
+    for (i, F) in enumerate(fmt.types)
+        if F === String
+            push!(body.args, :(print(out, fmt[$i])))
         else
-            write(buf, c)
+            @assert F <: Field
+            arg = argument(F)
+            if arg isa Int
+                push!(body.args, :(formatfield(out, fmt[$i], positionals[$arg])))
+            else
+                @assert arg isa Symbol
+                push!(body.args, :(formatfield(out, fmt[$i], keywords[$(QuoteNode(arg))])))
+            end
         end
-        i = nextind(spec, i)
     end
-    if k ≠ length(args) + 1
-        error("placeholders mismatch arguments")
-    end
+    return body
+end
+
+@generated format(out::IO, fmt::Tuple, positionals...; keywords...) =
+    genformat(fmt, positionals, keywords)
+
+function format(fmt::Tuple, positionals...; keywords...)
+    buf = IOBuffer()
+    format(buf, fmt, positionals...; keywords...)
     return String(take!(buf))
 end
 
+function parse_format(fmt::String)
+    list = []
+    n = 0
+    i = firstindex(fmt)
+    while (j = findnext('{', fmt, i)) !== nothing
+        j - 1 ≥ i && push!(list, fmt[i:j-1])
+        j += 1
+        if fmt[j] == '}'
+            # automatically numbered field
+            n += 1
+            push!(list, Field{n, Any}())
+        elseif isdigit(fmt[j])
+            # numbered field
+            number = Int(fmt[j] - '0')
+            push!(list, Field{number, Any}())
+            j += 1
+        else
+            # named field
+            name = Symbol(fmt[j])
+            push!(list, Field{name, Any}())
+            j += 1
+        end
+        i = j + 1
+    end
+    lastindex(fmt) ≥ i && push!(list, fmt[i:end])
+    return (list...,)
+end
+
 macro f_str(s)
-    Format(s)
+    parse_format(s)
 end
 
 end
