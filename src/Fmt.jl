@@ -73,6 +73,7 @@ end
 
 function parse_field(fmt::String, i::Int, serial::Int)
     c = fmt[i]  # the first character after '{'
+    # check field name
     if c == '}'
         serial += 1
         return Field{serial, Any}(), i + 1, serial
@@ -86,10 +87,22 @@ function parse_field(fmt::String, i::Int, serial::Int)
         serial += 1
         arg = serial
     end
-    c = fmt[i]
+    # check spec
+    if fmt[i] == ':'
+        fill, align, width, i = parse_spec(fmt, i + 1)
+        return Field{arg, Any}(;fill, align, width), i + 1, serial
+    else
+        return Field{arg, Any}(), i + 1, serial
+    end
+end
+
+function parse_spec(fmt::String, i::Int)
+    c = fmt[i]  # the first character after ':'
+    fill = FILL_UNSPECIFIED
+    align = ALIGN_UNSPECIFIED
     width = WIDTH_UNSPECIFIED
-    if c == ':'
-        i += 1
+    if isdigit(c)
+        # width
         width = 0
         while isdigit(fmt[i])
             width = 10*width + Int(fmt[i] - '0')
@@ -97,7 +110,7 @@ function parse_field(fmt::String, i::Int, serial::Int)
         end
     end
     @assert fmt[i] == '}'
-    return Field{arg, Any}(width = width), i + 1, serial
+    return fill, align, width, i
 end
 
 macro f_str(s)
