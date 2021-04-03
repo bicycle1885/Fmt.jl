@@ -2,17 +2,11 @@ module Fmt
 
 export @f_str, format
 
+using Base: StringVector
+
 const FILL_UNSPECIFIED = reinterpret(Char, 0xFFFFFFFF)
 @enum Alignment::UInt8 ALIGN_UNSPECIFIED ALIGN_LEFT ALIGN_RIGHT
 const WIDTH_UNSPECIFIED = -1
-
-struct Literal{w}
-    str::String
-end
-
-function Literal(s)
-    return Literal{length(s)}(s)
-end
 
 struct Field{arg, T}
     fill::Char
@@ -30,56 +24,83 @@ end
 
 argument(::Type{Field{arg, _}}) where {arg, _} = arg
 
-function formatfield(out::IO, field::Field, x)
+function formatfield(data::Vector{UInt8}, p::Int, field::Field, x::Any)
     if field.width == WIDTH_UNSPECIFIED
-        print(out, x)
+        s = string(x)
     else
         if field.align == ALIGN_RIGHT
-            print(out, lpad(x, field.width, field.fill))
+            s = lpad(x, field.width, field.fill)
         else
-            print(out, rpad(x, field.width, field.fill))
+            s = rpad(x, field.width, field.fill)
         end
     end
+    n = ncodeunits(s)
+    copyto!(data, p, codeunits(s), 1, n)
+    return n
 end
 
-function formatfield(out::IO, field::Field, x::Integer)
+function formatfield(data::Vector{UInt8}, p::Int, field::Field, x::Integer)
+    # TODO: optimize
     if field.width == WIDTH_UNSPECIFIED
-        print(out, x)
+        s = string(x)
     else
         if field.align == ALIGN_LEFT
-            print(out, rpad(x, field.width, field.fill))
+            s = rpad(x, field.width, field.fill)
         else
-            print(out, lpad(x, field.width, field.fill))
+            s = lpad(x, field.width, field.fill)
         end
     end
+    n = ncodeunits(s)
+    copyto!(data, p, codeunits(s), 1, n)
+    return n
 end
 
+formatsize(f::Field, x::AbstractString) = max(f.width, ncodeunits(x) * sizeof(codeunit(x)))
+
+formatsize(f::Field, x::Integer) = max(f.width, ndigits(x) + (x < 0))
+
 function genformat(fmt, positionals, keywords)
-    body = Expr(:block)
+    code_size = Expr(:block)  # compute data size
+    code_data = Expr(:block)  # write data
     for (i, F) in enumerate(fmt.types)
-        if F <: Literal
-            push!(body.args, :(print(out, fmt[$i].str)))
+        if F === String
+            size = :(s += ncodeunits(fmt[$i]))
+            data = quote
+                n = ncodeunits(fmt[$i])
+                copyto!(data, p, codeunits(fmt[$i]), 1, n)
+                p += n
+            end
         else
             @assert F <: Field
             arg = argument(F)
             if arg isa Int
-                push!(body.args, :(formatfield(out, fmt[$i], positionals[$arg])))
+                arg = :(positionals[$arg])
             else
                 @assert arg isa Symbol
-                push!(body.args, :(formatfield(out, fmt[$i], keywords[$(QuoteNode(arg))])))
+                arg = :(keywords[$(QuoteNode(arg))])
             end
+            size = :(s += formatsize(fmt[$i], $arg))
+            data = :(p += formatfield(data, p, fmt[$i], $arg))
         end
+        push!(code_size.args, size)
+        push!(code_data.args, data)
     end
-    return body
+    return quote
+        s = 0  # size
+        $(code_size)
+        data = StringVector(s)
+        p = 1  # position
+        $(code_data)
+        data
+    end
 end
 
-@generated format(out::IO, fmt::Tuple, positionals...; keywords...) =
-    genformat(fmt, positionals, keywords)
+@generated format(fmt::Tuple, positionals...; keywords...) =
+    :(String($(genformat(fmt, positionals, keywords))))
 
-function format(fmt::Tuple, positionals...; keywords...)
-    buf = IOBuffer()
-    format(buf, fmt, positionals...; keywords...)
-    return String(take!(buf))
+function format(out::IO, fmt::Tuple, positionals...; keywords...)
+    write(out, format(fmt, positionals...; keywords...))
+    nothing
 end
 
 function parse_format(fmt::String)
@@ -87,11 +108,11 @@ function parse_format(fmt::String)
     serial = 0
     i = firstindex(fmt)
     while (j = findnext('{', fmt, i)) !== nothing
-        j - 1 ≥ i && push!(list, Literal(fmt[i:j-1]))
+        j - 1 ≥ i && push!(list, fmt[i:j-1])
         field, i, serial = parse_field(fmt, j + 1, serial)
         push!(list, field)
     end
-    lastindex(fmt) ≥ i && push!(list, Literal(fmt[i:end]))
+    lastindex(fmt) ≥ i && push!(list, fmt[i:end])
     return (list...,)
 end
 
