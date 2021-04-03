@@ -3,6 +3,7 @@ module Fmt
 export @f_str, format
 
 struct Field{arg, T}
+    width::Int  # minimum width
 end
 
 argument(::Type{Field{arg, _}}) where {arg, _} = arg
@@ -41,30 +42,44 @@ end
 
 function parse_format(fmt::String)
     list = []
-    n = 0
+    serial = 0
     i = firstindex(fmt)
     while (j = findnext('{', fmt, i)) !== nothing
         j - 1 ≥ i && push!(list, fmt[i:j-1])
-        j += 1
-        if fmt[j] == '}'
-            # automatically numbered field
-            n += 1
-            push!(list, Field{n, Any}())
-        elseif isdigit(fmt[j])
-            # numbered field
-            number = Int(fmt[j] - '0')
-            push!(list, Field{number, Any}())
-            j += 1
-        else
-            # named field
-            name = Symbol(fmt[j])
-            push!(list, Field{name, Any}())
-            j += 1
-        end
-        i = j + 1
+        field, i, serial = parse_field(fmt, j + 1, serial)
+        push!(list, field)
     end
     lastindex(fmt) ≥ i && push!(list, fmt[i:end])
     return (list...,)
+end
+
+function parse_field(fmt::String, i::Int, serial::Int)
+    c = fmt[i]  # the first character after '{'
+    if c == '}'
+        serial += 1
+        return Field{serial, Any}(-1), i + 1, serial
+    elseif isdigit(c)
+        arg = Int(c - '0')
+        i += 1
+    elseif 'a' ≤ c ≤ 'z'
+        arg = Symbol(c)
+        i += 1
+    elseif c == ':'
+        serial += 1
+        arg = serial
+    end
+    c = fmt[i]
+    width = -1
+    if c == ':'
+        i += 1
+        width = 0
+        while isdigit(fmt[i])
+            width = 10*width + Int(fmt[i] - '-')
+            i += 1
+        end
+    end
+    @assert fmt[i] == '}'
+    return Field{arg, Any}(width), i + 1, serial
 end
 
 macro f_str(s)
