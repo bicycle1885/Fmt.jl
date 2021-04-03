@@ -9,12 +9,14 @@ const FILL_UNSPECIFIED = reinterpret(Char, 0xFFFFFFFF)
 @enum Sign::UInt8 SIGN_PLUS SIGN_MINUS SIGN_SPACE
 const SIGN_UNSPECIFIED = SIGN_MINUS
 const WIDTH_UNSPECIFIED = -1
+const TYPE_UNSPECIFIED = reinterpret(Char, 0xFFFFFFFF)
 
 struct Field{arg, T}
     fill::Char
     align::Alignment
     sign::Sign
     width::Int  # minimum width
+    type::Char
 end
 
 function Field{arg, T}(;
@@ -22,8 +24,9 @@ function Field{arg, T}(;
         align = ALIGN_UNSPECIFIED,
         sign = SIGN_UNSPECIFIED,
         width = WIDTH_UNSPECIFIED,
+        type = TYPE_UNSPECIFIED,
         ) where {arg, T}
-    return Field{arg, T}(fill, align, sign, width)
+    return Field{arg, T}(fill, align, sign, width, type)
 end
 
 argument(::Type{Field{arg, _}}) where {arg, _} = arg
@@ -200,6 +203,7 @@ function parse_spec(fmt::String, i::Int)
     align = ALIGN_UNSPECIFIED
     sign = SIGN_UNSPECIFIED
     width = WIDTH_UNSPECIFIED
+    type = TYPE_UNSPECIFIED
     c = fmt[i]  # the first character after ':'
 
     if c ∉ ('{', '}') && nextind(fmt, i) ≤ lastindex(fmt) && fmt[nextind(fmt, i)] ∈ ('<', '>')
@@ -234,9 +238,16 @@ function parse_spec(fmt::String, i::Int)
             width = 10*width + Int(fmt[i] - '0')
             i += 1
         end
+        c = fmt[i]
     end
 
-    @assert fmt[i] == '}'
+    if c in ('d',)
+        # integer type
+        type = 'd'
+        c = fmt[i+=1]
+    end
+
+    @assert c == '}'
     return fill, align, sign, width, i
 end
 

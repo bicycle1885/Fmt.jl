@@ -80,4 +80,6 @@ using Test
     @test format(f"{:+}", -3) == "-3"
     @test format(f"{: }",  3) == " 3"
     @test format(f"{: }", -3) == "-3"
+
+    @test format(f"{:d}", 42) == "42"
 end
