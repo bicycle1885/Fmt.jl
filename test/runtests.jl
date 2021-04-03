@@ -63,4 +63,11 @@ using Test
     @test format(f"{:┉<3}", 123) == "123"
     @test format(f"{:┉<4}", 123) == "123┉"
     @test format(f"{:┉<5}", 123) == "123┉┉"
+
+    @test format(f"{:┉<0}", "abc") == "abc"
+    @test format(f"{:┉<1}", "abc") == "abc"
+    @test format(f"{:┉<2}", "abc") == "abc"
+    @test format(f"{:┉<3}", "abc") == "abc"
+    @test format(f"{:┉<4}", "abc") == "abc┉"
+    @test format(f"{:┉<5}", "abc") == "abc┉┉"
 end

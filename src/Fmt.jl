@@ -57,7 +57,8 @@ end
 
 function formatsize(f::Field, x::AbstractString)
     size = ncodeunits(x) * sizeof(codeunit(x)) 
-    return size + max(f.width - length(x), 0)
+    f.width == WIDTH_UNSPECIFIED && return size
+    return ncodeunits(f.fill) * max(f.width - length(x), 0) + size
 end
 
 function formatsize(f::Field, x::Integer)
