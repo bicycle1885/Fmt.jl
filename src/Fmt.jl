@@ -68,7 +68,7 @@ function parse_format(fmt::String)
 end
 
 macro f_str(s)
-    parse_format(s)
+    parse_format(unescape_string(s))
 end
 
 end

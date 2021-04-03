@@ -4,6 +4,7 @@ using Test
 @testset "format" begin
     @test format(f"") == ""
     @test format(f"foobar") == "foobar"
+    @test format(f"\r\n") == "\r\n"
 
     @test format(f"Hello, {}!", "world") == "Hello, world!"
     @test format(f"Hello, {}!", "世界") == "Hello, 世界!"
