@@ -6,6 +6,14 @@ const FILL_UNSPECIFIED = reinterpret(Char, 0xFFFFFFFF)
 @enum Alignment::UInt8 ALIGN_UNSPECIFIED ALIGN_LEFT ALIGN_RIGHT
 const WIDTH_UNSPECIFIED = -1
 
+struct Literal{w}
+    str::String
+end
+
+function Literal(s)
+    return Literal{length(s)}(s)
+end
+
 struct Field{arg, T}
     fill::Char
     align::Alignment
@@ -49,8 +57,8 @@ end
 function genformat(fmt, positionals, keywords)
     body = Expr(:block)
     for (i, F) in enumerate(fmt.types)
-        if F === String
-            push!(body.args, :(print(out, fmt[$i])))
+        if F <: Literal
+            push!(body.args, :(print(out, fmt[$i].str)))
         else
             @assert F <: Field
             arg = argument(F)
@@ -79,11 +87,11 @@ function parse_format(fmt::String)
     serial = 0
     i = firstindex(fmt)
     while (j = findnext('{', fmt, i)) !== nothing
-        j - 1 ≥ i && push!(list, fmt[i:j-1])
+        j - 1 ≥ i && push!(list, Literal(fmt[i:j-1]))
         field, i, serial = parse_field(fmt, j + 1, serial)
         push!(list, field)
     end
-    lastindex(fmt) ≥ i && push!(list, fmt[i:end])
+    lastindex(fmt) ≥ i && push!(list, Literal(fmt[i:end]))
     return (list...,)
 end
 
