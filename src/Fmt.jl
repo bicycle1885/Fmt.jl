@@ -62,7 +62,13 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Integer)
         data[p] = UInt8('-')
         p += 1
     end
-    p = decimal(data, p, unsigned(abs(x)))
+    if f.type == 'd' || f.type == TYPE_UNSPECIFIED
+        p = decimal(data, p, unsigned(abs(x)))
+    elseif f.type == 'X' || f.type == 'x'
+        p = hexadecimal(data, p, unsigned(abs(x)), f.type == 'X')
+    else
+        @assert false
+    end
     if f.align == ALIGN_LEFT
         p = pad(data, p, f.fill, padwidth)
     end
@@ -83,6 +89,34 @@ function decimal(data::Vector{UInt8}, p::Int, x::Unsigned)
     end
     if n > 0
         data[p] = (rem(x, 10) % UInt8) + Z
+    end
+    return p + m
+end
+
+const HEXADECIMAL_DIGITS_UPPERCASE = zeros(UInt16, 256)
+const HEXADECIMAL_DIGITS_LOWERCASE = zeros(UInt16, 256)
+for x in 0:255
+    d, r = divrem(x, 16)
+    A = UInt8('A')
+    HEXADECIMAL_DIGITS_UPPERCASE[x+1] = ((d < 10 ? d + Z : d - 10 + A) << 8) % UInt16 + (r < 10 ? r + Z : r - 10 + A) % UInt8
+    A = UInt8('a')
+    HEXADECIMAL_DIGITS_LOWERCASE[x+1] = ((d < 10 ? d + Z : d - 10 + A) << 8) % UInt16 + (r < 10 ? r + Z : r - 10 + A) % UInt8
+end
+
+function hexadecimal(data::Vector{UInt8}, p::Int, x::Unsigned, uppercase::Bool)
+    m = n = ndigits(x, base = 16)
+    hexdigits = uppercase ? HEXADECIMAL_DIGITS_UPPERCASE : HEXADECIMAL_DIGITS_LOWERCASE
+    while n ≥ 2
+        x, r = divrem(x, 256)
+        xx = hexdigits[(r % Int) + 1]
+        data[p+n-1] =  xx       % UInt8
+        data[p+n-2] = (xx >> 8) % UInt8
+        n -= 2
+    end
+    if n > 0
+        A = uppercase ? UInt8('A') : UInt8('a')
+        r = rem(x, 16) % UInt8
+        data[p] = r < 0xa ? r + Z : r - 0xa + A
     end
     return p + m
 end
@@ -111,7 +145,8 @@ function formatsize(f::Field, x::AbstractString)
 end
 
 function formatsize(f::Field, x::Integer)
-    w = ndigits(x) + (x < 0 || f.sign ≠ SIGN_MINUS)
+    base = f.type == 'X' || f.type == 'x' ? 16 : 10
+    w = ndigits(x; base) + (x < 0 || f.sign ≠ SIGN_MINUS)
     f.width == WIDTH_UNSPECIFIED && return w
     return ncodeunits(f.fill) * max(f.width - w, 0) + w
 end
@@ -191,8 +226,8 @@ function parse_field(fmt::String, i::Int, serial::Int)
     end
     # check spec
     if fmt[i] == ':'
-        fill, align, sign, width, i = parse_spec(fmt, i + 1)
-        return Field{arg, Any}(;fill, align, sign, width), i + 1, serial
+        fill, align, sign, width, type, i = parse_spec(fmt, i + 1)
+        return Field{arg, Any}(;fill, align, sign, width, type), i + 1, serial
     else
         return Field{arg, Any}(), i + 1, serial
     end
@@ -241,14 +276,14 @@ function parse_spec(fmt::String, i::Int)
         c = fmt[i]
     end
 
-    if c in ('d',)
+    if c in ('d', 'X', 'x')
         # integer type
-        type = 'd'
+        type = c
         c = fmt[i+=1]
     end
 
     @assert c == '}'
-    return fill, align, sign, width, i
+    return fill, align, sign, width, type, i
 end
 
 macro f_str(s)
