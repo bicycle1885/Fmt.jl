@@ -16,6 +16,7 @@ struct Field{arg, T}
     align::Alignment
     sign::Sign
     altform::Bool
+    zero::Bool  # zero padding
     width::Int  # minimum width
     type::Char
 end
@@ -25,10 +26,11 @@ function Field{arg, T}(;
         align = ALIGN_UNSPECIFIED,
         sign = SIGN_UNSPECIFIED,
         altform = false,
+        zero = false,
         width = WIDTH_UNSPECIFIED,
         type = TYPE_UNSPECIFIED,
         ) where {arg, T}
-    return Field{arg, T}(fill, align, sign, altform, width, type)
+    return Field{arg, T}(fill, align, sign, altform, zero, width, type)
 end
 
 argument(::Type{Field{arg, _}}) where {arg, _} = arg
@@ -52,9 +54,9 @@ const Z = UInt8('0')
 
 function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Integer)
     base = f.type == 'X' || f.type == 'x' ? 16 : f.type == 'o' ? 8 : f.type == 'b' ? 2 : 10
-    width = ndigits(x; base) + (x < 0 || f.sign ≠ SIGN_MINUS) + 2 * (base ≠ 10)
+    width = ndigits(x; base) + (x < 0 || f.sign ≠ SIGN_MINUS) + (f.altform && base ≠ 10 && 2)
     padwidth = max(f.width - width, 0)
-    if f.align != ALIGN_LEFT
+    if f.align != ALIGN_LEFT && !f.zero
         p = pad(data, p, f.fill, padwidth)
     end
     if x ≥ 0 && f.sign == SIGN_SPACE
@@ -66,6 +68,9 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Integer)
     elseif x < 0
         data[p] = UInt8('-')
         p += 1
+    end
+    if f.zero
+        p = pad(data, p, '0', padwidth)
     end
     u = unsigned(abs(x))
     if base == 10
@@ -275,8 +280,8 @@ function parse_field(fmt::String, i::Int, serial::Int)
     end
     # check spec
     if fmt[i] == ':'
-        fill, align, sign, altform, width, type, i = parse_spec(fmt, i + 1)
-        return Field{arg, Any}(;fill, align, sign, altform, width, type), i + 1, serial
+        fill, align, sign, altform, zero, width, type, i = parse_spec(fmt, i + 1)
+        return Field{arg, Any}(;fill, align, sign, altform, zero, width, type), i + 1, serial
     else
         return Field{arg, Any}(), i + 1, serial
     end
@@ -314,9 +319,15 @@ function parse_spec(fmt::String, i::Int)
         c = fmt[i+=1]
     end
 
+    zero = false
     width = WIDTH_UNSPECIFIED
     if isdigit(c)
         # minimum width
+        if c == '0' && isdigit(fmt[i+1])
+            # preceded by zero
+            zero = true
+            i += 1
+        end
         if fill == FILL_UNSPECIFIED
             fill = ' '
         end
@@ -336,7 +347,7 @@ function parse_spec(fmt::String, i::Int)
     end
 
     @assert c == '}'
-    return fill, align, sign, altform, width, type, i
+    return fill, align, sign, altform, zero, width, type, i
 end
 
 macro f_str(s)

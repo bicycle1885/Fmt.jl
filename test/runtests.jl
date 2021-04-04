@@ -99,4 +99,18 @@ using Test
     @test format(f"{:#x}", 42) == "0x2a"
 
     @test format(f"{:s}", "abc") == "abc"
+
+    @test format(f"{:02}",  42) == "42"
+    @test format(f"{:02}", -42) == "-42"
+    @test format(f"{:03}",  42) == "042"
+    @test format(f"{:03}", -42) == "-42"
+    @test format(f"{:04}",  42) == "0042"
+    @test format(f"{:04}", -42) == "-042"
+
+    @test format(f"{:+02}",  42) == "+42"
+    @test format(f"{:+02}", -42) == "-42"
+    @test format(f"{:+03}",  42) == "+42"
+    @test format(f"{:+03}", -42) == "-42"
+    @test format(f"{:+04}",  42) == "+042"
+    @test format(f"{:+04}", -42) == "-042"
 end
