@@ -54,7 +54,8 @@ const Z = UInt8('0')
 
 function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Integer)
     base = f.type == 'X' || f.type == 'x' ? 16 : f.type == 'o' ? 8 : f.type == 'b' ? 2 : 10
-    width = ndigits(x; base) + (x < 0 || f.sign ≠ SIGN_MINUS) + (f.altform && base ≠ 10 && 2)
+    m = ndigits(x; base)
+    width = m + (x < 0 || f.sign ≠ SIGN_MINUS) + (f.altform && base ≠ 10 && 2)
     padwidth = max(f.width - width, 0)
     if f.align != ALIGN_LEFT && !f.zero
         p = pad(data, p, f.fill, padwidth)
@@ -74,28 +75,28 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Integer)
     end
     u = unsigned(abs(x))
     if base == 10
-        p = decimal(data, p, u)
+        p = decimal(data, p, u, m)
     elseif base == 16
         if f.altform
             data[p  ] = Z
             data[p+1] = UInt8(f.type)
             p += 2
         end
-        p = hexadecimal(data, p, u, f.type == 'X')
+        p = hexadecimal(data, p, u, m, f.type == 'X')
     elseif base == 2
         if f.altform
             data[p  ] = Z
             data[p+1] = UInt8('b')
             p += 2
         end
-        p = binary(data, p, u)
+        p = binary(data, p, u, m)
     elseif base == 8
         if f.altform
             data[p  ] = Z
             data[p+1] = UInt('o')
             p += 2
         end
-        p = octal(data, p, u)
+        p = octal(data, p, u, m)
     else
         @assert false "invalid base"
     end
@@ -105,8 +106,8 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Integer)
     return p
 end
 
-function binary(data::Vector{UInt8}, p::Int, x::Unsigned)
-    m = n = ndigits(x, base = 2)
+function binary(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int)
+    n = m
     while n > 0
         r = (x & 0x1) % UInt8
         data[p+n-1] = r + Z
@@ -116,8 +117,8 @@ function binary(data::Vector{UInt8}, p::Int, x::Unsigned)
     return p + m
 end
 
-function octal(data::Vector{UInt8}, p::Int, x::Unsigned)
-    m = n = ndigits(x, base = 8)
+function octal(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int)
+    n = m
     while n > 0
         r = (x & 0x7) % UInt8
         data[p+n-1] = r + Z
@@ -129,8 +130,8 @@ end
 
 const DECIMAL_DIGITS = [let (d, r) = divrem(x, 10); ((d + Z) << 8) % UInt16 + (r + Z) % UInt8; end for x in 0:99]
 
-function decimal(data::Vector{UInt8}, p::Int, x::Unsigned)
-    m = n = ndigits(x)
+function decimal(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int)
+    n = m
     while n ≥ 2
         x, r = divrem(x, 0x64)  # 0x64 = 100
         dd = DECIMAL_DIGITS[(r % Int) + 1]
@@ -154,8 +155,8 @@ for x in 0:255
     HEXADECIMAL_DIGITS_LOWERCASE[x+1] = ((d < 10 ? d + Z : d - 10 + A) << 8) % UInt16 + (r < 10 ? r + Z : r - 10 + A) % UInt8
 end
 
-function hexadecimal(data::Vector{UInt8}, p::Int, x::Unsigned, uppercase::Bool)
-    m = n = ndigits(x, base = 16)
+function hexadecimal(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int, uppercase::Bool)
+    n = m
     hexdigits = uppercase ? HEXADECIMAL_DIGITS_UPPERCASE : HEXADECIMAL_DIGITS_LOWERCASE
     while n ≥ 2
         x, r = divrem(x, 0x100)  # 0x100 = 256
