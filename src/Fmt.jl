@@ -108,14 +108,11 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Integer)
     if f.align != ALIGN_LEFT && !f.zero
         p = pad(data, p, f.fill, padwidth)
     end
-    if x ≥ 0 && f.sign == SIGN_SPACE
-        data[p] = UInt8(' ')
-        p += 1
-    elseif x ≥ 0 && f.sign == SIGN_PLUS
-        data[p] = UInt8('+')
-        p += 1
-    elseif x < 0
+    if x < 0
         data[p] = UInt8('-')
+        p += 1
+    elseif f.sign == SIGN_SPACE || f.sign == SIGN_PLUS
+        data[p] = f.sign == SIGN_SPACE ? UInt8(' ') : UInt8('+')
         p += 1
     end
     if f.zero
