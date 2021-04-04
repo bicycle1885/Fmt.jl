@@ -35,7 +35,13 @@ end
 
 argument(::Type{Field{arg, _}}) where {arg, _} = arg
 
-function formatfield(data::Vector{UInt8}, p::Int, field::Field, x::Any)
+function formatsize(f::Field, x::AbstractString)
+    size = ncodeunits(x) * sizeof(codeunit(x)) 
+    f.width == WIDTH_UNSPECIFIED && return size
+    return ncodeunits(f.fill) * max(f.width - length(x), 0) + size
+end
+
+function formatfield(data::Vector{UInt8}, p::Int, field::Field, x::AbstractString)
     if field.width == WIDTH_UNSPECIFIED
         s = string(x)
     else
@@ -51,6 +57,17 @@ function formatfield(data::Vector{UInt8}, p::Int, field::Field, x::Any)
 end
 
 const Z = UInt8('0')
+
+function formatsize(f::Field, x::Integer)
+    base = f.type == 'X' || f.type == 'x' ? 16 : f.type == 'o' ? 8 : f.type == 'b' ? 2 : 10
+    m = base == 10 ? ndigits_decimal(x) : ndigits(x; base)
+    w = m + (x < 0 || f.sign ≠ SIGN_MINUS)
+    if f.altform && base != 10
+        w += 2  # prefix (0b, 0o, 0x)
+    end
+    f.width == WIDTH_UNSPECIFIED && return w
+    return ncodeunits(f.fill) * max(f.width - w, 0) + w
+end
 
 function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Integer)
     base = f.type == 'X' || f.type == 'x' ? 16 : f.type == 'o' ? 8 : f.type == 'b' ? 2 : 10
@@ -220,23 +237,6 @@ function pad(data::Vector{UInt8}, p::Int, fill::Char, w::Int)
         w -= 1
     end
     return p
-end
-
-function formatsize(f::Field, x::AbstractString)
-    size = ncodeunits(x) * sizeof(codeunit(x)) 
-    f.width == WIDTH_UNSPECIFIED && return size
-    return ncodeunits(f.fill) * max(f.width - length(x), 0) + size
-end
-
-function formatsize(f::Field, x::Integer)
-    base = f.type == 'X' || f.type == 'x' ? 16 : f.type == 'o' ? 8 : f.type == 'b' ? 2 : 10
-    m = base == 10 ? ndigits_decimal(x) : ndigits(x; base)
-    w = m + (x < 0 || f.sign ≠ SIGN_MINUS)
-    if f.altform && base != 10
-        w += 2  # prefix (0b, 0o, 0x)
-    end
-    f.width == WIDTH_UNSPECIFIED && return w
-    return ncodeunits(f.fill) * max(f.width - w, 0) + w
 end
 
 function genformat(fmt, positionals, keywords)
