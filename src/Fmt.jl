@@ -15,6 +15,7 @@ struct Field{arg, T}
     fill::Char
     align::Alignment
     sign::Sign
+    altform::Bool
     width::Int  # minimum width
     type::Char
 end
@@ -23,10 +24,11 @@ function Field{arg, T}(;
         fill = FILL_UNSPECIFIED,
         align = ALIGN_UNSPECIFIED,
         sign = SIGN_UNSPECIFIED,
+        altform = false,
         width = WIDTH_UNSPECIFIED,
         type = TYPE_UNSPECIFIED,
         ) where {arg, T}
-    return Field{arg, T}(fill, align, sign, width, type)
+    return Field{arg, T}(fill, align, sign, altform, width, type)
 end
 
 argument(::Type{Field{arg, _}}) where {arg, _} = arg
@@ -46,8 +48,11 @@ function formatfield(data::Vector{UInt8}, p::Int, field::Field, x::Any)
     return p + n
 end
 
+const Z = UInt8('0')
+
 function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Integer)
-    width = ndigits(x) + (x < 0 || f.sign ≠ SIGN_MINUS)
+    base = f.type == 'X' || f.type == 'x' ? 16 : f.type == 'o' ? 8 : f.type == 'b' ? 2 : 10
+    width = ndigits(x; base) + (x < 0 || f.sign ≠ SIGN_MINUS) + 2 * (base ≠ 10)
     padwidth = max(f.width - width, 0)
     if f.align != ALIGN_LEFT
         p = pad(data, p, f.fill, padwidth)
@@ -63,24 +68,37 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Integer)
         p += 1
     end
     u = unsigned(abs(x))
-    if f.type == 'd' || f.type == TYPE_UNSPECIFIED
+    if base == 10
         p = decimal(data, p, u)
-    elseif f.type == 'X' || f.type == 'x'
+    elseif base == 16
+        if f.altform
+            data[p  ] = Z
+            data[p+1] = UInt8(f.type)
+            p += 2
+        end
         p = hexadecimal(data, p, u, f.type == 'X')
-    elseif f.type == 'b'
+    elseif base == 2
+        if f.altform
+            data[p  ] = Z
+            data[p+1] = UInt8('b')
+            p += 2
+        end
         p = binary(data, p, u)
-    elseif f.type == 'o'
+    elseif base == 8
+        if f.altform
+            data[p  ] = Z
+            data[p+1] = UInt('o')
+            p += 2
+        end
         p = octal(data, p, u)
     else
-        @assert false
+        @assert false "invalid base"
     end
     if f.align == ALIGN_LEFT
         p = pad(data, p, f.fill, padwidth)
     end
     return p
 end
-
-const Z = UInt8('0')
 
 function binary(data::Vector{UInt8}, p::Int, x::Unsigned)
     m = n = ndigits(x, base = 2)
@@ -175,6 +193,9 @@ end
 function formatsize(f::Field, x::Integer)
     base = f.type == 'X' || f.type == 'x' ? 16 : f.type == 'o' ? 8 : f.type == 'b' ? 2 : 10
     w = ndigits(x; base) + (x < 0 || f.sign ≠ SIGN_MINUS)
+    if f.altform && base != 10
+        w += 2  # prefix (0b, 0o, 0x)
+    end
     f.width == WIDTH_UNSPECIFIED && return w
     return ncodeunits(f.fill) * max(f.width - w, 0) + w
 end
@@ -254,8 +275,8 @@ function parse_field(fmt::String, i::Int, serial::Int)
     end
     # check spec
     if fmt[i] == ':'
-        fill, align, sign, width, type, i = parse_spec(fmt, i + 1)
-        return Field{arg, Any}(;fill, align, sign, width, type), i + 1, serial
+        fill, align, sign, altform, width, type, i = parse_spec(fmt, i + 1)
+        return Field{arg, Any}(;fill, align, sign, altform, width, type), i + 1, serial
     else
         return Field{arg, Any}(), i + 1, serial
     end
@@ -265,6 +286,7 @@ function parse_spec(fmt::String, i::Int)
     fill = FILL_UNSPECIFIED
     align = ALIGN_UNSPECIFIED
     sign = SIGN_UNSPECIFIED
+    altform = false
     width = WIDTH_UNSPECIFIED
     type = TYPE_UNSPECIFIED
     c = fmt[i]  # the first character after ':'
@@ -287,6 +309,13 @@ function parse_spec(fmt::String, i::Int)
     if c ∈ ('-', '+', ' ')
         # sign
         sign = c == '-' ? SIGN_MINUS : c == '+' ? SIGN_PLUS : SIGN_SPACE
+        i += 1
+        c = fmt[i]
+    end
+
+    if c == '#'
+        # alternative form (altform)
+        altform = true
         i += 1
         c = fmt[i]
     end
@@ -315,7 +344,7 @@ function parse_spec(fmt::String, i::Int)
     end
 
     @assert c == '}'
-    return fill, align, sign, width, type, i
+    return fill, align, sign, altform, width, type, i
 end
 
 macro f_str(s)

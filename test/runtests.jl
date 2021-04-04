@@ -92,5 +92,11 @@ using Test
     @test format(f"{:X}", 99999) == "1869F"
     @test format(f"{:x}", 99999) == "1869f"
 
+    @test format(f"{:#b}", 42) == "0b101010"
+    @test format(f"{:#o}", 42) == "0o52"
+    @test format(f"{:#d}", 42) == "42"
+    @test format(f"{:#X}", 42) == "0X2A"
+    @test format(f"{:#x}", 42) == "0x2a"
+
     @test format(f"{:s}", "abc") == "abc"
 end
