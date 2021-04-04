@@ -11,6 +11,12 @@ const SIGN_UNSPECIFIED = SIGN_MINUS
 const WIDTH_UNSPECIFIED = -1
 const TYPE_UNSPECIFIED = reinterpret(Char, 0xFFFFFFFF)
 
+# fields without spec
+struct SimpleField{arg, T} end
+
+argument(::Type{SimpleField{arg, _}}) where {arg, _} = arg
+
+# generic fields
 struct Field{arg, T}
     fill::Char
     align::Alignment
@@ -35,10 +41,20 @@ end
 
 argument(::Type{Field{arg, _}}) where {arg, _} = arg
 
+function formatsize(::SimpleField, x::AbstractString)
+    return ncodeunits(x) * sizeof(codeunit(x)) 
+end
+
 function formatsize(f::Field, x::AbstractString)
     size = ncodeunits(x) * sizeof(codeunit(x)) 
     f.width == WIDTH_UNSPECIFIED && return size
     return ncodeunits(f.fill) * max(f.width - length(x), 0) + size
+end
+
+function formatfield(data::Vector{UInt8}, p::Int, ::SimpleField, x::AbstractString)
+    n = ncodeunits(x)
+    copyto!(data, p, codeunits(x), 1, n)
+    return p + n
 end
 
 function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::AbstractString)
@@ -58,6 +74,10 @@ end
 
 const Z = UInt8('0')
 
+function formatsize(::SimpleField, x::Integer)
+    return ndigits_decimal(x) + (x < 0)
+end
+
 function formatsize(f::Field, x::Integer)
     base = f.type == 'X' || f.type == 'x' ? 16 : f.type == 'o' ? 8 : f.type == 'b' ? 2 : 10
     m = base == 10 ? ndigits_decimal(x) : ndigits(x; base)
@@ -67,6 +87,16 @@ function formatsize(f::Field, x::Integer)
     end
     f.width == WIDTH_UNSPECIFIED && return w
     return ncodeunits(f.fill) * max(f.width - w, 0) + w
+end
+
+function formatfield(data::Vector{UInt8}, p::Int, ::SimpleField, x::Integer)
+    if x < 0
+        data[p] = UInt8('-')
+        p += 1
+    end
+    u = unsigned(abs(x))
+    m = ndigits_decimal(u)
+    return decimal(data, p, u, m)
 end
 
 function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Integer)
@@ -214,8 +244,16 @@ function ndigits_decimal(x::Unsigned)
     return n
 end
 
+function formatsize(::SimpleField, x::AbstractFloat)
+    return Ryu.neededdigits(typeof(x))
+end
+
 function formatsize(f::Field, x::AbstractFloat)
     return Ryu.neededdigits(typeof(x))
+end
+
+function formatfield(data::Vector{UInt8}, p::Int, ::SimpleField, x::AbstractFloat)
+    return Ryu.writeshortest(data, p, x)
 end
 
 function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::AbstractFloat)
@@ -251,7 +289,7 @@ function genformat(fmt, positionals, keywords)
                 p += n
             end
         else
-            @assert F <: Field
+            @assert F <: Field || F <: SimpleField
             arg = argument(F)
             if arg isa Int
                 arg = :(positionals[$arg])
@@ -302,7 +340,7 @@ function parse_field(fmt::String, i::Int, serial::Int)
     # check field name
     if c == '}'
         serial += 1
-        return Field{serial, Any}(), i + 1, serial
+        return SimpleField{serial, Any}(), i + 1, serial
     elseif isdigit(c)
         arg = Int(c - '0')
         i += 1
@@ -318,7 +356,7 @@ function parse_field(fmt::String, i::Int, serial::Int)
         spec, i = parse_spec(fmt, i + 1)
         return Field{arg, Any}(; spec...), i + 1, serial
     else
-        return Field{arg, Any}(), i + 1, serial
+        return SimpleField{arg, Any}(), i + 1, serial
     end
 end
 
