@@ -41,19 +41,19 @@ function formatsize(f::Field, x::AbstractString)
     return ncodeunits(f.fill) * max(f.width - length(x), 0) + size
 end
 
-function formatfield(data::Vector{UInt8}, p::Int, field::Field, x::AbstractString)
-    if field.width == WIDTH_UNSPECIFIED
-        s = string(x)
-    else
-        if field.align == ALIGN_RIGHT
-            s = lpad(x, field.width, field.fill)
-        else
-            s = rpad(x, field.width, field.fill)
-        end
+function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::AbstractString)
+    width = length(x)
+    padwidth = max(f.width - width, 0)
+    if f.align == ALIGN_RIGHT
+        p = pad(data, p, f.fill, padwidth)
     end
-    n = ncodeunits(s)
-    copyto!(data, p, codeunits(s), 1, n)
-    return p + n
+    n = ncodeunits(x)
+    copyto!(data, p, codeunits(x), 1, n)
+    p += n
+    if f.align != ALIGN_RIGHT
+        p = pad(data, p, f.fill, padwidth)
+    end
+    return p
 end
 
 const Z = UInt8('0')
