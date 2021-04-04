@@ -111,7 +111,18 @@ using Test
     @test format(f"{:#X}", 42) == "0X2A"
     @test format(f"{:#x}", 42) == "0x2a"
 
-    @test format(f"{:s}", "abc") == "abc"
+    @test format(f"{:d}",   42) == "42"
+    @test format(f"{:5d}",  42) == "   42"
+    @test format(f"{:-5d}", 42) == "   42"
+    @test format(f"{:+5d}", 42) == "  +42"
+    @test format(f"{: 5d}", 42) == "   42"
+    @test format(f"{:<5d}", 42) == "42   "
+    @test format(f"{:>5d}", 42) == "   42"
+
+    @test format(f"{:s}",   "abc") == "abc"
+    @test format(f"{:5s}",  "abc") == "abc  "
+    @test format(f"{:<5s}", "abc") == "abc  "
+    @test format(f"{:>5s}", "abc") == "  abc"
 
     @test format(f"{:02}",  42) == "42"
     @test format(f"{:02}", -42) == "-42"
