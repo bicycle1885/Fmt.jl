@@ -222,7 +222,7 @@ end
 
 function formatsize(f::Field, x::Integer)
     base = f.type == 'X' || f.type == 'x' ? 16 : f.type == 'o' ? 8 : f.type == 'b' ? 2 : 10
-    m = base == 10 ? ndigits_decimal(unsigned(abs(x))) : ndigits(x; base)
+    m = base == 10 ? ndigits_decimal(x) : ndigits(x; base)
     w = m + (x < 0 || f.sign ≠ SIGN_MINUS)
     if f.altform && base != 10
         w += 2  # prefix (0b, 0o, 0x)
