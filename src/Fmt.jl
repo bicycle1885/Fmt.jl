@@ -85,11 +85,15 @@ function formatsize(::SimpleField, x::Integer)
 end
 
 function formatsize(f::Field, x::Integer)
-    base = f.type == 'X' || f.type == 'x' ? 16 : f.type == 'o' ? 8 : f.type == 'b' ? 2 : 10
-    m = base == 10 ? ndigits_decimal(x) : ndigits(x; base)
-    w = m + (x < 0 || f.sign ≠ SIGN_MINUS)
-    if f.altform && base != 10
-        w += 2  # prefix (0b, 0o, 0x)
+    if f.type == 'c'
+        w = 1
+    else
+        base = f.type == 'X' || f.type == 'x' ? 16 : f.type == 'o' ? 8 : f.type == 'b' ? 2 : 10
+        m = base == 10 ? ndigits_decimal(x) : ndigits(x; base)
+        w = m + (x < 0 || f.sign ≠ SIGN_MINUS)
+        if f.altform && base != 10
+            w += 2  # prefix (0b, 0o, 0x)
+        end
     end
     f.width == WIDTH_UNSPECIFIED && return w
     return ncodeunits(f.fill) * max(f.width - w, 0) + w
@@ -106,6 +110,7 @@ function formatfield(data::Vector{UInt8}, p::Int, ::SimpleField, x::Integer)
 end
 
 function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Integer)
+    f.type == 'c' && return char(data, p, f, x)
     base = f.type == 'X' || f.type == 'x' ? 16 : f.type == 'o' ? 8 : f.type == 'b' ? 2 : 10
     u = unsigned(abs(x))
     m = base == 10 ? ndigits_decimal(u) : ndigits(x; base)
@@ -135,6 +140,19 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Integer)
     else
         @assert false "invalid base"
     end
+    if f.align == ALIGN_LEFT
+        p = pad(data, p, f.fill, padwidth)
+    end
+    return p
+end
+
+function char(data::Vector{UInt8}, p::Int, f::Field, x::Integer)
+    width = 1
+    padwidth = max(f.width - width, 0)
+    if f.align != ALIGN_LEFT
+        p = pad(data, p, f.fill, padwidth)
+    end
+    p = pad(data, p, Char(x), 1)
     if f.align == ALIGN_LEFT
         p = pad(data, p, f.fill, padwidth)
     end
@@ -466,7 +484,7 @@ function parse_spec(fmt::String, i::Int)
     end
 
     type = TYPE_UNSPECIFIED
-    if c in ('d', 'X', 'x', 'o', 'b', 's')
+    if c in ('d', 'X', 'x', 'o', 'b', 'c', 's')
         # type
         type = c
         c = fmt[i+=1]

@@ -99,6 +99,7 @@ using Test
     @test format(f"{:d}", 42) == "42"
     @test format(f"{:X}", 42) == "2A"
     @test format(f"{:x}", 42) == "2a"
+    @test format(f"{:c}", 42) == "*"
     @test format(f"{:b}", 99999) == "11000011010011111"
     @test format(f"{:o}", 99999) == "303237"
     @test format(f"{:d}", 99999) == "99999"
