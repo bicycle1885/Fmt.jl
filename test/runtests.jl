@@ -23,6 +23,12 @@ using Test
     @test format(f"x = {x}, y = {y}", y = 3, x = 2) == "x = 2, y = 3"
     @test format(f"x = {x}, y = {y}, z = {x}", x = 2, y = 3) == "x = 2, y = 3, z = 2"
 
+    @test format(f"{}", 0x12) == "18"
+    @test format(f"{}", 0xff) == "255"
+
+    @test format(f"{}", typemin(Int)) == "-9223372036854775808"
+    @test format(f"{}", typemax(Int)) == "9223372036854775807"
+
     @test format(f"{:}", 123) == "123"
     @test format(f"{:}", "abc") == "abc"
 
