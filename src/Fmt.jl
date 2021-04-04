@@ -121,26 +121,11 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Integer)
     if base == 10
         p = decimal(data, p, u, m)
     elseif base == 16
-        if f.altform
-            data[p  ] = Z
-            data[p+1] = UInt8(f.type)
-            p += 2
-        end
-        p = hexadecimal(data, p, u, m, f.type == 'X')
+        p = hexadecimal(data, p, u, m, f.type == 'X', f.altform)
     elseif base == 2
-        if f.altform
-            data[p  ] = Z
-            data[p+1] = UInt8('b')
-            p += 2
-        end
-        p = binary(data, p, u, m)
+        p = binary(data, p, u, m, f.altform)
     elseif base == 8
-        if f.altform
-            data[p  ] = Z
-            data[p+1] = UInt('o')
-            p += 2
-        end
-        p = octal(data, p, u, m)
+        p = octal(data, p, u, m, f.altform)
     else
         @assert false "invalid base"
     end
@@ -150,7 +135,12 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Integer)
     return p
 end
 
-function binary(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int)
+function binary(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int, altform::Bool)
+    if altform
+        data[p  ] = Z
+        data[p+1] = UInt8('b')
+        p += 2
+    end
     n = m
     while n > 0
         r = (x & 0x1) % UInt8
@@ -161,7 +151,12 @@ function binary(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int)
     return p + m
 end
 
-function octal(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int)
+function octal(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int, altform::Bool)
+    if altform
+        data[p  ] = Z
+        data[p+1] = UInt8('o')
+        p += 2
+    end
     n = m
     while n > 0
         r = (x & 0x7) % UInt8
@@ -199,7 +194,12 @@ for x in 0:255
     HEXADECIMAL_DIGITS_LOWERCASE[x+1] = ((d < 10 ? d + Z : d - 10 + A) << 8) % UInt16 + (r < 10 ? r + Z : r - 10 + A) % UInt8
 end
 
-function hexadecimal(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int, uppercase::Bool)
+function hexadecimal(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int, uppercase::Bool, altform::Bool)
+    if altform
+        data[p  ] = Z
+        data[p+1] = uppercase ? UInt8('X') : UInt8('x')
+        p += 2
+    end
     n = m
     hexdigits = uppercase ? HEXADECIMAL_DIGITS_UPPERCASE : HEXADECIMAL_DIGITS_LOWERCASE
     while n ≥ 2
