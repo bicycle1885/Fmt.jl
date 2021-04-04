@@ -244,10 +244,8 @@ end
 @generated format(fmt::Tuple, positionals...; keywords...) =
     :(String($(genformat(fmt, positionals, keywords))))
 
-function format(out::IO, fmt::Tuple, positionals...; keywords...)
-    write(out, format(fmt, positionals...; keywords...))
-    nothing
-end
+@generated format(out::IO, fmt::Tuple, positionals...; keywords...) =
+    :(write(out, $(genformat(fmt, positionals, keywords))))
 
 function parse_format(fmt::String)
     list = []

@@ -117,3 +117,11 @@ using Test
     @test format(f"{:+04}",  42) == "+042"
     @test format(f"{:+04}", -42) == "-042"
 end
+
+@testset "format (writer)" begin
+    buf = IOBuffer()
+    n = format(buf, f"(x = {}, y = {})\n", 123, -999)
+    s = "(x = 123, y = -999)\n"
+    @test n == sizeof(s)
+    @test String(take!(buf)) == s
+end
