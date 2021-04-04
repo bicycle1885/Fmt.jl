@@ -12,12 +12,15 @@ const WIDTH_UNSPECIFIED = -1
 const TYPE_UNSPECIFIED = reinterpret(Char, 0xFFFFFFFF)
 
 # fields without spec
-struct SimpleField{arg, T} end
+struct SimpleField{arg, interp, T} end
 
-argument(::Type{SimpleField{arg, _}}) where {arg, _} = arg
+argument(::Type{SimpleField{arg, _, __}}) where {arg, _, __} = arg
+argument(f::SimpleField) = argument(typeof(f))
+interpolated(::Type{SimpleField{_, i, __}}) where {_, i, __} = i
+interpolated(f::SimpleField) = interpolated(typeof(f))
 
 # generic fields
-struct Field{arg, T}
+struct Field{arg, interp, T}
     fill::Char
     align::Alignment
     sign::Sign
@@ -27,7 +30,7 @@ struct Field{arg, T}
     type::Char
 end
 
-function Field{arg, T}(;
+function Field{arg, interp, T}(;
         fill = FILL_UNSPECIFIED,
         align = ALIGN_UNSPECIFIED,
         sign = SIGN_UNSPECIFIED,
@@ -35,11 +38,14 @@ function Field{arg, T}(;
         zero = false,
         width = WIDTH_UNSPECIFIED,
         type = TYPE_UNSPECIFIED,
-        ) where {arg, T}
-    return Field{arg, T}(fill, align, sign, altform, zero, width, type)
+        ) where {arg, interp, T}
+    return Field{arg, interp, T}(fill, align, sign, altform, zero, width, type)
 end
 
-argument(::Type{Field{arg, _}}) where {arg, _} = arg
+argument(::Type{Field{arg, _, __}}) where {arg, _, __} = arg
+argument(f::Field) = argument(typeof(f))
+interpolated(::Type{Field{_, i, __}}) where {_, i, __} = i
+interpolated(f::Field) = interpolated(typeof(f))
 
 function formatsize(::SimpleField, x::AbstractString)
     return ncodeunits(x) * sizeof(codeunit(x)) 
@@ -313,11 +319,53 @@ function genformat(fmt, positionals, keywords)
     end
 end
 
+function genformatstring(fmt)
+    if length(fmt) == 0
+        return ""
+    elseif length(fmt) == 1 && fmt[1] isa String
+        return fmt[1]
+    end
+    code_size = Expr(:block)  # compute data size
+    code_data = Expr(:block)  # write data
+    for (i, f) in enumerate(fmt)
+        if f isa String
+            size = :(s += ncodeunits($f))
+            data = quote
+                n = ncodeunits($f)
+                copyto!(data, p, codeunits($f), 1, n)
+                p += n
+            end
+        else
+            @assert f isa Union{Field, SimpleField}
+            arg = argument(f)
+            @assert arg isa Symbol
+            arg = esc(arg)
+            size = :(s += formatsize($f, $arg))
+            data = :(p  = formatfield(data, p, $f, $arg))
+        end
+        push!(code_size.args, size)
+        push!(code_data.args, data)
+    end
+    return quote
+        s = 0  # size
+        $(code_size)
+        data = StringVector(s)
+        p = 1  # position
+        $(code_data)
+        if p - 1 < length(data)
+            resize!(data, p - 1)
+        end
+        String(data)
+    end
+end
+
 @generated format(fmt::Tuple, positionals...; keywords...) =
     :(String($(genformat(fmt, positionals, keywords))))
 
 @generated format(out::IO, fmt::Tuple, positionals...; keywords...) =
     :(write(out, $(genformat(fmt, positionals, keywords))))
+
+format(s::String) = s
 
 function parse_format(fmt::String)
     list = []
@@ -334,10 +382,17 @@ end
 
 function parse_field(fmt::String, i::Int, serial::Int)
     c = fmt[i]  # the first character after '{'
+    interp = false
+    if fmt[i] == '$'
+        # interpolation
+        interp = true
+        c = fmt[i+=1]
+    end
+
     # check field name
     if c == '}'
         serial += 1
-        return SimpleField{serial, Any}(), i + 1, serial
+        return SimpleField{serial, false, Any}(), i + 1, serial
     elseif isdigit(c)
         arg = Int(c - '0')
         i += 1
@@ -348,12 +403,13 @@ function parse_field(fmt::String, i::Int, serial::Int)
         serial += 1
         arg = serial
     end
+
     # check spec
     if fmt[i] == ':'
         spec, i = parse_spec(fmt, i + 1)
-        return Field{arg, Any}(; spec...), i + 1, serial
+        return Field{arg, interp, Any}(; spec...), i + 1, serial
     else
-        return SimpleField{arg, Any}(), i + 1, serial
+        return SimpleField{arg, interp, Any}(), i + 1, serial
     end
 end
 
@@ -420,8 +476,16 @@ function parse_spec(fmt::String, i::Int)
     return (; fill, align, sign, altform, zero, width, type), i
 end
 
+is_all_interpolated(fmt) =
+    all(f isa String || interpolated(f) for f in fmt)
+
 macro f_str(s)
-    parse_format(unescape_string(s))
+    fmt = parse_format(unescape_string(s))
+    if is_all_interpolated(fmt)
+        genformatstring(fmt)
+    else
+        fmt
+    end
 end
 
 end

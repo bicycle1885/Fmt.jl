@@ -146,3 +146,16 @@ end
     @test n == sizeof(s)
     @test String(take!(buf)) == s
 end
+
+@testset "format (string)" begin
+    x = 42
+    y = "hi!"
+    @test f"" == ""
+    @test f"foobar" == "foobar"
+    @test f"{$x}" == "42"
+    @test f"{$y}" == "hi!"
+    @test f"{$y} {$x}" == "hi! 42"
+
+    x = 42
+    @test f"{$x:+4d}" == " +42"
+end
