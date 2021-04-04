@@ -13,6 +13,10 @@ using Test
     @test format(f"x = {}", 42) == "x = 42"
     @test format(f"x = {}, y = {}", 2, 3) == "x = 2, y = 3"
 
+    @test format(f"pi = {}", 3.1) == "pi = 3.1"
+    @test format(f"pi = {}", 3.14) == "pi = 3.14"
+    @test format(f"pi = {}", 3.141) == "pi = 3.141"
+
     @test format(f"x = {1}", 2) == "x = 2"
     @test format(f"x = {1}, y = {2}", 2, 3) == "x = 2, y = 3"
     @test format(f"x = {2}, y = {1}", 2, 3) == "x = 3, y = 2"

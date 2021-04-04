@@ -2,7 +2,7 @@ module Fmt
 
 export @f_str, format
 
-using Base: StringVector
+using Base: StringVector, Ryu
 
 const FILL_UNSPECIFIED = reinterpret(Char, 0xFFFFFFFF)
 @enum Alignment::UInt8 ALIGN_UNSPECIFIED ALIGN_LEFT ALIGN_RIGHT
@@ -197,6 +197,14 @@ function ndigits_decimal(x::Unsigned)
     return n
 end
 
+function formatsize(f::Field, x::AbstractFloat)
+    return Ryu.neededdigits(typeof(x))
+end
+
+function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::AbstractFloat)
+    return Ryu.writeshortest(data, p, x)
+end
+
 function pad(data::Vector{UInt8}, p::Int, fill::Char, w::Int)
     m = ncodeunits(fill)
     x = reinterpret(UInt32, fill) >> 8(4 - m)
@@ -263,6 +271,9 @@ function genformat(fmt, positionals, keywords)
         data = StringVector(s)
         p = 1  # position
         $(code_data)
+        if p - 1 < length(data)
+            resize!(data, p - 1)
+        end
         data
     end
 end
