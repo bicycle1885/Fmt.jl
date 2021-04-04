@@ -54,7 +54,8 @@ const Z = UInt8('0')
 
 function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Integer)
     base = f.type == 'X' || f.type == 'x' ? 16 : f.type == 'o' ? 8 : f.type == 'b' ? 2 : 10
-    m = ndigits(x; base)
+    u = unsigned(abs(x))
+    m = base == 10 ? ndigits_decimal(u) : ndigits(x; base)
     width = m + (x < 0 || f.sign ≠ SIGN_MINUS) + (f.altform && base ≠ 10 && 2)
     padwidth = max(f.width - width, 0)
     if f.align != ALIGN_LEFT && !f.zero
@@ -73,7 +74,6 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Integer)
     if f.zero
         p = pad(data, p, '0', padwidth)
     end
-    u = unsigned(abs(x))
     if base == 10
         p = decimal(data, p, u, m)
     elseif base == 16
@@ -173,6 +173,30 @@ function hexadecimal(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int, uppercase
     return p + m
 end
 
+ndigits_decimal(x::Integer) =
+    ndigits_decimal(unsigned(abs(x)))
+
+function ndigits_decimal(x::Unsigned)
+    n = 0
+    while true
+        if x < 10
+            n += 1
+            break
+        elseif x < 100
+            n += 2
+            break
+        elseif x < 1000
+            n += 3
+            break
+        else
+            n += 4
+            x < 10000 && break
+            x = div(x, oftype(x, 10000))
+        end
+    end
+    return n
+end
+
 function pad(data::Vector{UInt8}, p::Int, fill::Char, w::Int)
     m = ncodeunits(fill)
     x = reinterpret(UInt32, fill) >> 8(4 - m)
@@ -198,7 +222,8 @@ end
 
 function formatsize(f::Field, x::Integer)
     base = f.type == 'X' || f.type == 'x' ? 16 : f.type == 'o' ? 8 : f.type == 'b' ? 2 : 10
-    w = ndigits(x; base) + (x < 0 || f.sign ≠ SIGN_MINUS)
+    m = base == 10 ? ndigits_decimal(unsigned(abs(x))) : ndigits(x; base)
+    w = m + (x < 0 || f.sign ≠ SIGN_MINUS)
     if f.altform && base != 10
         w += 2  # prefix (0b, 0o, 0x)
     end
