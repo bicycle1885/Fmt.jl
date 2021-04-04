@@ -283,45 +283,40 @@ function parse_field(fmt::String, i::Int, serial::Int)
 end
 
 function parse_spec(fmt::String, i::Int)
-    fill = FILL_UNSPECIFIED
-    align = ALIGN_UNSPECIFIED
-    sign = SIGN_UNSPECIFIED
-    altform = false
-    width = WIDTH_UNSPECIFIED
-    type = TYPE_UNSPECIFIED
     c = fmt[i]  # the first character after ':'
 
+    fill = FILL_UNSPECIFIED
+    align = ALIGN_UNSPECIFIED
     if c ∉ ('{', '}') && nextind(fmt, i) ≤ lastindex(fmt) && fmt[nextind(fmt, i)] ∈ ('<', '>')
         # fill + align
         fill = c
         i = nextind(fmt, i)
         align = fmt[i] == '<' ? ALIGN_LEFT : ALIGN_RIGHT
-        i += 1
-        c = fmt[i]
+        c = fmt[i+=1]
     elseif c ∈ ('<', '>')
         # align
         fill = ' '
         align = c == '<' ? ALIGN_LEFT : ALIGN_RIGHT
-        i += 1
-        c = fmt[i]
+        c = fmt[i+=1]
     end
 
+    sign = SIGN_UNSPECIFIED
     if c ∈ ('-', '+', ' ')
         # sign
         sign = c == '-' ? SIGN_MINUS : c == '+' ? SIGN_PLUS : SIGN_SPACE
-        i += 1
-        c = fmt[i]
+        c = fmt[i+=1]
     end
 
+    altform = false
     if c == '#'
         # alternative form (altform)
         altform = true
-        i += 1
-        c = fmt[i]
+        c = fmt[i+=1]
     end
 
+    width = WIDTH_UNSPECIFIED
     if isdigit(c)
-        # width
+        # minimum width
         if fill == FILL_UNSPECIFIED
             fill = ' '
         end
@@ -333,12 +328,9 @@ function parse_spec(fmt::String, i::Int)
         c = fmt[i]
     end
 
-    if c in ('d', 'X', 'x', 'o', 'b')
-        # integer type
-        type = c
-        c = fmt[i+=1]
-    elseif c == 's'
-        # string type
+    type = TYPE_UNSPECIFIED
+    if c in ('d', 'X', 'x', 'o', 'b', 's')
+        # type
         type = c
         c = fmt[i+=1]
     end
