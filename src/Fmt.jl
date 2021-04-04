@@ -278,8 +278,8 @@ function parse_field(fmt::String, i::Int, serial::Int)
     end
     # check spec
     if fmt[i] == ':'
-        fill, align, sign, altform, zero, width, type, i = parse_spec(fmt, i + 1)
-        return Field{arg, Any}(;fill, align, sign, altform, zero, width, type), i + 1, serial
+        spec, i = parse_spec(fmt, i + 1)
+        return Field{arg, Any}(; spec...), i + 1, serial
     else
         return Field{arg, Any}(), i + 1, serial
     end
@@ -345,7 +345,7 @@ function parse_spec(fmt::String, i::Int)
     end
 
     @assert c == '}'
-    return fill, align, sign, altform, zero, width, type, i
+    return (; fill, align, sign, altform, zero, width, type), i
 end
 
 macro f_str(s)
