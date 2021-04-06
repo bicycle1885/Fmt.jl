@@ -9,19 +9,9 @@ const FILL_UNSPECIFIED = reinterpret(Char, 0xFFFFFFFF)
 @enum Sign::UInt8 SIGN_PLUS SIGN_MINUS SIGN_SPACE
 const SIGN_UNSPECIFIED = SIGN_MINUS
 const WIDTH_UNSPECIFIED = -1
-const TYPE_UNSPECIFIED = reinterpret(Char, 0xFFFFFFFF)
-
-# fields without spec
-struct SimpleField{arg}
-    interp::Bool
-end
-
-argument(::Type{SimpleField{arg}}) where arg = arg
-argument(f::SimpleField) = argument(typeof(f))
-interpolated(f::SimpleField) = f.interp
 
 # generic fields
-struct Field{arg}
+struct Field{type, arg}
     interp::Bool  # interpolated
     fill::Char
     align::Alignment
@@ -29,10 +19,9 @@ struct Field{arg}
     altform::Bool
     zero::Bool  # zero padding
     width::Int  # minimum width
-    type::Char
 end
 
-function Field{arg}(
+function Field{type, arg}(
         interp;
         fill = FILL_UNSPECIFIED,
         align = ALIGN_UNSPECIFIED,
@@ -40,29 +29,18 @@ function Field{arg}(
         altform = false,
         zero = false,
         width = WIDTH_UNSPECIFIED,
-        type = TYPE_UNSPECIFIED,
-        ) where arg
-    return Field{arg}(interp, fill, align, sign, altform, zero, width, type)
+        ) where {type, arg}
+    return Field{type, arg}(interp, fill, align, sign, altform, zero, width)
 end
 
-argument(::Type{Field{arg}}) where arg = arg
+argument(::Type{Field{_, arg}}) where {_, arg} = arg
 argument(f::Field) = argument(typeof(f))
 interpolated(f::Field) = f.interp
-
-function formatsize(::SimpleField, x::AbstractString)
-    return ncodeunits(x) * sizeof(codeunit(x)) 
-end
 
 function formatsize(f::Field, x::AbstractString)
     size = ncodeunits(x) * sizeof(codeunit(x)) 
     f.width == WIDTH_UNSPECIFIED && return size
     return ncodeunits(f.fill) * max(f.width - length(x), 0) + size
-end
-
-function formatfield(data::Vector{UInt8}, p::Int, ::SimpleField, x::AbstractString)
-    n = ncodeunits(x)
-    copyto!(data, p, codeunits(x), 1, n)
-    return p + n
 end
 
 function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::AbstractString)
@@ -82,15 +60,11 @@ end
 
 const Z = UInt8('0')
 
-function formatsize(::SimpleField, x::Integer)
-    return ndigits_decimal(x) + (x < 0)
-end
-
-function formatsize(f::Field, x::Integer)
-    if f.type == 'c'
+function formatsize(f::Field{type}, x::Integer) where type
+    if type == 'c'
         w = 1
     else
-        base = f.type == 'X' || f.type == 'x' ? 16 : f.type == 'o' ? 8 : f.type == 'b' ? 2 : 10
+        base = type == 'X' || type == 'x' ? 16 : type == 'o' ? 8 : type == 'b' ? 2 : 10
         m = base == 10 ? ndigits_decimal(x) : ndigits(x; base)
         w = m + (x < 0 || f.sign ≠ SIGN_MINUS)
         if f.altform && base != 10
@@ -101,19 +75,9 @@ function formatsize(f::Field, x::Integer)
     return ncodeunits(f.fill) * max(f.width - w, 0) + w
 end
 
-function formatfield(data::Vector{UInt8}, p::Int, ::SimpleField, x::Integer)
-    if x < 0
-        data[p] = UInt8('-')
-        p += 1
-    end
-    u = unsigned(abs(x))
-    m = ndigits_decimal(u)
-    return decimal(data, p, u, m)
-end
-
-function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Integer)
-    f.type == 'c' && return char(data, p, f, x)
-    base = f.type == 'X' || f.type == 'x' ? 16 : f.type == 'o' ? 8 : f.type == 'b' ? 2 : 10
+function formatfield(data::Vector{UInt8}, p::Int, f::Field{type}, x::Integer) where type
+    type == 'c' && return char(data, p, f, x)
+    base = type == 'X' || type == 'x' ? 16 : type == 'o' ? 8 : type == 'b' ? 2 : 10
     u = unsigned(abs(x))
     m = base == 10 ? ndigits_decimal(u) : ndigits(x; base)
     width = m + (x < 0 || f.sign ≠ SIGN_MINUS) + (f.altform && base ≠ 10 && 2)
@@ -134,7 +98,7 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Integer)
     if base == 10
         p = decimal(data, p, u, m)
     elseif base == 16
-        p = hexadecimal(data, p, u, m, f.type == 'X', f.altform)
+        p = hexadecimal(data, p, u, m, type == 'X', f.altform)
     elseif base == 2
         p = binary(data, p, u, m, f.altform)
     elseif base == 8
@@ -267,16 +231,8 @@ function ndigits_decimal(x::Unsigned)
     return n
 end
 
-function formatsize(::SimpleField, x::AbstractFloat)
-    return Ryu.neededdigits(typeof(x))
-end
-
 function formatsize(f::Field, x::AbstractFloat)
     return Ryu.neededdigits(typeof(x))
-end
-
-function formatfield(data::Vector{UInt8}, p::Int, ::SimpleField, x::AbstractFloat)
-    return Ryu.writeshortest(data, p, x)
 end
 
 function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::AbstractFloat)
@@ -312,7 +268,7 @@ function genformat(fmt, positionals, keywords)
                 p += n
             end
         else
-            @assert F <: Field || F <: SimpleField
+            @assert F <: Field
             arg = argument(F)
             if arg isa Int
                 arg = :(positionals[$arg])
@@ -356,7 +312,7 @@ function genformatstring(fmt)
                 p += n
             end
         else
-            @assert f isa Union{Field, SimpleField}
+            @assert f isa Field
             arg = argument(f)
             @assert arg isa Symbol
             arg = esc(arg)
@@ -412,7 +368,7 @@ function parse_field(fmt::String, i::Int, serial::Int)
     # check field name
     if c == '}'
         serial += 1
-        return SimpleField{serial}(false), i + 1, serial
+        return Field{'?', serial}(false), i + 1, serial
     elseif isdigit(c)
         arg = Int(c - '0')
         i += 1
@@ -426,10 +382,10 @@ function parse_field(fmt::String, i::Int, serial::Int)
 
     # check spec
     if fmt[i] == ':'
-        spec, i = parse_spec(fmt, i + 1)
-        return Field{arg}(interp; spec...), i + 1, serial
+        spec, type, i = parse_spec(fmt, i + 1)
+        return Field{type, arg}(interp; spec...), i + 1, serial
     else
-        return SimpleField{arg}(interp), i + 1, serial
+        return Field{'?', arg}(interp), i + 1, serial
     end
 end
 
@@ -485,7 +441,7 @@ function parse_spec(fmt::String, i::Int)
         c = fmt[i]
     end
 
-    type = TYPE_UNSPECIFIED
+    type = '?'  # unspecified
     if c in ('d', 'X', 'x', 'o', 'b', 'c', 's')
         # type
         type = c
@@ -493,7 +449,7 @@ function parse_spec(fmt::String, i::Int)
     end
 
     @assert c == '}'
-    return (; fill, align, sign, altform, zero, width, type), i
+    return (; fill, align, sign, altform, zero, width), type, i
 end
 
 is_all_interpolated(fmt) =
