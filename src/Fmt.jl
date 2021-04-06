@@ -38,13 +38,13 @@ argument(::Type{Field{_, arg}}) where {_, arg} = arg
 argument(f::Field) = argument(typeof(f))
 interpolated(f::Field) = f.interp
 
-function formatsize(f::Field, x::AbstractString)
+function formatinfo(f::Field, x::AbstractString)
     size = ncodeunits(x) * sizeof(codeunit(x)) 
-    f.width == WIDTH_UNSPECIFIED && return size
-    return ncodeunits(f.fill) * max(f.width - length(x), 0) + size
+    f.width == WIDTH_UNSPECIFIED && return size, nothing
+    return ncodeunits(f.fill) * max(f.width - length(x), 0) + size, nothing
 end
 
-function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::AbstractString)
+function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::AbstractString, info)
     width = length(x)
     padwidth = max(f.width - width, 0)
     if f.align == ALIGN_RIGHT
@@ -61,13 +61,13 @@ end
 
 const Z = UInt8('0')
 
-function formatsize(f::Field{'c'}, x::Integer)
+function formatinfo(f::Field{'c'}, x::Integer)
     size = ncodeunits(Char(x))
-    f.width == WIDTH_UNSPECIFIED && return size
-    return ncodeunits(f.fill) * max(f.width - 1, 0) + size
+    f.width == WIDTH_UNSPECIFIED && return size, nothing
+    return ncodeunits(f.fill) * max(f.width - 1, 0) + size, nothing
 end
 
-function formatfield(data::Vector{UInt8}, p::Int, f::Field{'c'}, x::Integer)
+function formatfield(data::Vector{UInt8}, p::Int, f::Field{'c'}, x::Integer, info)
     width = 1
     padwidth = max(f.width - width, 0)
     if f.align != ALIGN_LEFT
@@ -80,18 +80,18 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field{'c'}, x::Integer)
     return p
 end
 
-function formatsize(f::Field{type}, x::Integer) where type
+function formatinfo(f::Field{type}, x::Integer) where type
     base = type == 'X' || type == 'x' ? 16 : type == 'o' ? 8 : type == 'b' ? 2 : 10
     m = base == 10 ? ndigits_decimal(x) : ndigits(x; base)
     w = m + (x < 0 || f.sign ≠ SIGN_MINUS)
     if f.altform && base != 10
         w += 2  # prefix (0b, 0o, 0x)
     end
-    f.width == WIDTH_UNSPECIFIED && return w
-    return ncodeunits(f.fill) * max(f.width - w, 0) + w
+    f.width == WIDTH_UNSPECIFIED && return w, nothing
+    return ncodeunits(f.fill) * max(f.width - w, 0) + w, nothing
 end
 
-function formatfield(data::Vector{UInt8}, p::Int, f::Field{type}, x::Integer) where type
+function formatfield(data::Vector{UInt8}, p::Int, f::Field{type}, x::Integer, info) where type
     base = type == 'X' || type == 'x' ? 16 : type == 'o' ? 8 : type == 'b' ? 2 : 10
     u = unsigned(abs(x))
     m = base == 10 ? ndigits_decimal(u) : ndigits(x; base)
@@ -233,11 +233,11 @@ function ndigits_decimal(x::Unsigned)
     return n
 end
 
-function formatsize(f::Field, x::AbstractFloat)
-    return Ryu.neededdigits(typeof(x))
+function formatinfo(f::Field, x::AbstractFloat)
+    return Ryu.neededdigits(typeof(x)), nothing
 end
 
-function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::AbstractFloat)
+function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::AbstractFloat, info)
     return Ryu.writeshortest(data, p, x)
 end
 
@@ -259,11 +259,11 @@ function pad(data::Vector{UInt8}, p::Int, fill::Char, w::Int)
 end
 
 function genformat(fmt, positionals, keywords)
-    code_size = Expr(:block)  # compute data size
+    code_info = Expr(:block)  # compute data size and other info
     code_data = Expr(:block)  # write data
     for (i, F) in enumerate(fmt.types)
         if F === String
-            size = :(s += ncodeunits(fmt[$i]))
+            info = :(s += ncodeunits(fmt[$i]))
             data = quote
                 n = ncodeunits(fmt[$i])
                 copyto!(data, p, codeunits(fmt[$i]), 1, n)
@@ -278,15 +278,18 @@ function genformat(fmt, positionals, keywords)
                 @assert arg isa Symbol
                 arg = :(keywords[$(QuoteNode(arg))])
             end
-            size = :(s += formatsize(fmt[$i], $arg))
-            data = :(p  = formatfield(data, p, fmt[$i], $arg))
+            info = quote
+                size, $(Symbol(:info, i)) = formatinfo(fmt[$i], $arg)
+                s += size
+            end
+            data = :(p = formatfield(data, p, fmt[$i], $arg, $(Symbol(:info, i))))
         end
-        push!(code_size.args, size)
+        push!(code_info.args, info)
         push!(code_data.args, data)
     end
     return quote
         s = 0  # size
-        $(code_size)
+        $(code_info)
         data = StringVector(s)
         p = 1  # position
         $(code_data)
@@ -303,11 +306,11 @@ function genformatstring(fmt)
     elseif length(fmt) == 1 && fmt[1] isa String
         return fmt[1]
     end
-    code_size = Expr(:block)  # compute data size
+    code_info = Expr(:block)  # compute data size and other info
     code_data = Expr(:block)  # write data
     for (i, f) in enumerate(fmt)
         if f isa String
-            size = :(s += ncodeunits($f))
+            info = :(s += ncodeunits($f))
             data = quote
                 n = ncodeunits($f)
                 copyto!(data, p, codeunits($f), 1, n)
@@ -318,15 +321,18 @@ function genformatstring(fmt)
             arg = argument(f)
             @assert arg isa Symbol
             arg = esc(arg)
-            size = :(s += formatsize($f, $arg))
-            data = :(p  = formatfield(data, p, $f, $arg))
+            info = quote
+                size, $(Symbol(:info, i)) = formatinfo($f, $arg)
+                s += size
+            end
+            data = :(p = formatfield(data, p, $f, $arg, $(Symbol(:info, i))))
         end
-        push!(code_size.args, size)
+        push!(code_info.args, info)
         push!(code_data.args, data)
     end
     return quote
         s = 0  # size
-        $(code_size)
+        $(code_info)
         data = StringVector(s)
         p = 1  # position
         $(code_data)
