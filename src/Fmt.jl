@@ -40,13 +40,13 @@ interpolated(f::Field) = f.interp
 
 function formatinfo(f::Field, x::AbstractString)
     size = ncodeunits(x) * sizeof(codeunit(x)) 
-    f.width == WIDTH_UNSPECIFIED && return size, nothing
-    return ncodeunits(f.fill) * max(f.width - length(x), 0) + size, nothing
+    len = length(x)
+    f.width == WIDTH_UNSPECIFIED && return size, len
+    return ncodeunits(f.fill) * max(f.width - len, 0) + size, len
 end
 
-function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::AbstractString, info)
-    width = length(x)
-    padwidth = max(f.width - width, 0)
+function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::AbstractString, len)
+    padwidth = max(f.width - len, 0)
     if f.align == ALIGN_RIGHT
         p = pad(data, p, f.fill, padwidth)
     end
