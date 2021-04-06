@@ -61,23 +61,37 @@ end
 
 const Z = UInt8('0')
 
+function formatsize(f::Field{'c'}, x::Integer)
+    w = 1
+    f.width == WIDTH_UNSPECIFIED && return w
+    return ncodeunits(f.fill) * max(f.width - w, 0) + w
+end
+
+function formatfield(data::Vector{UInt8}, p::Int, f::Field{'c'}, x::Integer)
+    width = 1
+    padwidth = max(f.width - width, 0)
+    if f.align != ALIGN_LEFT
+        p = pad(data, p, f.fill, padwidth)
+    end
+    p = pad(data, p, Char(x), 1)
+    if f.align == ALIGN_LEFT
+        p = pad(data, p, f.fill, padwidth)
+    end
+    return p
+end
+
 function formatsize(f::Field{type}, x::Integer) where type
-    if type == 'c'
-        w = 1
-    else
-        base = type == 'X' || type == 'x' ? 16 : type == 'o' ? 8 : type == 'b' ? 2 : 10
-        m = base == 10 ? ndigits_decimal(x) : ndigits(x; base)
-        w = m + (x < 0 || f.sign ≠ SIGN_MINUS)
-        if f.altform && base != 10
-            w += 2  # prefix (0b, 0o, 0x)
-        end
+    base = type == 'X' || type == 'x' ? 16 : type == 'o' ? 8 : type == 'b' ? 2 : 10
+    m = base == 10 ? ndigits_decimal(x) : ndigits(x; base)
+    w = m + (x < 0 || f.sign ≠ SIGN_MINUS)
+    if f.altform && base != 10
+        w += 2  # prefix (0b, 0o, 0x)
     end
     f.width == WIDTH_UNSPECIFIED && return w
     return ncodeunits(f.fill) * max(f.width - w, 0) + w
 end
 
 function formatfield(data::Vector{UInt8}, p::Int, f::Field{type}, x::Integer) where type
-    type == 'c' && return char(data, p, f, x)
     base = type == 'X' || type == 'x' ? 16 : type == 'o' ? 8 : type == 'b' ? 2 : 10
     u = unsigned(abs(x))
     m = base == 10 ? ndigits_decimal(u) : ndigits(x; base)
@@ -107,19 +121,6 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field{type}, x::Integer) wh
     else
         @assert false "invalid base"
     end
-    if f.align == ALIGN_LEFT
-        p = pad(data, p, f.fill, padwidth)
-    end
-    return p
-end
-
-function char(data::Vector{UInt8}, p::Int, f::Field, x::Integer)
-    width = 1
-    padwidth = max(f.width - width, 0)
-    if f.align != ALIGN_LEFT
-        p = pad(data, p, f.fill, padwidth)
-    end
-    p = pad(data, p, Char(x), 1)
     if f.align == ALIGN_LEFT
         p = pad(data, p, f.fill, padwidth)
     end
