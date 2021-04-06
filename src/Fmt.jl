@@ -94,7 +94,6 @@ end
 
 function formatfield(data::Vector{UInt8}, p::Int, f::Field{type}, x::Integer, m::Int) where type
     base = type == 'X' || type == 'x' ? 16 : type == 'o' ? 8 : type == 'b' ? 2 : 10
-    u = unsigned(abs(x))
     width = m + (x < 0 || f.sign ≠ SIGN_MINUS) + (f.altform && base ≠ 10 && 2)
     padwidth = max(f.width - width, 0)
     if f.align != ALIGN_LEFT && !f.zero
@@ -110,6 +109,7 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field{type}, x::Integer, m:
     if f.zero
         p = pad(data, p, '0', padwidth)
     end
+    u = unsigned(abs(x))
     if base == 16
         p = hexadecimal(data, p, u, m, type == 'X', f.altform)
     elseif base == 10
