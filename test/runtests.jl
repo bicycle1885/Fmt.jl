@@ -106,6 +106,13 @@ using Test
     @test format(f"{:X}", 99999) == "1869F"
     @test format(f"{:x}", 99999) == "1869f"
 
+    # 'α': Unicode U+03B1 (category Ll: Letter, lowercase)
+    @test format(f"{:c}",  0x03b1) == "α"
+    @test format(f"{:0c}", 0x03b1) == "α"
+    @test format(f"{:1c}", 0x03b1) == "α"
+    @test format(f"{:2c}", 0x03b1) == " α"
+    @test format(f"{:3c}", 0x03b1) == "  α"
+
     @test format(f"{:#b}", 42) == "0b101010"
     @test format(f"{:#o}", 42) == "0o52"
     @test format(f"{:#d}", 42) == "42"

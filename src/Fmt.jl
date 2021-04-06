@@ -62,9 +62,9 @@ end
 const Z = UInt8('0')
 
 function formatsize(f::Field{'c'}, x::Integer)
-    w = 1
-    f.width == WIDTH_UNSPECIFIED && return w
-    return ncodeunits(f.fill) * max(f.width - w, 0) + w
+    size = ncodeunits(Char(x))
+    f.width == WIDTH_UNSPECIFIED && return size
+    return ncodeunits(f.fill) * max(f.width - 1, 0) + size
 end
 
 function formatfield(data::Vector{UInt8}, p::Int, f::Field{'c'}, x::Integer)
