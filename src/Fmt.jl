@@ -263,7 +263,7 @@ function genformat(fmt, positionals, keywords)
     code_data = Expr(:block)  # write data
     for (i, F) in enumerate(fmt.types)
         if F === String
-            info = :(s += ncodeunits(fmt[$i]))
+            info = :(size += ncodeunits(fmt[$i]))
             data = quote
                 n = ncodeunits(fmt[$i])
                 copyto!(data, p, codeunits(fmt[$i]), 1, n)
@@ -279,8 +279,8 @@ function genformat(fmt, positionals, keywords)
                 arg = :(keywords[$(QuoteNode(arg))])
             end
             info = quote
-                size, $(Symbol(:info, i)) = formatinfo(fmt[$i], $arg)
-                s += size
+                s, $(Symbol(:info, i)) = formatinfo(fmt[$i], $arg)
+                size += s
             end
             data = :(p = formatfield(data, p, fmt[$i], $arg, $(Symbol(:info, i))))
         end
@@ -288,12 +288,12 @@ function genformat(fmt, positionals, keywords)
         push!(code_data.args, data)
     end
     return quote
-        s = 0  # size
+        size = 0  # size
         $(code_info)
-        data = StringVector(s)
+        data = StringVector(size)
         p = 1  # position
         $(code_data)
-        if p - 1 < length(data)
+        if p - 1 < size
             resize!(data, p - 1)
         end
         data
@@ -310,7 +310,7 @@ function genformatstring(fmt)
     code_data = Expr(:block)  # write data
     for (i, f) in enumerate(fmt)
         if f isa String
-            info = :(s += ncodeunits($f))
+            info = :(size += ncodeunits($f))
             data = quote
                 n = ncodeunits($f)
                 copyto!(data, p, codeunits($f), 1, n)
@@ -322,8 +322,8 @@ function genformatstring(fmt)
             @assert arg isa Symbol
             arg = esc(arg)
             info = quote
-                size, $(Symbol(:info, i)) = formatinfo($f, $arg)
-                s += size
+                s, $(Symbol(:info, i)) = formatinfo($f, $arg)
+                size += s
             end
             data = :(p = formatfield(data, p, $f, $arg, $(Symbol(:info, i))))
         end
@@ -331,12 +331,12 @@ function genformatstring(fmt)
         push!(code_data.args, data)
     end
     return quote
-        s = 0  # size
+        size = 0  # size
         $(code_info)
-        data = StringVector(s)
+        data = StringVector(size)
         p = 1  # position
         $(code_data)
-        if p - 1 < length(data)
+        if p - 1 < size
             resize!(data, p - 1)
         end
         String(data)
