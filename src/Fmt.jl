@@ -88,14 +88,13 @@ function formatinfo(f::Field{type}, x::Integer) where type
     if f.altform && base != 10
         w += 2  # prefix (0b, 0o, 0x)
     end
-    f.width == WIDTH_UNSPECIFIED && return w, nothing
-    return ncodeunits(f.fill) * max(f.width - w, 0) + w, nothing
+    f.width == WIDTH_UNSPECIFIED && return w, m
+    return ncodeunits(f.fill) * max(f.width - w, 0) + w, m
 end
 
-function formatfield(data::Vector{UInt8}, p::Int, f::Field{type}, x::Integer, info) where type
+function formatfield(data::Vector{UInt8}, p::Int, f::Field{type}, x::Integer, m::Int) where type
     base = type == 'X' || type == 'x' ? 16 : type == 'o' ? 8 : type == 'b' ? 2 : 10
     u = unsigned(abs(x))
-    m = base == 10 ? ndigits_decimal(u) : ndigits(x; base)
     width = m + (x < 0 || f.sign ≠ SIGN_MINUS) + (f.altform && base ≠ 10 && 2)
     padwidth = max(f.width - width, 0)
     if f.align != ALIGN_LEFT && !f.zero
