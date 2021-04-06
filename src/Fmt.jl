@@ -163,7 +163,7 @@ const DECIMAL_DIGITS = [let (d, r) = divrem(x, 10); ((d + Z) << 8) % UInt16 + (r
 
 function decimal(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int)
     n = m
-    while n ≥ 2
+    @inbounds while n ≥ 2
         x, r = divrem(x, 0x64)  # 0x64 = 100
         dd = DECIMAL_DIGITS[(r % Int) + 1]
         data[p+n-1] =  dd       % UInt8
