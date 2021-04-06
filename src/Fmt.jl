@@ -95,14 +95,14 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field{type}, x::Integer) wh
     if f.zero
         p = pad(data, p, '0', padwidth)
     end
-    if base == 10
-        p = decimal(data, p, u, m)
-    elseif base == 16
+    if base == 16
         p = hexadecimal(data, p, u, m, type == 'X', f.altform)
-    elseif base == 2
-        p = binary(data, p, u, m, f.altform)
+    elseif base == 10
+        p = decimal(data, p, u, m)
     elseif base == 8
         p = octal(data, p, u, m, f.altform)
+    elseif base == 2
+        p = binary(data, p, u, m, f.altform)
     else
         @assert false "invalid base"
     end
