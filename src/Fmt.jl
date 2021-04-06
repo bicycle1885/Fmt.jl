@@ -92,11 +92,11 @@ function formatinfo(f::Field{type}, x::Integer) where type
     return ncodeunits(f.fill) * max(f.width - w, 0) + w, m
 end
 
-function formatfield(data::Vector{UInt8}, p::Int, f::Field{type}, x::Integer, m::Int) where type
+@inline function formatfield(data::Vector{UInt8}, p::Int, f::Field{type}, x::Integer, m::Int) where type
     base = type == 'X' || type == 'x' ? 16 : type == 'o' ? 8 : type == 'b' ? 2 : 10
     width = m + (x < 0 || f.sign ≠ SIGN_MINUS) + (f.altform && base ≠ 10 && 2)
     padwidth = max(f.width - width, 0)
-    if f.align != ALIGN_LEFT && !f.zero
+    if f.width != WIDTH_UNSPECIFIED && f.align != ALIGN_LEFT && !f.zero
         p = pad(data, p, f.fill, padwidth)
     end
     if x < 0
@@ -121,7 +121,7 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field{type}, x::Integer, m:
     else
         @assert false "invalid base"
     end
-    if f.align == ALIGN_LEFT
+    if f.width != WIDTH_UNSPECIFIED && f.align == ALIGN_LEFT
         p = pad(data, p, f.fill, padwidth)
     end
     return p
