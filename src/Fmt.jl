@@ -45,7 +45,7 @@ function formatinfo(f::Field, x::AbstractString)
     return ncodeunits(f.fill) * max(f.width - len, 0) + size, len
 end
 
-function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::AbstractString, len)
+function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::AbstractString, len::Int)
     padwidth = max(f.width - len, 0)
     if f.align == ALIGN_RIGHT
         p = pad(data, p, f.fill, padwidth)
