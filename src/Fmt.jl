@@ -127,55 +127,6 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field{type}, x::Integer, m:
     return p
 end
 
-function genformatinfo(f::Field, i::Int)
-    arg = esc(argument(f))
-    quote
-        $(Symbol(:info, i)) = let
-            s, info = formatinfo($f, $arg)
-            size += s
-            info
-        end
-    end
-end
-
-function genformatfield(f::Field, i::Int)
-    arg = esc(argument(f))
-    return :(p = formatfield(data, p, $f, $arg, $(Symbol(:info, i))))
-end
-
-#=
-function genformatinfo(f::Field{'d'}, i::Int)
-    code = Expr(:block)
-    arg = esc(argument(f))
-    push!(code.args, :(s = m = ndigits_decimal($arg)))
-    if f.sign == SIGN_PLUS || f.sign == SIGN_SPACE
-        push!(code.args, :(s += 1))
-    else
-        push!(code.args, :(s += $arg < 0))
-    end
-    if f.width != WIDTH_UNSPECIFIED
-        push!(code.args, :(s += $(ncodeunits(f.fill)) * max($(f.width) - s, 0)))
-    end
-    push!(code.args, :(size += s))
-    return :($(Symbol(:info, i)) = let; $code; m; end)
-end
-
-function genformatfield(f::Field{'d'}, i::Int)
-    code = Expr(:block)
-    arg = esc(argument(f))
-    push!(code.args, :(m = $(Symbol(:info, i))))
-    push!(code.args, quote
-        if $arg < 0
-            data[p] = UInt8('-')
-            p += 1
-        end
-    end)
-    push!(code.args, :(u = unsigned(abs($arg))))
-    push!(code.args, :(p = decimal(data, p, u, m)))
-    return Expr(:let, Expr(:block), code)
-end
-=#
-
 function binary(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int, altform::Bool)
     if altform
         data[p  ] = Z
@@ -359,37 +310,36 @@ function genformatstring(fmt)
     code_data = Expr(:block)  # write data
     for (i, f) in enumerate(fmt)
         if f isa String
-            info = :(size += $(ncodeunits(f)))
+            info = :(size += ncodeunits($f))
             data = quote
-                let
-                    n = $(ncodeunits(f))
-                    copyto!(data, p, codeunits($f), 1, n)
-                    p += n
-                end
+                n = ncodeunits($f)
+                copyto!(data, p, codeunits($f), 1, n)
+                p += n
             end
         else
             @assert f isa Field
             arg = argument(f)
             @assert arg isa Symbol
             arg = esc(arg)
-            info = genformatinfo(f, i)
-            data = genformatfield(f, i)
+            info = quote
+                s, $(Symbol(:info, i)) = formatinfo($f, $arg)
+                size += s
+            end
+            data = :(p = formatfield(data, p, $f, $arg, $(Symbol(:info, i))))
         end
         push!(code_info.args, info)
         push!(code_data.args, data)
     end
     return quote
-        let
-            size = 0  # size
-            $(code_info)
-            data = StringVector(size)
-            p = 1  # position
-            $(code_data)
-            if p - 1 < size
-                resize!(data, p - 1)
-            end
-            String(data)
+        size = 0  # size
+        $(code_info)
+        data = StringVector(size)
+        p = 1  # position
+        $(code_data)
+        if p - 1 < size
+            resize!(data, p - 1)
         end
+        String(data)
     end
 end
 
