@@ -62,18 +62,19 @@ end
 const Z = UInt8('0')
 
 function formatinfo(f::Field{'c'}, x::Integer)
-    size = ncodeunits(Char(x))
-    f.width == WIDTH_UNSPECIFIED && return size, nothing
-    return ncodeunits(f.fill) * max(f.width - 1, 0) + size, nothing
+    char = Char(x)
+    size = ncodeunits(char)
+    f.width == WIDTH_UNSPECIFIED && return size, char
+    return ncodeunits(f.fill) * max(f.width - 1, 0) + size, char
 end
 
-function formatfield(data::Vector{UInt8}, p::Int, f::Field{'c'}, x::Integer, info)
+function formatfield(data::Vector{UInt8}, p::Int, f::Field{'c'}, x::Integer, char::Char)
     width = 1
     padwidth = max(f.width - width, 0)
     if f.align != ALIGN_LEFT
         p = pad(data, p, f.fill, padwidth)
     end
-    p = pad(data, p, Char(x), 1)
+    p = pad(data, p, char, 1)
     if f.align == ALIGN_LEFT
         p = pad(data, p, f.fill, padwidth)
     end
