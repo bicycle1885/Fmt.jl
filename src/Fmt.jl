@@ -12,15 +12,17 @@ const WIDTH_UNSPECIFIED = -1
 const TYPE_UNSPECIFIED = reinterpret(Char, 0xFFFFFFFF)
 
 # fields without spec
-struct SimpleField{arg, interp} end
+struct SimpleField{arg}
+    interp::Bool
+end
 
-argument(::Type{SimpleField{arg, _}}) where {arg, _} = arg
+argument(::Type{SimpleField{arg}}) where arg = arg
 argument(f::SimpleField) = argument(typeof(f))
-interpolated(::Type{SimpleField{_, i}}) where {_, i} = i
-interpolated(f::SimpleField) = interpolated(typeof(f))
+interpolated(f::SimpleField) = f.interp
 
 # generic fields
-struct Field{arg, interp}
+struct Field{arg}
+    interp::Bool  # interpolated
     fill::Char
     align::Alignment
     sign::Sign
@@ -30,7 +32,8 @@ struct Field{arg, interp}
     type::Char
 end
 
-function Field{arg, interp}(;
+function Field{arg}(
+        interp;
         fill = FILL_UNSPECIFIED,
         align = ALIGN_UNSPECIFIED,
         sign = SIGN_UNSPECIFIED,
@@ -38,14 +41,13 @@ function Field{arg, interp}(;
         zero = false,
         width = WIDTH_UNSPECIFIED,
         type = TYPE_UNSPECIFIED,
-        ) where {arg, interp}
-    return Field{arg, interp}(fill, align, sign, altform, zero, width, type)
+        ) where arg
+    return Field{arg}(interp, fill, align, sign, altform, zero, width, type)
 end
 
-argument(::Type{Field{arg, _}}) where {arg, _} = arg
+argument(::Type{Field{arg}}) where arg = arg
 argument(f::Field) = argument(typeof(f))
-interpolated(::Type{Field{_, i}}) where {_, i} = i
-interpolated(f::Field) = interpolated(typeof(f))
+interpolated(f::Field) = f.interp
 
 function formatsize(::SimpleField, x::AbstractString)
     return ncodeunits(x) * sizeof(codeunit(x)) 
@@ -410,7 +412,7 @@ function parse_field(fmt::String, i::Int, serial::Int)
     # check field name
     if c == '}'
         serial += 1
-        return SimpleField{serial, false}(), i + 1, serial
+        return SimpleField{serial}(false), i + 1, serial
     elseif isdigit(c)
         arg = Int(c - '0')
         i += 1
@@ -425,9 +427,9 @@ function parse_field(fmt::String, i::Int, serial::Int)
     # check spec
     if fmt[i] == ':'
         spec, i = parse_spec(fmt, i + 1)
-        return Field{arg, interp}(; spec...), i + 1, serial
+        return Field{arg}(interp; spec...), i + 1, serial
     else
-        return SimpleField{arg, interp}(), i + 1, serial
+        return SimpleField{arg}(interp), i + 1, serial
     end
 end
 
