@@ -311,10 +311,18 @@ function genformatstring(fmt)
     for (i, f) in enumerate(fmt)
         if f isa String
             info = :(size += ncodeunits($f))
-            data = quote
-                n = ncodeunits($f)
-                copyto!(data, p, codeunits($f), 1, n)
-                p += n
+            n = ncodeunits(f)
+            data = if n < 8
+                # expand short copy loop
+                quote
+                    @inbounds $(genstrcopy(f))
+                    p += $n
+                end
+            else
+                quote
+                    copyto!(data, p, codeunits($f), 1, $n)
+                    p += $n
+                end
             end
         else
             @assert f isa Field
@@ -341,6 +349,15 @@ function genformatstring(fmt)
         end
         String(data)
     end
+end
+
+function genstrcopy(s::String)
+    n = ncodeunits(s)
+    code = Expr(:block)
+    for i in 1:n
+        push!(code.args, :(data[p+$i-1] = $(codeunit(s, i))))
+    end
+    return code
 end
 
 @generated format(fmt::Tuple, positionals...; keywords...) =
