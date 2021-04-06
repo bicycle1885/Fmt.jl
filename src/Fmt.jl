@@ -10,7 +10,8 @@ const FILL_UNSPECIFIED = reinterpret(Char, 0xFFFFFFFF)
 const SIGN_UNSPECIFIED = SIGN_MINUS
 const WIDTH_UNSPECIFIED = -1
 
-# generic fields
+# type (Char)         : type specifier ('?' means unspecified)
+# arg (Int or Symbol) : argument position or name
 struct Field{type, arg}
     interp::Bool  # interpolated
     fill::Char
