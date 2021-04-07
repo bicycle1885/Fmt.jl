@@ -252,7 +252,8 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field{type}, x::AbstractFlo
     typed = false
     compact = false
     if type == 'f'
-        return Ryu.writefixed(data, p, x, 6)
+        precision = f.precision == PRECISION_UNSPECIFIED ? 6 : f.precision
+        return Ryu.writefixed(data, p, x, precision)
     elseif f.precision != PRECISION_UNSPECIFIED
         precision = f.precision
         x = round(x, sigdigits = precision)

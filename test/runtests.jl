@@ -155,8 +155,22 @@ using Test
     @test format(f"{:.7}", pi) == "3.141593"
     @test format(f"{:.8}", pi) == "3.1415927"
 
+    h = 6.62607015e-34  # Planck constant
+    N = 6.02214076e+23  # Avogadro constant
     @test format(f"{:f}", 1.) == "1.000000"
     @test format(f"{:f}", pi) == "3.141593"
+    @test format(f"{:f}", h)  == "0.000000"
+    @test format(f"{:f}", N)  == "602214075999999987023872.000000"
+
+    @test format(f"{:.2f}", 1.) == "1.00"
+    @test format(f"{:.2f}", pi) == "3.14"
+    @test format(f"{:.2f}", h)  == "0.00"
+    @test format(f"{:.2f}", N)  == "602214075999999987023872.00"
+
+    @test format(f"{:.12f}", 1.) == "1.000000000000"
+    @test format(f"{:.12f}", pi) == "3.141592653590"
+    @test format(f"{:.12f}", h)  == "0.000000000000"
+    @test format(f"{:.12f}", N)  == "602214075999999987023872.000000000000"
 end
 
 @testset "format (writer)" begin
