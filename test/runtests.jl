@@ -172,6 +172,7 @@ using Test
     @test format(f"{:.12f}", h)  == "0.000000000000"
     @test format(f"{:.12f}", N)  == "602214075999999987023872.000000000000"
 
+    @test format(f"{:e}", 1.) == "1.000000e+00"
     @test format(f"{:e}", pi) == "3.141593e+00"
     @test format(f"{:e}", h)  == "6.626070e-34"
     @test format(f"{:e}", N)  == "6.022141e+23"
