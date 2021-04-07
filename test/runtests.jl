@@ -162,6 +162,10 @@ using Test
     @test format(f"{:f}", h)  == "0.000000"
     @test format(f"{:f}", N)  == "602214075999999987023872.000000"
 
+    @test format(f"{:f}",  Inf) == "inf"
+    @test format(f"{:f}", -Inf) == "-inf"
+    @test format(f"{:f}",  NaN) == "nan"
+
     @test format(f"{:.2f}", 1.) == "1.00"
     @test format(f"{:.2f}", pi) == "3.14"
     @test format(f"{:.2f}", h)  == "0.00"
@@ -176,6 +180,10 @@ using Test
     @test format(f"{:e}", pi) == "3.141593e+00"
     @test format(f"{:e}", h)  == "6.626070e-34"
     @test format(f"{:e}", N)  == "6.022141e+23"
+
+    @test format(f"{:e}",  Inf) == "inf"
+    @test format(f"{:e}", -Inf) == "-inf"
+    @test format(f"{:e}",  NaN) == "nan"
 
     @test format(f"{:.2e}", 1.) == "1.00e+00"
     @test format(f"{:.2e}", pi) == "3.14e+00"

@@ -251,6 +251,23 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field{type}, x::AbstractFlo
     decchar = UInt8('.')
     typed = false
     compact = false
+
+    if isinf(x)
+        if x < 0
+            data[p] = UInt8('-')
+            p += 1
+        end
+        data[p  ] = UInt8('i')
+        data[p+1] = UInt8('n')
+        data[p+2] = UInt8('f')
+        return p + 3
+    elseif isnan(x)
+        data[p  ] = UInt8('n')
+        data[p+1] = UInt8('a')
+        data[p+2] = UInt8('n')
+        return p + 3
+    end
+
     if type == 'f'
         precision = f.precision == PRECISION_UNSPECIFIED ? 6 : f.precision
         return Ryu.writefixed(data, p, x, precision)
