@@ -176,6 +176,16 @@ using Test
     @test format(f"{:e}", pi) == "3.141593e+00"
     @test format(f"{:e}", h)  == "6.626070e-34"
     @test format(f"{:e}", N)  == "6.022141e+23"
+
+    @test format(f"{:.2e}", 1.) == "1.00e+00"
+    @test format(f"{:.2e}", pi) == "3.14e+00"
+    @test format(f"{:.2e}", h)  == "6.63e-34"
+    @test format(f"{:.2e}", N)  == "6.02e+23"
+
+    @test format(f"{:.12e}", 1.) == "1.000000000000e+00"
+    @test format(f"{:.12e}", pi) == "3.141592653590e+00"
+    @test format(f"{:.12e}", h)  == "6.626070150000e-34"
+    @test format(f"{:.12e}", N)  == "6.022140760000e+23"
 end
 
 @testset "format (writer)" begin
