@@ -154,6 +154,9 @@ using Test
     @test format(f"{:.6}", pi) == "3.14159"
     @test format(f"{:.7}", pi) == "3.141593"
     @test format(f"{:.8}", pi) == "3.1415927"
+
+    @test format(f"{:f}", 1.) == "1.000000"
+    @test format(f"{:f}", pi) == "3.141593"
 end
 
 @testset "format (writer)" begin

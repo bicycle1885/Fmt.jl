@@ -240,7 +240,7 @@ function formatinfo(f::Field, x::AbstractFloat)
     return Ryu.neededdigits(typeof(x)), nothing
 end
 
-function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::AbstractFloat, info)
+function formatfield(data::Vector{UInt8}, p::Int, f::Field{type}, x::AbstractFloat, info) where type
     # default parameters of Ryu.writeshortest
     plus = false
     space = false
@@ -251,7 +251,9 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::AbstractFloat, in
     decchar = UInt8('.')
     typed = false
     compact = false
-    if f.precision != PRECISION_UNSPECIFIED
+    if type == 'f'
+        return Ryu.writefixed(data, p, x, 6)
+    elseif f.precision != PRECISION_UNSPECIFIED
         precision = f.precision
         x = round(x, sigdigits = precision)
     end
@@ -496,7 +498,7 @@ function parse_spec(fmt::String, i::Int)
     end
 
     type = '?'  # unspecified
-    if c in ('d', 'X', 'x', 'o', 'b', 'c', 's')
+    if c in ('d', 'X', 'x', 'o', 'b', 'c', 's', 'f')
         # type
         type = c
         c = fmt[i+=1]
