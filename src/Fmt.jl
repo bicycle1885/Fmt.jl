@@ -254,6 +254,9 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field{type}, x::AbstractFlo
     if type == 'f'
         precision = f.precision == PRECISION_UNSPECIFIED ? 6 : f.precision
         return Ryu.writefixed(data, p, x, precision)
+    elseif type == 'e'
+        precision = f.precision == PRECISION_UNSPECIFIED ? 6 : f.precision
+        return Ryu.writeexp(data, p, x, precision)
     elseif f.precision != PRECISION_UNSPECIFIED
         precision = f.precision
         x = round(x, sigdigits = precision)
@@ -499,7 +502,7 @@ function parse_spec(fmt::String, i::Int)
     end
 
     type = '?'  # unspecified
-    if c in ('d', 'X', 'x', 'o', 'b', 'c', 's', 'f')
+    if c in ('d', 'X', 'x', 'o', 'b', 'c', 's', 'f', 'e')
         # type
         type = c
         c = fmt[i+=1]
