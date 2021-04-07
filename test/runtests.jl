@@ -145,6 +145,15 @@ using Test
     @test format(f"{:+03}", -42) == "-42"
     @test format(f"{:+04}",  42) == "+042"
     @test format(f"{:+04}", -42) == "-042"
+
+    pi = Float64(π)
+    @test format(f"{:.2}", pi) == "3.1"
+    @test format(f"{:.3}", pi) == "3.14"
+    @test format(f"{:.4}", pi) == "3.142"
+    @test format(f"{:.5}", pi) == "3.1416"
+    @test format(f"{:.6}", pi) == "3.14159"
+    @test format(f"{:.7}", pi) == "3.141593"
+    @test format(f"{:.8}", pi) == "3.1415927"
 end
 
 @testset "format (writer)" begin

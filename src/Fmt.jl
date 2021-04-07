@@ -9,6 +9,7 @@ const FILL_UNSPECIFIED = reinterpret(Char, 0xFFFFFFFF)
 @enum Sign::UInt8 SIGN_PLUS SIGN_MINUS SIGN_SPACE
 const SIGN_UNSPECIFIED = SIGN_MINUS
 const WIDTH_UNSPECIFIED = -1
+const PRECISION_UNSPECIFIED = -1
 
 # type (Char)         : type specifier ('?' means unspecified)
 # arg (Int or Symbol) : argument position or name
@@ -20,6 +21,7 @@ struct Field{type, arg}
     altform::Bool
     zero::Bool  # zero padding
     width::Int  # minimum width
+    precision::Int  # precision
 end
 
 function Field{type, arg}(
@@ -30,8 +32,9 @@ function Field{type, arg}(
         altform = false,
         zero = false,
         width = WIDTH_UNSPECIFIED,
+        precision = PRECISION_UNSPECIFIED,
         ) where {type, arg}
-    return Field{type, arg}(interp, fill, align, sign, altform, zero, width)
+    return Field{type, arg}(interp, fill, align, sign, altform, zero, width, precision)
 end
 
 argument(::Type{Field{_, arg}}) where {_, arg} = arg
@@ -238,7 +241,21 @@ function formatinfo(f::Field, x::AbstractFloat)
 end
 
 function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::AbstractFloat, info)
-    return Ryu.writeshortest(data, p, x)
+    # default parameters of Ryu.writeshortest
+    plus = false
+    space = false
+    hash = true
+    precision = -1
+    expchar = UInt8('e')
+    padexp = false
+    decchar = UInt8('.')
+    typed = false
+    compact = false
+    if f.precision != PRECISION_UNSPECIFIED
+        precision = f.precision
+        x = round(x, sigdigits = precision)
+    end
+    return Ryu.writeshortest(data, p, x, plus, space, hash, precision, expchar, padexp, decchar, typed, compact)
 end
 
 function pad(data::Vector{UInt8}, p::Int, fill::Char, w::Int)
@@ -466,6 +483,18 @@ function parse_spec(fmt::String, i::Int)
         c = fmt[i]
     end
 
+    precision = PRECISION_UNSPECIFIED
+    if c == '.'
+        # precision
+        i += 1
+        precision = 0
+        while isdigit(fmt[i])
+            precision = 10precision + Int(fmt[i] - '0')
+            i += 1
+        end
+        c = fmt[i]
+    end
+
     type = '?'  # unspecified
     if c in ('d', 'X', 'x', 'o', 'b', 'c', 's')
         # type
@@ -474,7 +503,7 @@ function parse_spec(fmt::String, i::Int)
     end
 
     @assert c == '}'
-    return (; fill, align, sign, altform, zero, width), type, i
+    return (; fill, align, sign, altform, zero, width, precision), type, i
 end
 
 is_all_interpolated(fmt) =
