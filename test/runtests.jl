@@ -206,6 +206,9 @@ using Test
     @test format(f"{:.12f}", h)  == "0.000000000000"
     @test format(f"{:.12f}", N)  == "602214075999999987023872.000000000000"
 
+    @test format(f"{:.0f}", 1.0) == "1"
+    @test format(f"{:#.0f}", 1.0) == "1."
+
     @test format(f"{:e}", 1.) == "1.000000e+00"
     @test format(f"{:e}", pi) == "3.141593e+00"
     @test format(f"{:e}", h)  == "6.626070e-34"
@@ -236,6 +239,9 @@ using Test
     @test format(f"{:.2E}", pi) == "3.14E+00"
     @test format(f"{:.2E}", h)  == "6.63E-34"
     @test format(f"{:.2E}", N)  == "6.02E+23"
+
+    @test format(f"{:.0e}", 1.0) == "1e+00"
+    @test format(f"{:#.0e}", 1.0) == "1.e+00"
 end
 
 @testset "format (writer)" begin
