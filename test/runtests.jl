@@ -277,6 +277,14 @@ using Test
     @test format(f"{:10f}",  3.14) == "  3.140000"
     @test format(f"{:>10f}", 3.14) == "  3.140000"
     @test format(f"{:<10f}", 3.14) == "3.140000  "
+
+    @test format(f"{:06}",  1.2) == "0001.2"
+    @test format(f"{:06}", -1.2) == "-001.2"
+    @test format(f"{:+06}", 1.2) == "+001.2"
+    @test format(f"{:-06}", 1.2) == "0001.2"
+    @test format(f"{: 06}", 1.2) == " 001.2"
+
+    @test format(f"{:06}", -0.0) == "-000.0"
 end
 
 @testset "format (writer)" begin

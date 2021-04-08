@@ -324,10 +324,18 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field{type}, x::AbstractFlo
         p = Ryu.writeshortest(data, p, x, plus, space, hash, precision, expchar, padexp, decchar, typed, compact)
     end
 
-    width = p - start
-    padwidth = max(f.width - width, 0)
     if f.width != WIDTH_UNSPECIFIED
-        if f.align != ALIGN_LEFT
+        width = p - start
+        padwidth = max(f.width - width, 0)
+        if f.zero
+            if x < 0 || x === -zero(x) || f.sign == SIGN_PLUS || f.sign == SIGN_SPACE
+                start += 1
+                width -= 1
+            end
+            copyto!(data, start + padwidth, data, start, width)
+            pad(data, start, '0', padwidth)
+            p += padwidth
+        elseif f.align != ALIGN_LEFT
             padsize = ncodeunits(f.fill) * padwidth
             copyto!(data, padsize + 1, data, start, width)
             pad(data, start, f.fill, padwidth)
