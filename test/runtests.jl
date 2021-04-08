@@ -155,6 +155,13 @@ using Test
     @test format(f"{:.7}", pi) == "3.141593"
     @test format(f"{:.8}", pi) == "3.1415927"
 
+    @test format(f"{:-}",  0.5) == "0.5"
+    @test format(f"{:+}",  0.5) == "+0.5"
+    @test format(f"{: }",  0.5) == " 0.5"
+    @test format(f"{:-}", -0.5) == "-0.5"
+    @test format(f"{:+}", -0.5) == "-0.5"
+    @test format(f"{: }", -0.5) == "-0.5"
+
     h = 6.62607015e-34  # Planck constant
     N = 6.02214076e+23  # Avogadro constant
     @test format(f"{:f}", 1.) == "1.000000"
@@ -162,9 +169,23 @@ using Test
     @test format(f"{:f}", h)  == "0.000000"
     @test format(f"{:f}", N)  == "602214075999999987023872.000000"
 
+    @test format(f"{:-f}",  0.5) == "0.500000"
+    @test format(f"{:+f}",  0.5) == "+0.500000"
+    @test format(f"{: f}",  0.5) == " 0.500000"
+    @test format(f"{:-f}", -0.5) == "-0.500000"
+    @test format(f"{:+f}", -0.5) == "-0.500000"
+    @test format(f"{: f}", -0.5) == "-0.500000"
+
     @test format(f"{:f}",  Inf) == "inf"
     @test format(f"{:f}", -Inf) == "-inf"
     @test format(f"{:f}",  NaN) == "nan"
+
+    @test format(f"{:-f}",  Inf) == "inf"
+    @test format(f"{:+f}",  Inf) == "+inf"
+    @test format(f"{: f}",  Inf) == " inf"
+    @test format(f"{:-f}", -Inf) == "-inf"
+    @test format(f"{:+f}", -Inf) == "-inf"
+    @test format(f"{: f}", -Inf) == "-inf"
 
     @test format(f"{:F}",  Inf) == "INF"
     @test format(f"{:F}", -Inf) == "-INF"
@@ -189,6 +210,13 @@ using Test
     @test format(f"{:e}", pi) == "3.141593e+00"
     @test format(f"{:e}", h)  == "6.626070e-34"
     @test format(f"{:e}", N)  == "6.022141e+23"
+
+    @test format(f"{:-e}",  0.5) == "5.000000e-01"
+    @test format(f"{:+e}",  0.5) == "+5.000000e-01"
+    @test format(f"{: e}",  0.5) == " 5.000000e-01"
+    @test format(f"{:-e}", -0.5) == "-5.000000e-01"
+    @test format(f"{:+e}", -0.5) == "-5.000000e-01"
+    @test format(f"{: e}", -0.5) == "-5.000000e-01"
 
     @test format(f"{:e}",  Inf) == "inf"
     @test format(f"{:e}", -Inf) == "-inf"

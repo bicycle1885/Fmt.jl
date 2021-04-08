@@ -242,8 +242,6 @@ end
 
 function formatfield(data::Vector{UInt8}, p::Int, f::Field{type}, x::AbstractFloat, info) where type
     # default parameters of Ryu.writeshortest
-    plus = false
-    space = false
     hash = true
     precision = -1
     expchar = UInt8('e')
@@ -252,9 +250,26 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field{type}, x::AbstractFlo
     typed = false
     compact = false
 
+    if f.sign == SIGN_SPACE
+        plus = false
+        space = true
+    elseif f.sign == SIGN_PLUS
+        plus = true
+        space = false
+    else
+        plus = false
+        space = false
+    end
+
     if isinf(x)
         if x < 0
             data[p] = UInt8('-')
+            p += 1
+        elseif plus
+            data[p] = UInt8('+')
+            p += 1
+        elseif space
+            data[p] = UInt8(' ')
             p += 1
         end
         if type == 'F' || type == 'E'
@@ -282,11 +297,11 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field{type}, x::AbstractFlo
 
     if type == 'F' || type == 'f'
         precision = f.precision == PRECISION_UNSPECIFIED ? 6 : f.precision
-        return Ryu.writefixed(data, p, x, precision)
+        return Ryu.writefixed(data, p, x, precision, plus, space)
     elseif type == 'E' || type == 'e'
         precision = f.precision == PRECISION_UNSPECIFIED ? 6 : f.precision
         expchar = type == 'E' ? UInt8('E') : UInt8('e')
-        return Ryu.writeexp(data, p, x, precision, false, false, false, expchar)
+        return Ryu.writeexp(data, p, x, precision, plus, space, false, expchar)
     elseif f.precision != PRECISION_UNSPECIFIED
         precision = f.precision
         x = round(x, sigdigits = precision)
