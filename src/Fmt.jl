@@ -308,9 +308,12 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field{type}, x::AbstractFlo
         expchar = type == 'E' ? UInt8('E') : UInt8('e')
         return Ryu.writeexp(data, p, x, precision, plus, space, hash, expchar)
     elseif f.precision != PRECISION_UNSPECIFIED
+        hash = false
+        padexp = true
         precision = f.precision
         x = round(x, sigdigits = precision)
     end
+    #@show plus space hash precision expchar padexp decchar typed compact
     return Ryu.writeshortest(data, p, x, plus, space, hash, precision, expchar, padexp, decchar, typed, compact)
 end
 

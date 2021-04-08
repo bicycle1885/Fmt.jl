@@ -155,6 +155,13 @@ using Test
     @test format(f"{:.7}", pi) == "3.141593"
     @test format(f"{:.8}", pi) == "3.1415927"
 
+    @test format(f"{:.3}", 1e-1) == "0.1"
+    @test format(f"{:.3}", 1e-2) == "0.01"
+    @test format(f"{:.3}", 1e-3) == "0.001"
+    @test format(f"{:.3}", 1e-4) == "0.0001"
+    @test format(f"{:.3}", 1e-5) == "1e-05"
+    @test format(f"{:.3}", 1e-6) == "1e-06"
+
     @test format(f"{:-}",  0.5) == "0.5"
     @test format(f"{:+}",  0.5) == "+0.5"
     @test format(f"{: }",  0.5) == " 0.5"
