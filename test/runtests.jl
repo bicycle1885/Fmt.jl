@@ -169,7 +169,7 @@ using Test
     @test format(f"{:+}", -0.5) == "-0.5"
     @test format(f"{: }", -0.5) == "-0.5"
 
-    @test format(f"{:}", 1.0) == "1.0"
+    @test format(f"{:}",  1.0) == "1.0"
     @test format(f"{:#}", 1.0) == "1.0"
     @test format(f"{:g}", 1.0) == "1"
     @test format(f"{:G}", 1.0) == "1"
