@@ -1,6 +1,8 @@
 using Fmt
 using Test
 
+const format = Fmt.format
+
 @testset "format" begin
     @test format(f"") == ""
     @test format(f"foobar") == "foobar"

@@ -1,6 +1,6 @@
 module Fmt
 
-export @f_str, format
+export @f_str
 
 using Base: StringVector, Ryu
 
