@@ -307,7 +307,13 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field{type}, x::AbstractFlo
         precision = f.precision == PRECISION_UNSPECIFIED ? 6 : f.precision
         expchar = type == 'E' ? UInt8('E') : UInt8('e')
         return Ryu.writeexp(data, p, x, precision, plus, space, hash, expchar)
-    elseif type == 'G' || type == 'g' || type == '?'
+    elseif type == '%'
+        precision = f.precision == PRECISION_UNSPECIFIED ? 6 : f.precision
+        p = Ryu.writefixed(data, p, 100x, precision, plus, space, hash)
+        data[p] = UInt8('%')
+        return p + 1
+    else
+        @assert type == 'G' || type == 'g' || type == '?'
         if type == '?' && isinteger(x)
             hash = true
         end
@@ -559,7 +565,7 @@ function parse_spec(fmt::String, i::Int)
     end
 
     type = '?'  # unspecified
-    if c in "dXxobcsFfEeGg"
+    if c in "dXxobcsFfEeGg%"
         # type
         type = c
         c = fmt[i+=1]

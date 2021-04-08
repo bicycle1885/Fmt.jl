@@ -174,6 +174,12 @@ using Test
     @test format(f"{:g}", 1.0) == "1"
     @test format(f"{:G}", 1.0) == "1"
 
+    @test format(f"{:%}",   1.0) == "100.000000%"
+    @test format(f"{:.0%}", 1.0) == "100%"
+    @test format(f"{:.1%}", 1.0) == "100.0%"
+    @test format(f"{:.2%}", 1.0) == "100.00%"
+    @test format(f"{:.1%}", 0.5) == "50.0%"
+
     h = 6.62607015e-34  # Planck constant
     N = 6.02214076e+23  # Avogadro constant
     @test format(f"{:f}", 1.) == "1.000000"
