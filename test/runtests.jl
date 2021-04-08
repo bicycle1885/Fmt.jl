@@ -27,6 +27,8 @@ using Test
     @test format(f"x = {x}, y = {y}", y = 3, x = 2) == "x = 2, y = 3"
     @test format(f"x = {x}, y = {y}, z = {x}", x = 2, y = 3) == "x = 2, y = 3, z = 2"
 
+    @test format(f"{1}{2}{3}{4}{5}{6}{7}{8}{9}{10}{11}{12}", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12) == "123456789101112"
+
     @test format(f"{}", 0x12) == "18"
     @test format(f"{}", 0xff) == "255"
 

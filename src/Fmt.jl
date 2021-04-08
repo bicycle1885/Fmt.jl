@@ -503,9 +503,12 @@ function parse_field(fmt::String, i::Int, serial::Int)
     elseif c == ':'
         serial += 1
         arg = serial
-    elseif isdigit(c)
-        arg = Int(c - '0')
-        i += 1
+    elseif isdigit(c) && c != '0'
+        arg = 0
+        while isdigit(fmt[i])
+            arg = 10arg + Int(fmt[i] - '0')
+            i += 1
+        end
     elseif 'A' ≤ c ≤ 'Z' || 'a' ≤ c ≤ 'z'  # FIXME
         arg, i = Meta.parse(fmt, i, greedy = false)
     end
