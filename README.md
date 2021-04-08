@@ -106,3 +106,8 @@ naive_print:
 fmt_print:
   35.194 ms (2000000 allocations: 91.55 MiB)
 ```
+
+## Related projects
+
+- [Printf.jl](https://docs.julialang.org/en/v1/stdlib/Printf/) provides C-style formatting macros. In my opinion, it doesn't match dynamic nature of Julia because it needs type specifier.
+- [Formatting.jl](https://github.com/JuliaIO/Formatting.jl) provides similar functionality with different APIs. Fmt.jl is much simpler and more performant.
