@@ -519,7 +519,7 @@ function parse_spec(fmt::String, i::Int)
     end
 
     type = '?'  # unspecified
-    if c in ('d', 'X', 'x', 'o', 'b', 'c', 's', 'f', 'e')
+    if c in "dXxobcsfe"
         # type
         type = c
         c = fmt[i+=1]
