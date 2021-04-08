@@ -139,6 +139,11 @@ using Test
     @test format(f"{:04}",  42) == "0042"
     @test format(f"{:04}", -42) == "-042"
 
+    #@test format(f"{:<06}",  123) == "123000"
+    #@test format(f"{:>06}",  123) == "000123"
+    #@test format(f"{:<+06}", 123) == "+12300"
+    #@test format(f"{:>+06}", 123) == "00+123"
+
     @test format(f"{:+02}",  42) == "+42"
     @test format(f"{:+02}", -42) == "-42"
     @test format(f"{:+03}",  42) == "+42"
