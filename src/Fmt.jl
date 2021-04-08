@@ -260,7 +260,7 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field{type}, x::AbstractFlo
         space = false
     end
     
-    if f.altform
+    if f.altform || type == '?'
         hash = true
     else
         hash = false

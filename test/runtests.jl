@@ -162,6 +162,9 @@ using Test
     @test format(f"{:+}", -0.5) == "-0.5"
     @test format(f"{: }", -0.5) == "-0.5"
 
+    @test format(f"{:}", 1.0) == "1.0"
+    @test format(f"{:#}", 1.0) == "1.0"
+
     h = 6.62607015e-34  # Planck constant
     N = 6.02214076e+23  # Avogadro constant
     @test format(f"{:f}", 1.) == "1.000000"
