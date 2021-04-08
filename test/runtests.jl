@@ -166,10 +166,19 @@ using Test
     @test format(f"{:f}", -Inf) == "-inf"
     @test format(f"{:f}",  NaN) == "nan"
 
+    @test format(f"{:F}",  Inf) == "INF"
+    @test format(f"{:F}", -Inf) == "-INF"
+    @test format(f"{:F}",  NaN) == "NAN"
+
     @test format(f"{:.2f}", 1.) == "1.00"
     @test format(f"{:.2f}", pi) == "3.14"
     @test format(f"{:.2f}", h)  == "0.00"
     @test format(f"{:.2f}", N)  == "602214075999999987023872.00"
+
+    @test format(f"{:.2F}", 1.) == "1.00"
+    @test format(f"{:.2F}", pi) == "3.14"
+    @test format(f"{:.2F}", h)  == "0.00"
+    @test format(f"{:.2F}", N)  == "602214075999999987023872.00"
 
     @test format(f"{:.12f}", 1.) == "1.000000000000"
     @test format(f"{:.12f}", pi) == "3.141592653590"
@@ -194,6 +203,11 @@ using Test
     @test format(f"{:.12e}", pi) == "3.141592653590e+00"
     @test format(f"{:.12e}", h)  == "6.626070150000e-34"
     @test format(f"{:.12e}", N)  == "6.022140760000e+23"
+
+    @test format(f"{:.2E}", 1.) == "1.00E+00"
+    @test format(f"{:.2E}", pi) == "3.14E+00"
+    @test format(f"{:.2E}", h)  == "6.63E-34"
+    @test format(f"{:.2E}", N)  == "6.02E+23"
 end
 
 @testset "format (writer)" begin

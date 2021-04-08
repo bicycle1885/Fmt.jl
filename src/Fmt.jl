@@ -257,23 +257,36 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field{type}, x::AbstractFlo
             data[p] = UInt8('-')
             p += 1
         end
-        data[p  ] = UInt8('i')
-        data[p+1] = UInt8('n')
-        data[p+2] = UInt8('f')
+        if type == 'F' || type == 'E'
+            data[p  ] = UInt8('I')
+            data[p+1] = UInt8('N')
+            data[p+2] = UInt8('F')
+        else
+            data[p  ] = UInt8('i')
+            data[p+1] = UInt8('n')
+            data[p+2] = UInt8('f')
+        end
         return p + 3
     elseif isnan(x)
-        data[p  ] = UInt8('n')
-        data[p+1] = UInt8('a')
-        data[p+2] = UInt8('n')
+        if type == 'F' || type == 'E'
+            data[p  ] = UInt8('N')
+            data[p+1] = UInt8('A')
+            data[p+2] = UInt8('N')
+        else
+            data[p  ] = UInt8('n')
+            data[p+1] = UInt8('a')
+            data[p+2] = UInt8('n')
+        end
         return p + 3
     end
 
-    if type == 'f'
+    if type == 'F' || type == 'f'
         precision = f.precision == PRECISION_UNSPECIFIED ? 6 : f.precision
         return Ryu.writefixed(data, p, x, precision)
-    elseif type == 'e'
+    elseif type == 'E' || type == 'e'
         precision = f.precision == PRECISION_UNSPECIFIED ? 6 : f.precision
-        return Ryu.writeexp(data, p, x, precision)
+        expchar = type == 'E' ? UInt8('E') : UInt8('e')
+        return Ryu.writeexp(data, p, x, precision, false, false, false, expchar)
     elseif f.precision != PRECISION_UNSPECIFIED
         precision = f.precision
         x = round(x, sigdigits = precision)
@@ -519,7 +532,7 @@ function parse_spec(fmt::String, i::Int)
     end
 
     type = '?'  # unspecified
-    if c in "dXxobcsfe"
+    if c in "dXxobcsFfEe"
         # type
         type = c
         c = fmt[i+=1]
