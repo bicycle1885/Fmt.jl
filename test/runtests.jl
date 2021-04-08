@@ -310,4 +310,8 @@ end
     @test f"{$x:+4d}" == " +42"
     @test f"{$x}: bin = {$x:b}, oct = {$x:o}, dec = {$x:d}, hex = {$x:x}" ==
         "42: bin = 101010, oct = 52, dec = 42, hex = 2a"
+
+    FOO = foo = 100
+    @test f"{$FOO:d}" == "100"
+    @test f"{$foo:d}" == "100"
 end

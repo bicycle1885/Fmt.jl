@@ -500,15 +500,14 @@ function parse_field(fmt::String, i::Int, serial::Int)
     if c == '}'
         serial += 1
         return Field{'?', serial}(false), i + 1, serial
-    elseif isdigit(c)
-        arg = Int(c - '0')
-        i += 1
-    elseif 'a' ≤ c ≤ 'z'
-        arg = Symbol(c)
-        i += 1
     elseif c == ':'
         serial += 1
         arg = serial
+    elseif isdigit(c)
+        arg = Int(c - '0')
+        i += 1
+    elseif 'A' ≤ c ≤ 'Z' || 'a' ≤ c ≤ 'z'  # FIXME
+        arg, i = Meta.parse(fmt, i, greedy = false)
     end
 
     # check spec
