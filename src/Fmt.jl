@@ -260,6 +260,7 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field{type}, x::AbstractFlo
         space = false
     end
     
+    start = p
     if isinf(x)
         if x < 0
             data[p] = UInt8('-')
@@ -324,7 +325,22 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field{type}, x::AbstractFlo
         end
     end
     #@show plus space hash precision expchar padexp decchar typed compact
-    return Ryu.writeshortest(data, p, x, plus, space, hash, precision, expchar, padexp, decchar, typed, compact)
+    p = Ryu.writeshortest(data, p, x, plus, space, hash, precision, expchar, padexp, decchar, typed, compact)
+
+    width = p - start
+    padwidth = max(f.width - width, 0)
+    if f.width != WIDTH_UNSPECIFIED
+        if f.align != ALIGN_LEFT
+            padsize = ncodeunits(f.fill) * padwidth
+            copyto!(data, padsize + 1, data, start, width)
+            pad(data, start, f.fill, padwidth)
+            p += padsize
+        elseif f.align == ALIGN_LEFT
+            p = pad(data, p, f.fill, padwidth)
+        end
+    end
+
+    return p
 end
 
 function pad(data::Vector{UInt8}, p::Int, fill::Char, w::Int)

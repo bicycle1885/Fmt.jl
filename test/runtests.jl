@@ -260,6 +260,14 @@ using Test
 
     @test format(f"{:.0e}", 1.0) == "1e+00"
     @test format(f"{:#.0e}", 1.0) == "1.e+00"
+
+    @test format(f"{:5}", 1.2)   == "  1.2"
+    @test format(f"{:>5}", 1.2)  == "  1.2"
+    @test format(f"{:<5}", 1.2)  == "1.2  "
+    @test format(f"{:*>5}", 1.2) == "**1.2"
+    @test format(f"{:*<5}", 1.2) == "1.2**"
+    @test format(f"{:ζ>5}", 1.2) == "ζζ1.2"
+    @test format(f"{:ζ<5}", 1.2) == "1.2ζζ"
 end
 
 @testset "format (writer)" begin
