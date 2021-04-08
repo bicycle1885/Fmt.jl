@@ -260,6 +260,12 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field{type}, x::AbstractFlo
         space = false
     end
     
+    if f.altform
+        hash = true
+    else
+        hash = false
+    end
+
     start = p
     if isinf(x)
         if x < 0
@@ -281,7 +287,7 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field{type}, x::AbstractFlo
             data[p+1] = UInt8('n')
             data[p+2] = UInt8('f')
         end
-        return p + 3
+        p += 3
     elseif isnan(x)
         if type == 'F' || type == 'E'
             data[p  ] = UInt8('N')
@@ -292,27 +298,19 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field{type}, x::AbstractFlo
             data[p+1] = UInt8('a')
             data[p+2] = UInt8('n')
         end
-        return p + 3
-    end
-
-    if f.altform
-        hash = true
-    else
-        hash = false
-    end
-
-    if type == 'F' || type == 'f'
+        p += 3
+    elseif type == 'F' || type == 'f'
         precision = f.precision == PRECISION_UNSPECIFIED ? 6 : f.precision
-        return Ryu.writefixed(data, p, x, precision, plus, space, hash)
+        p = Ryu.writefixed(data, p, x, precision, plus, space, hash)
     elseif type == 'E' || type == 'e'
         precision = f.precision == PRECISION_UNSPECIFIED ? 6 : f.precision
         expchar = type == 'E' ? UInt8('E') : UInt8('e')
-        return Ryu.writeexp(data, p, x, precision, plus, space, hash, expchar)
+        p = Ryu.writeexp(data, p, x, precision, plus, space, hash, expchar)
     elseif type == '%'
         precision = f.precision == PRECISION_UNSPECIFIED ? 6 : f.precision
         p = Ryu.writefixed(data, p, 100x, precision, plus, space, hash)
         data[p] = UInt8('%')
-        return p + 1
+        p += 1
     else
         @assert type == 'G' || type == 'g' || type == '?'
         if type == '?' && isinteger(x)
@@ -323,9 +321,8 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field{type}, x::AbstractFlo
             precision = f.precision
             x = round(x, sigdigits = precision)
         end
+        p = Ryu.writeshortest(data, p, x, plus, space, hash, precision, expchar, padexp, decchar, typed, compact)
     end
-    #@show plus space hash precision expchar padexp decchar typed compact
-    p = Ryu.writeshortest(data, p, x, plus, space, hash, precision, expchar, padexp, decchar, typed, compact)
 
     width = p - start
     padwidth = max(f.width - width, 0)
@@ -339,7 +336,6 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field{type}, x::AbstractFlo
             p = pad(data, p, f.fill, padwidth)
         end
     end
-
     return p
 end
 
