@@ -337,7 +337,7 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field{type}, x::AbstractFlo
             p += padwidth
         elseif f.align != ALIGN_LEFT
             padsize = ncodeunits(f.fill) * padwidth
-            copyto!(data, padsize + 1, data, start, width)
+            copyto!(data, start + padsize, data, start, width)
             pad(data, start, f.fill, padwidth)
             p += padsize
         elseif f.align == ALIGN_LEFT

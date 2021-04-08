@@ -285,6 +285,8 @@ using Test
     @test format(f"{: 06}", 1.2) == " 001.2"
 
     @test format(f"{:06}", -0.0) == "-000.0"
+
+    @test format(f"({:10.3f})", 3.14) == "(     3.140)"
 end
 
 @testset "format (writer)" begin
