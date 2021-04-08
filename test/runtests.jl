@@ -171,6 +171,8 @@ using Test
 
     @test format(f"{:}", 1.0) == "1.0"
     @test format(f"{:#}", 1.0) == "1.0"
+    @test format(f"{:g}", 1.0) == "1"
+    @test format(f"{:G}", 1.0) == "1"
 
     h = 6.62607015e-34  # Planck constant
     N = 6.02214076e+23  # Avogadro constant

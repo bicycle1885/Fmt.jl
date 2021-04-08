@@ -260,12 +260,6 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field{type}, x::AbstractFlo
         space = false
     end
     
-    if f.altform || type == '?'
-        hash = true
-    else
-        hash = false
-    end
-
     if isinf(x)
         if x < 0
             data[p] = UInt8('-')
@@ -300,6 +294,12 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field{type}, x::AbstractFlo
         return p + 3
     end
 
+    if f.altform
+        hash = true
+    else
+        hash = false
+    end
+
     if type == 'F' || type == 'f'
         precision = f.precision == PRECISION_UNSPECIFIED ? 6 : f.precision
         return Ryu.writefixed(data, p, x, precision, plus, space, hash)
@@ -307,11 +307,15 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field{type}, x::AbstractFlo
         precision = f.precision == PRECISION_UNSPECIFIED ? 6 : f.precision
         expchar = type == 'E' ? UInt8('E') : UInt8('e')
         return Ryu.writeexp(data, p, x, precision, plus, space, hash, expchar)
-    elseif f.precision != PRECISION_UNSPECIFIED
-        hash = false
-        padexp = true
-        precision = f.precision
-        x = round(x, sigdigits = precision)
+    elseif type == 'G' || type == 'g' || type == '?'
+        if type == '?' && isinteger(x)
+            hash = true
+        end
+        if f.precision != PRECISION_UNSPECIFIED
+            padexp = true
+            precision = f.precision
+            x = round(x, sigdigits = precision)
+        end
     end
     #@show plus space hash precision expchar padexp decchar typed compact
     return Ryu.writeshortest(data, p, x, plus, space, hash, precision, expchar, padexp, decchar, typed, compact)
@@ -555,7 +559,7 @@ function parse_spec(fmt::String, i::Int)
     end
 
     type = '?'  # unspecified
-    if c in "dXxobcsFfEe"
+    if c in "dXxobcsFfEeGg"
         # type
         type = c
         c = fmt[i+=1]
