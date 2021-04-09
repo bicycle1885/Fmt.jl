@@ -41,6 +41,18 @@ argument(::Type{Field{_, arg}}) where {_, arg} = arg
 argument(f::Field) = argument(typeof(f))
 interpolated(f::Field) = f.interp
 
+# generic fallback
+function formatinfo(f::Field, x::Any)
+    s = string(x)
+    return ncodeunits(s), s
+end
+
+function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Any, s::String)
+    n = ncodeunits(s)
+    copyto!(data, p, codeunits(s), 1, n)
+    return p + n
+end
+
 function formatinfo(f::Field, x::AbstractString)
     size = ncodeunits(x) * sizeof(codeunit(x)) 
     len = length(x)
