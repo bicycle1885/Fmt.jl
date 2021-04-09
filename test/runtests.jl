@@ -33,7 +33,12 @@ struct Foo end
 
     @test format(f"{1}{2}{3}{4}{5}{6}{7}{8}{9}{10}{11}{12}", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12) == "123456789101112"
 
-    @test format(f"{}", Foo()) == "Foo()"
+    @test format(f"{}",     Foo()) == "Foo()"
+    @test format(f"{:9}",   Foo()) == "Foo()    "
+    @test format(f"{:<9}",  Foo()) == "Foo()    "
+    @test format(f"{:>9}",  Foo()) == "    Foo()"
+    @test format(f"{:*>9}", Foo()) == "****Foo()"
+    @test format(f"{:*<9}", Foo()) == "Foo()****"
     @test format(f"{}", (x = 1, y = 2)) == "(x = 1, y = 2)"
 
     @test format(f"{}", 0x12) == "18"

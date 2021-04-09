@@ -44,13 +44,24 @@ interpolated(f::Field) = f.interp
 # generic fallback
 function formatinfo(f::Field, x::Any)
     s = string(x)
-    return ncodeunits(s), s
+    size = ncodeunits(s)
+    width = length(s)
+    f.width == WIDTH_UNSPECIFIED && return size, (s, width)
+    return ncodeunits(f.fill) * max(f.width - width, 0) + size, (s, width)
 end
 
-function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Any, s::String)
+function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Any, (s, width)::Tuple{String,Int})
+    padwidth = max(f.width - width, 0)
+    if f.width != WIDTH_UNSPECIFIED && f.align == ALIGN_RIGHT
+        p = pad(data, p, f.fill, padwidth)
+    end
     n = ncodeunits(s)
     copyto!(data, p, codeunits(s), 1, n)
-    return p + n
+    p += n
+    if f.width != WIDTH_UNSPECIFIED && f.align != ALIGN_RIGHT
+        p = pad(data, p, f.fill, padwidth)
+    end
+    return p
 end
 
 function formatinfo(f::Field, x::AbstractString)
