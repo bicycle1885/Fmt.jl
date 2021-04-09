@@ -296,6 +296,10 @@ struct Foo end
     @test format(f"{:06}", -0.0) == "-000.0"
 
     @test format(f"({:10.3f})", 3.14) == "(     3.140)"
+
+    @test format(f"{:.0g}", 1.0) == "1"
+    @test format(f"{:.1g}", 1.0) == "1"
+    @test format(f"{:.2g}", 1.0) == "1"
 end
 
 @testset "format (writer)" begin

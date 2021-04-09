@@ -330,7 +330,7 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field{type}, x::AbstractFlo
         end
         if f.precision != PRECISION_UNSPECIFIED
             padexp = true
-            precision = f.precision
+            precision = max(f.precision, 1)
             x = round(x, sigdigits = precision)
         end
         p = Ryu.writeshortest(data, p, x, plus, space, hash, precision, expchar, padexp, decchar, typed, compact)
