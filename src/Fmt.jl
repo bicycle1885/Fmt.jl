@@ -563,13 +563,11 @@ function genstrcopy(s::String)
     return code
 end
 
-@generated format(fmt::Tuple, positionals...; keywords...) =
-    :(String($(genformat(fmt, positionals, keywords))))
-
-@generated format(out::IO, fmt::Tuple, positionals...; keywords...) =
-    :(write(out, $(genformat(fmt, positionals, keywords))))
-
-format(s::String) = s
+#@generated format(fmt::Tuple, positionals...; keywords...) =
+#    :(String($(genformat(fmt, positionals, keywords))))
+#
+#@generated format(out::IO, fmt::Tuple, positionals...; keywords...) =
+#    :(write(out, $(genformat(fmt, positionals, keywords))))
 
 function parse_format(fmt::String)
     list = []
@@ -697,12 +695,96 @@ end
 is_all_interpolated(fmt) =
     all(f isa String || interpolated(f) for f in fmt)
 
+function compile(fmt::String)
+    spec = parse_format(unescape_string(fmt))
+
+    # no fields; return static string
+    if isempty(spec)
+        return "", nothing
+    elseif length(spec) == 1 && spec[1] isa String
+        return spec[1], nothing
+    end
+
+    n_positionals = 0
+    keywords = Symbol[]
+    interpolated = Symbol[]
+    code_info = Expr(:block)
+    code_data = Expr(:block)
+    for (i, f) in enumerate(spec)
+        if f isa String
+            n = ncodeunits(f)
+            info = :(size += $n)
+            data = if n < 8
+                quote
+                    @inbounds $(genstrcopy(f))
+                    p += $n
+                end
+            else
+                quote
+                    copyto!(data, p, $(codeunits(f)), 1, $n)
+                    p += $n
+                end
+            end
+        else
+            arg = argument(f)
+            if arg isa Int
+                n_positionals = max(arg, n_positionals)
+                arg = Symbol(:_, arg)
+            else
+                if arg ∉ keywords
+                    push!(keywords, arg)
+                    f.interp && push!(interpolated, arg)
+                end
+            end
+            arg = esc(arg)
+            meta = Symbol(:meta, i)
+            info = quote
+                s, $meta = formatinfo($f, $arg)
+                size += s
+            end
+            data = :(p = formatfield(data, p, $f, $arg, $meta))
+        end
+        push!(code_info.args, info)
+        push!(code_data.args, data)
+    end
+    arguments = Expr(:tuple, Expr(:parameters, esc.(keywords)...), [esc(Symbol(:_, i)) for i in 1:n_positionals]...)
+    body = quote
+        size = 0
+        $(code_info)
+        data = StringVector(size)
+        p = 1
+        $(code_data)
+        p - 1 < size && resize!(data, p - 1)
+        return String(data)
+    end
+    return Expr(:function, arguments, body), interpolated
+end
+
+struct Format{F}
+    str::String
+    fun::F
+end
+
+Base.show(out::IO, fmt::Format) = print(out, "f\"", fmt.str, '"')
+
+format(fmt::String) = fmt
+format(fmt::Format, positionals...; keywords...) = fmt.fun(positionals...; keywords...)
+format(out::IO, fmt::Format, positionals...; keywords...) = write(out, fmt.fun(positionals...; keywords...))
+
 macro f_str(s)
-    fmt = parse_format(unescape_string(s))
-    if is_all_interpolated(fmt)
-        genformatstring(fmt)
+    #fmt = parse_format(unescape_string(s))
+    #if is_all_interpolated(fmt)
+    #    genformatstring(fmt)
+    #else
+    #    fmt
+    #end
+    code, interped = compile(s)
+    if code isa String
+        code
+    elseif isempty(interped)
+        :(Format($s, $code))
     else
-        fmt
+        :($(code)(; $(esc.(interped)...)))
     end
 end
 
