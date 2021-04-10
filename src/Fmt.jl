@@ -183,12 +183,12 @@ end
 function formatinfo(f::Field{type}, x::Integer) where type
     base = type == 'X' || type == 'x' ? 16 : type == 'o' ? 8 : type == 'b' ? 2 : 10
     m = base == 10 ? ndigits_decimal(x) : ndigits(x; base)
-    w = m + (x < 0 || f.sign ≠ SIGN_MINUS)
+    width = m + (x < 0 || f.sign ≠ SIGN_MINUS)
     if f.altform && base != 10
-        w += 2  # prefix (0b, 0o, 0x)
+        width += 2  # prefix (0b, 0o, 0x)
     end
-    f.width == WIDTH_UNSPECIFIED && return w, m
-    return paddingsize(f, w) + w, m
+    f.width == WIDTH_UNSPECIFIED && return width, m
+    return paddingsize(f, width) + width, m
 end
 
 @inline function formatfield(data::Vector{UInt8}, p::Int, f::Field{type}, x::Integer, m::Int) where type
