@@ -20,9 +20,9 @@ struct Keyword
     interp::Bool
 end
 
-# type (Char)         : type specifier ('?' means unspecified)
-# arg (Int or Symbol) : argument position or name
-struct Field{type, arg, W}
+# type (Char) : type specifier ('?' means unspecified)
+struct Field{type, W}
+    argument::Union{Int, Symbol}
     interp::Bool  # interpolated
     fill::Char
     align::Alignment
@@ -33,8 +33,8 @@ struct Field{type, arg, W}
     precision::Int  # precision
 end
 
-function Field{type, arg}(
-        interp;
+function Field{type}(
+        argument, interp;
         fill = FILL_UNSPECIFIED,
         align = ALIGN_UNSPECIFIED,
         sign = SIGN_UNSPECIFIED,
@@ -42,20 +42,19 @@ function Field{type, arg}(
         zero = false,
         width = WIDTH_UNSPECIFIED,
         precision = PRECISION_UNSPECIFIED,
-        ) where {type, arg}
-    return Field{type, arg, typeof(width)}(interp, fill, align, sign, altform, zero, width, precision)
+        ) where type
+    return Field{type, typeof(width)}(argument, interp, fill, align, sign, altform, zero, width, precision)
 end
 
-function Field(f::Field{type, arg}; width) where {type, arg}
-    return Field{type, arg, typeof(width)}(f.interp, f.fill, f.align, f.sign, f.altform, f.zero, width, f.precision)
+function Field(f::Field{type}; width) where type
+    return Field{type, typeof(width)}(f.argument, f.interp, f.fill, f.align, f.sign, f.altform, f.zero, width, f.precision)
 end
 
-argument(::Type{Field{_, arg, __}}) where {_, arg, __} = arg
-argument(f::Field) = argument(typeof(f))
+argument(f::Field) = f.argument
 interpolated(f::Field) = f.interp
 
-paddingwidth(f::Field{_, __, Int}, width::Int) where {_, __} = max(f.width - width, 0)
-paddingwidth(f::Field{_, __, Nothing}, width::Int) where {_, __} = 0
+paddingwidth(f::Field{_, Int}, width::Int) where _  = max(f.width - width, 0)
+paddingwidth(f::Field{_, Nothing}, width::Int) where _ = 0
 paddingsize(f::Field, width::Int) = paddingwidth(f, width) * ncodeunits(f.fill)
 
 # generic fallback
@@ -501,7 +500,7 @@ function parse_field(fmt::String, i::Int, serial::Int)
     # check field name
     if c == '}'
         serial += 1
-        return Field{'?', serial}(false), i + 1, serial
+        return Field{'?'}(serial, false), i + 1, serial
     elseif c == ':'
         serial += 1
         arg = serial
@@ -518,9 +517,9 @@ function parse_field(fmt::String, i::Int, serial::Int)
     # check spec
     if fmt[i] == ':'
         spec, type, i = parse_spec(fmt, i + 1)
-        return Field{type, arg}(interp; spec...), i + 1, serial
+        return Field{type}(arg, interp; spec...), i + 1, serial
     else
-        return Field{'?', arg}(interp), i + 1, serial
+        return Field{'?'}(arg, interp), i + 1, serial
     end
 end
 
