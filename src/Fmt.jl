@@ -208,7 +208,11 @@ function formatinfo(f::Field{type}, x::Integer) where type
         width += 2  # prefix (0b, 0o, 0x)
     end
     if f.grouping == GROUPING_COMMA || f.grouping == GROUPING_UNDERSCORE
-        width += div(m - 1, 3)
+        if base == 10
+            width += div(m - 1, 3)
+        else
+            width += div(m - 1, 4)
+        end
     end
     f.width == WIDTH_UNSPECIFIED && return width, m
     return paddingsize(f, width) + width, m
@@ -232,20 +236,28 @@ end
         p = pad(data, p, '0', pw)
     end
     u = unsigned(abs(x))
-    if base == 16
-        p = hexadecimal(data, p, u, m, type == 'X', f.altform)
-    elseif base == 10
-        if f.grouping == GROUPING_UNSPECIFIED
+    if f.grouping == GROUPING_UNSPECIFIED
+        if base == 16
+            p = hexadecimal(data, p, u, m, type == 'X', f.altform)
+        elseif base == 10
             p = decimal(data, p, u, m)
+        elseif base == 8
+            p = octal(data, p, u, m, f.altform)
+        elseif base == 2
+            p = binary(data, p, u, m, type == 'B', f.altform)
         else
-            p = decimal_grouping(data, p, u, m, f.grouping == GROUPING_COMMA ? UInt8(',') : UInt8('_'))
+            @assert false "invalid base"
         end
-    elseif base == 8
-        p = octal(data, p, u, m, f.altform)
-    elseif base == 2
-        p = binary(data, p, u, m, type == 'B', f.altform)
     else
-        @assert false "invalid base"
+        if base == 16
+            p = hexadecimal_grouping(data, p, u, m, type == 'X', f.altform)
+        elseif base == 10
+            p = decimal_grouping(data, p, u, m, f.grouping == GROUPING_COMMA ? UInt8(',') : UInt8('_'))
+        elseif base == 8
+        elseif base == 2
+        else
+            @assert false "invalid base"
+        end
     end
     if f.width != WIDTH_UNSPECIFIED && f.align == ALIGN_LEFT
         p = pad(data, p, f.fill, pw)
@@ -350,6 +362,31 @@ function hexadecimal(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int, uppercase
         data[p] = r < 0xa ? r + Z : r - 0xa + A
     end
     return p + m
+end
+
+function hexadecimal_grouping(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int, uppercase::Bool, altform::Bool)
+    if altform
+        data[p  ] = Z
+        data[p+1] = uppercase ? UInt8('X') : UInt8('x')
+        p += 2
+    end
+    k = div(m - 1, 4)
+    n = m + k
+    hexdigits = uppercase ? HEXADECIMAL_DIGITS_UPPERCASE : HEXADECIMAL_DIGITS_LOWERCASE
+    while n ≥ 5
+        x, r = divrem(x, 0x100)  # 0x100 = 256
+        xx = hexdigits[(r % Int) + 1]
+        data[p+n-1] = xx % UInt8
+        data[p+n-2] = (xx >> 8) % UInt8
+        x, r = divrem(x, 0x100)
+        xx = hexdigits[(r % Int) + 1]
+        data[p+n-3] = xx % UInt8
+        data[p+n-4] = (xx >> 8) % UInt8
+        data[p+n-5] = UInt8('_')
+        n -= 5
+    end
+    hexadecimal(data, p, x, n, uppercase, false)
+    return p + m + k
 end
 
 ndigits_decimal(x::Integer) =
