@@ -34,6 +34,7 @@ f"{$x:b}" == "101010"
 f"{$x:o}" == "52"
 f"{$x:d}" == "42"
 f"{$x:x}" == "2a"
+f"{$x:X}" == "2A"
 
 # format with a minimum width
 f"{$x:4}" == "  42"
