@@ -5,7 +5,7 @@ export @f_str
 using Base: StringVector, Ryu
 
 const FILL_UNSPECIFIED = reinterpret(Char, 0xFFFFFFFF)
-@enum Alignment::UInt8 ALIGN_UNSPECIFIED ALIGN_LEFT ALIGN_RIGHT
+@enum Alignment::UInt8 ALIGN_UNSPECIFIED ALIGN_LEFT ALIGN_RIGHT ALIGN_CENTER
 @enum Sign::UInt8 SIGN_PLUS SIGN_MINUS SIGN_SPACE
 const SIGN_UNSPECIFIED = SIGN_MINUS
 const WIDTH_UNSPECIFIED = nothing
@@ -222,8 +222,12 @@ end
     base = type == 'X' || type == 'x' ? 16 : type == 'o' ? 8 : type == 'B' || type == 'b' ? 2 : 10
     width = m + (x < 0 || f.sign ≠ SIGN_MINUS) + (f.altform && base ≠ 10 && 2)
     pw = paddingwidth(f, width)
-    if f.width != WIDTH_UNSPECIFIED && f.align != ALIGN_LEFT && !f.zero
-        p = pad(data, p, f.fill, pw)
+    if f.width != WIDTH_UNSPECIFIED && !f.zero
+        if f.align == ALIGN_RIGHT || f.align == ALIGN_UNSPECIFIED
+            p = pad(data, p, f.fill, pw)
+        elseif f.align == ALIGN_CENTER
+            p = pad(data, p, f.fill, pw ÷ 2)
+        end
     end
     if x < 0
         data[p] = UInt8('-')
@@ -261,8 +265,12 @@ end
             @assert false "invalid base"
         end
     end
-    if f.width != WIDTH_UNSPECIFIED && f.align == ALIGN_LEFT
-        p = pad(data, p, f.fill, pw)
+    if f.width != WIDTH_UNSPECIFIED
+        if f.align == ALIGN_LEFT
+            p = pad(data, p, f.fill, pw)
+        elseif f.align == ALIGN_CENTER
+            p = pad(data, p, f.fill, pw - pw ÷ 2)
+        end
     end
     return p
 end
@@ -636,16 +644,16 @@ function parse_spec(fmt::String, i::Int, serial::Int)
 
     fill = ' '
     align = ALIGN_UNSPECIFIED
-    if c ∉ ('{', '}') && nextind(fmt, i) ≤ lastindex(fmt) && fmt[nextind(fmt, i)] ∈ ('<', '>')
+    if c ∉ ('{', '}') && nextind(fmt, i) ≤ lastindex(fmt) && fmt[nextind(fmt, i)] ∈ ('<', '^', '>')
         # fill + align
         fill = c
         i = nextind(fmt, i)
-        align = fmt[i] == '<' ? ALIGN_LEFT : ALIGN_RIGHT
+        align = fmt[i] == '<' ? ALIGN_LEFT : fmt[i] == '^' ? ALIGN_CENTER : ALIGN_RIGHT
         c = fmt[i+=1]
-    elseif c ∈ ('<', '>')
+    elseif c ∈ ('<', '^', '>')
         # align
         fill = ' '
-        align = c == '<' ? ALIGN_LEFT : ALIGN_RIGHT
+        align = c == '<' ? ALIGN_LEFT : c == '^' ? ALIGN_CENTER : ALIGN_RIGHT
         c = fmt[i+=1]
     end
 

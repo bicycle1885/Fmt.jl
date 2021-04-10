@@ -71,10 +71,13 @@ struct Foo end
     @test format(f"{:5}", 123) == "  123"
 
     @test format(f"{:<5}", 123) == "123  "
+    @test format(f"{:^5}", 123) == " 123 "
     @test format(f"{:>5}", 123) == "  123"
     @test format(f"{:_<5}", 123) == "123__"
+    @test format(f"{:_^5}", 123) == "_123_"
     @test format(f"{:_>5}", 123) == "__123"
     @test format(f"{:<<5}", 123) == "123<<"
+    @test format(f"{:^^5}", 123) == "^123^"
     @test format(f"{:>>5}", 123) == ">>123"
 
     @test format(f"{:0}", "abc") == "abc"
