@@ -198,7 +198,7 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Bool, ::Nothing)
 end
 
 function formatinfo(f::Field{type}, x::Integer) where type
-    base = type == 'X' || type == 'x' ? 16 : type == 'o' ? 8 : type == 'b' ? 2 : 10
+    base = type == 'X' || type == 'x' ? 16 : type == 'o' ? 8 : type == 'B' || type == 'b' ? 2 : 10
     m = base == 10 ? ndigits_decimal(x) : ndigits(x; base)
     width = m + (x < 0 || f.sign ≠ SIGN_MINUS)
     if f.altform && base != 10
@@ -209,7 +209,7 @@ function formatinfo(f::Field{type}, x::Integer) where type
 end
 
 @inline function formatfield(data::Vector{UInt8}, p::Int, f::Field{type}, x::Integer, m::Int) where type
-    base = type == 'X' || type == 'x' ? 16 : type == 'o' ? 8 : type == 'b' ? 2 : 10
+    base = type == 'X' || type == 'x' ? 16 : type == 'o' ? 8 : type == 'B' || type == 'b' ? 2 : 10
     width = m + (x < 0 || f.sign ≠ SIGN_MINUS) + (f.altform && base ≠ 10 && 2)
     pw = paddingwidth(f, width)
     if f.width != WIDTH_UNSPECIFIED && f.align != ALIGN_LEFT && !f.zero
@@ -233,7 +233,7 @@ end
     elseif base == 8
         p = octal(data, p, u, m, f.altform)
     elseif base == 2
-        p = binary(data, p, u, m, f.altform)
+        p = binary(data, p, u, m, type == 'B', f.altform)
     else
         @assert false "invalid base"
     end
@@ -243,10 +243,10 @@ end
     return p
 end
 
-function binary(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int, altform::Bool)
+function binary(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int, uppercase::Bool, altform::Bool)
     if altform
         data[p  ] = Z
-        data[p+1] = UInt8('b')
+        data[p+1] = uppercase ? UInt8('B') : UInt8('b')
         p += 2
     end
     n = m
@@ -590,7 +590,7 @@ function parse_spec(fmt::String, i::Int, serial::Int)
     end
 
     type = '?'  # unspecified
-    if c in "dXxobcsFfEeGg%"
+    if c in "dXxoBbcsFfEeGg%"
         # type
         type = c
         c = fmt[i+=1]
