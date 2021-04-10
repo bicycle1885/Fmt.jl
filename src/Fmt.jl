@@ -460,114 +460,9 @@ function pad(data::Vector{UInt8}, p::Int, fill::Char, w::Int)
     return p
 end
 
-function genformat(fmt, positionals, keywords)
-    code_info = Expr(:block)  # compute data size and other info
-    code_data = Expr(:block)  # write data
-    for (i, F) in enumerate(fmt.types)
-        f = :(fmt[$i])
-        if F === String
-            info = :(size += ncodeunits($f))
-            data = quote
-                n = ncodeunits($f)
-                copyto!(data, p, codeunits($f), 1, n)
-                p += n
-            end
-        else
-            @assert F <: Field
-            arg = argument(F)
-            if arg isa Int
-                arg = :(positionals[$arg])
-            else
-                @assert arg isa Symbol
-                arg = :(keywords[$(QuoteNode(arg))])
-            end
-            info = quote
-                s, $(Symbol(:info, i)) = formatinfo($f, $arg)
-                size += s
-            end
-            data = :(p = formatfield(data, p, $f, $arg, $(Symbol(:info, i))))
-        end
-        push!(code_info.args, info)
-        push!(code_data.args, data)
-    end
-    return quote
-        size = 0  # size
-        $(code_info)
-        data = StringVector(size)
-        p = 1  # position
-        $(code_data)
-        if p - 1 < size
-            resize!(data, p - 1)
-        end
-        data
-    end
-end
 
-function genformatstring(fmt)
-    if length(fmt) == 0
-        return ""
-    elseif length(fmt) == 1 && fmt[1] isa String
-        return fmt[1]
-    end
-    code_info = Expr(:block)  # compute data size and other info
-    code_data = Expr(:block)  # write data
-    for (i, f) in enumerate(fmt)
-        if f isa String
-            info = :(size += ncodeunits($f))
-            n = ncodeunits(f)
-            data = if n < 8
-                # expand short copy loop
-                quote
-                    @inbounds $(genstrcopy(f))
-                    p += $n
-                end
-            else
-                quote
-                    copyto!(data, p, codeunits($f), 1, $n)
-                    p += $n
-                end
-            end
-        else
-            @assert f isa Field
-            arg = argument(f)
-            @assert arg isa Symbol
-            arg = esc(arg)
-            info = quote
-                s, $(Symbol(:info, i)) = formatinfo($f, $arg)
-                size += s
-            end
-            data = :(p = formatfield(data, p, $f, $arg, $(Symbol(:info, i))))
-        end
-        push!(code_info.args, info)
-        push!(code_data.args, data)
-    end
-    return quote
-        size = 0  # size
-        $(code_info)
-        data = StringVector(size)
-        p = 1  # position
-        $(code_data)
-        if p - 1 < size
-            resize!(data, p - 1)
-        end
-        String(data)
-    end
-end
-
-function genstrcopy(s::String)
-    n = ncodeunits(s)
-    code = Expr(:block)
-    for i in 1:n
-        push!(code.args, :(data[p+$i-1] = $(codeunit(s, i))))
-    end
-    return code
-end
-
-#@generated format(fmt::Tuple, positionals...; keywords...) =
-#    :(String($(genformat(fmt, positionals, keywords))))
-#
-#@generated format(out::IO, fmt::Tuple, positionals...; keywords...) =
-#    :(write(out, $(genformat(fmt, positionals, keywords))))
+# Parser
+# ------
 
 function parse_format(fmt::String)
     list = []
@@ -692,8 +587,9 @@ function parse_spec(fmt::String, i::Int)
     return (; fill, align, sign, altform, zero, width, precision), type, i
 end
 
-is_all_interpolated(fmt) =
-    all(f isa String || interpolated(f) for f in fmt)
+
+# Compiler
+# --------
 
 function compile(fmt::String)
     spec = parse_format(unescape_string(fmt))
@@ -760,6 +656,19 @@ function compile(fmt::String)
     return Expr(:function, arguments, body), interpolated
 end
 
+function genstrcopy(s::String)
+    n = ncodeunits(s)
+    code = Expr(:block)
+    for i in 1:n
+        push!(code.args, :(data[p+$i-1] = $(codeunit(s, i))))
+    end
+    return code
+end
+
+
+# Interface
+# ---------
+
 struct Format{F}
     str::String
     fun::F
@@ -772,12 +681,6 @@ format(fmt::Format, positionals...; keywords...) = fmt.fun(positionals...; keywo
 format(out::IO, fmt::Format, positionals...; keywords...) = write(out, fmt.fun(positionals...; keywords...))
 
 macro f_str(s)
-    #fmt = parse_format(unescape_string(s))
-    #if is_all_interpolated(fmt)
-    #    genformatstring(fmt)
-    #else
-    #    fmt
-    #end
     code, interped = compile(s)
     if code isa String
         code
