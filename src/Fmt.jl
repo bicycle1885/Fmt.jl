@@ -20,15 +20,17 @@ struct Keyword
     interp::Bool
 end
 
+const Argument = Union{Positional, Keyword}
+
 # type (Char) : type specifier ('?' means unspecified)
-struct Field{type, W}
-    argument::Union{Positional, Keyword}
+struct Field{type}
+    argument::Argument
     fill::Char
     align::Alignment
     sign::Sign
     altform::Bool
     zero::Bool  # zero padding
-    width::W
+    width::Union{Int, Nothing, Argument}
     precision::Int  # precision
 end
 
@@ -42,17 +44,23 @@ function Field{type}(
         width = WIDTH_UNSPECIFIED,
         precision = PRECISION_UNSPECIFIED,
         ) where type
-    return Field{type, typeof(width)}(argument, fill, align, sign, altform, zero, width, precision)
+    return Field{type}(argument, fill, align, sign, altform, zero, width, precision)
 end
 
 function Field(f::Field{type}; width) where type
-    return Field{type, typeof(width)}(f.argument, f.fill, f.align, f.sign, f.altform, f.zero, width, f.precision)
+    return Field{type}(f.argument, f.fill, f.align, f.sign, f.altform, f.zero, width, f.precision)
 end
 
 argument(f::Field) = f.argument
 
-paddingwidth(f::Field{_, Int}, width::Int) where _  = max(f.width - width, 0)
-paddingwidth(f::Field{_, Nothing}, width::Int) where _ = 0
+function paddingwidth(f::Field, width::Int)
+    @assert f.width isa Int || f.width isa Nothing
+    if f.width isa Int
+        return max(f.width - width, 0)
+    else
+        return 0
+    end
+end
 paddingsize(f::Field, width::Int) = paddingwidth(f, width) * ncodeunits(f.fill)
 
 # generic fallback
