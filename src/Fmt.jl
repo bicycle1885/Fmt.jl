@@ -22,8 +22,7 @@ end
 
 # type (Char) : type specifier ('?' means unspecified)
 struct Field{type, W}
-    argument::Union{Int, Symbol}
-    interp::Bool  # interpolated
+    argument::Union{Positional, Keyword}
     fill::Char
     align::Alignment
     sign::Sign
@@ -34,7 +33,7 @@ struct Field{type, W}
 end
 
 function Field{type}(
-        argument, interp;
+        argument;
         fill = FILL_UNSPECIFIED,
         align = ALIGN_UNSPECIFIED,
         sign = SIGN_UNSPECIFIED,
@@ -43,15 +42,14 @@ function Field{type}(
         width = WIDTH_UNSPECIFIED,
         precision = PRECISION_UNSPECIFIED,
         ) where type
-    return Field{type, typeof(width)}(argument, interp, fill, align, sign, altform, zero, width, precision)
+    return Field{type, typeof(width)}(argument, fill, align, sign, altform, zero, width, precision)
 end
 
 function Field(f::Field{type}; width) where type
-    return Field{type, typeof(width)}(f.argument, f.interp, f.fill, f.align, f.sign, f.altform, f.zero, width, f.precision)
+    return Field{type, typeof(width)}(f.argument, f.fill, f.align, f.sign, f.altform, f.zero, width, f.precision)
 end
 
 argument(f::Field) = f.argument
-interpolated(f::Field) = f.interp
 
 paddingwidth(f::Field{_, Int}, width::Int) where _  = max(f.width - width, 0)
 paddingwidth(f::Field{_, Nothing}, width::Int) where _ = 0
@@ -490,36 +488,35 @@ end
 
 function parse_field(fmt::String, i::Int, serial::Int)
     c = fmt[i]  # the first character after '{'
-    interp = false
-    if fmt[i] == '$'
-        # interpolation
-        interp = true
-        c = fmt[i+=1]
-    end
 
     # check field name
     if c == '}'
         serial += 1
-        return Field{'?'}(serial, false), i + 1, serial
+        return Field{'?'}(Positional(serial)), i + 1, serial
     elseif c == ':'
         serial += 1
-        arg = serial
+        arg = Positional(serial)
     elseif isdigit(c) && c != '0'
-        arg = 0
+        n = 0
         while isdigit(fmt[i])
-            arg = 10arg + Int(fmt[i] - '0')
+            n = 10n + Int(fmt[i] - '0')
             i += 1
         end
+        arg = Positional(n)
+    elseif c == '$'  # interpolation
+        name, i = Meta.parse(fmt, i + 1, greedy = false)
+        arg = Keyword(name, true)
     elseif isletter(c) || c == '_'  # FIXME
-        arg, i = Meta.parse(fmt, i, greedy = false)
+        name, i = Meta.parse(fmt, i, greedy = false)
+        arg = Keyword(name, false)
     end
 
     # check spec
     if fmt[i] == ':'
         spec, type, i = parse_spec(fmt, i + 1)
-        return Field{type}(arg, interp; spec...), i + 1, serial
+        return Field{type}(arg; spec...), i + 1, serial
     else
-        return Field{'?'}(arg, interp), i + 1, serial
+        return Field{'?'}(arg), i + 1, serial
     end
 end
 
@@ -657,17 +654,16 @@ function compile(fmt::String)
             end
         else
             arg = argument(f)
-            if arg isa Int
-                n_positionals = max(arg, n_positionals)
-                arg = Symbol(:_, arg)
+            if arg isa Positional
+                n_positionals = max(arg.position, n_positionals)
+                x = esc(Symbol(:_, arg.position))
             else
-                if arg ∉ keywords
-                    push!(keywords, arg)
-                    f.interp && push!(interpolated, arg)
+                if arg.name ∉ keywords
+                    push!(keywords, arg.name)
+                    arg.interp && push!(interpolated, arg.name)
                 end
+                x = esc(arg.name)
             end
-            arg = esc(arg)
-            meta = Symbol(:meta, i)
             if f.width isa Positional
                 position = f.width.position
                 n_positionals = max(position, n_positionals)
@@ -680,11 +676,12 @@ function compile(fmt::String)
                 end
                 f = :(Field($f, width = $(esc(keyword))))
             end
+            meta = Symbol(:meta, i)
             info = quote
-                s, $meta = formatinfo($f, $arg)
+                s, $meta = formatinfo($f, $x)
                 size += s
             end
-            data = :(p = formatfield(data, p, $f, $arg, $meta))
+            data = :(p = formatfield(data, p, $f, $x, $meta))
         end
         push!(code_info.args, info)
         push!(code_data.args, data)
