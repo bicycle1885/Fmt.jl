@@ -33,6 +33,12 @@ struct Foo end
     @test format(f"x = {2}, y = {1}", 2, 3) == "x = 3, y = 2"
     @test format(f"x = {1}, y = {2}, z = {1}", 2, 3) == "x = 2, y = 3, z = 2"
 
+    @test format(f"{3}", 1, 2, 3) == "3"
+    @test format(f"{3} {1}", 1, 2, 3) == "3 1"
+    @test format(f"{3} {2}", 1, 2, 3) == "3 2"
+    @test format(f"{3} {3}", 1, 2, 3) == "3 3"
+    @test format(f"{3} {3} {3}", 1, 2, 3) == "3 3 3"
+
     @test format(f"x = {x}", x = 2) == "x = 2"
     @test format(f"x = {x}, y = {y}", x = 2, y = 3) == "x = 2, y = 3"
     @test format(f"x = {x}, y = {y}", y = 3, x = 2) == "x = 2, y = 3"
