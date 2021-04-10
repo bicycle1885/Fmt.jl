@@ -11,6 +11,14 @@ const SIGN_UNSPECIFIED = SIGN_MINUS
 const WIDTH_UNSPECIFIED = nothing
 const PRECISION_UNSPECIFIED = -1
 
+struct Positional
+    position::Int
+end
+
+struct Keyword
+    name::Symbol
+end
+
 # type (Char)         : type specifier ('?' means unspecified)
 # arg (Int or Symbol) : argument position or name
 struct Field{type, arg, W}
@@ -35,6 +43,10 @@ function Field{type, arg}(
         precision = PRECISION_UNSPECIFIED,
         ) where {type, arg}
     return Field{type, arg, typeof(width)}(interp, fill, align, sign, altform, zero, width, precision)
+end
+
+function Field(f::Field{type, arg}; width) where {type, arg}
+    return Field{type, arg, typeof(width)}(f.interp, f.fill, f.align, f.sign, f.altform, f.zero, width, f.precision)
 end
 
 argument(::Type{Field{_, arg, __}}) where {_, arg, __} = arg
@@ -545,15 +557,24 @@ function parse_spec(fmt::String, i::Int)
 
     zero = false
     width = WIDTH_UNSPECIFIED
-    if isdigit(c)
+    if c == '{'
+        if fill == FILL_UNSPECIFIED
+            fill = ' '
+        end
+        i += 1
+        width = Positional(fmt[i] - UInt8('0'))
+        i += 1
+        @assert fmt[i+1] == '}'
+        c = fmt[i+=1]
+    elseif isdigit(c)
+        if fill == FILL_UNSPECIFIED
+            fill = ' '
+        end
         # minimum width
         if c == '0' && isdigit(fmt[i+1])
             # preceded by zero
             zero = true
             i += 1
-        end
-        if fill == FILL_UNSPECIFIED
-            fill = ' '
         end
         width = 0
         while isdigit(fmt[i])
@@ -633,6 +654,13 @@ function compile(fmt::String)
             end
             arg = esc(arg)
             meta = Symbol(:meta, i)
+            if f.width isa Positional
+                position = f.width.position
+                n_positionals = max(position, n_positionals)
+                f = :(Field($f, width = $(esc(Symbol(:_, position)))))
+            elseif f.width isa Keyword
+                f = :(Field($f, width = $(esc(f.width.name))))
+            end
             info = quote
                 s, $meta = formatinfo($f, $arg)
                 size += s

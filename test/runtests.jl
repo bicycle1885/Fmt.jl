@@ -318,6 +318,9 @@ struct Foo end
     @test format(f"{:.0g}", 1.0) == "1"
     @test format(f"{:.1g}", 1.0) == "1"
     @test format(f"{:.2g}", 1.0) == "1"
+
+    @test format(f"{1:{2}}", "foo", 5) == "foo  "
+    @test format(f"{2:{1}}", 5, "foo") == "foo  "
 end
 
 @testset "format (writer)" begin
