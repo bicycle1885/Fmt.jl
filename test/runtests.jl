@@ -364,6 +364,20 @@ struct Foo end
     @test format(f"{:_x}", 0x12345678) == "1234_5678"
     @test format(f"{:_x}", 0x123456789) == "1_2345_6789"
     @test format(f"{:_x}", 0x123456789a) == "12_3456_789a"
+
+    @test format(f"{:_b}", 0b1) == "1"
+    @test format(f"{:_b}", 0b10) == "10"
+    @test format(f"{:_b}", 0b101) == "101"
+    @test format(f"{:_b}", 0b1010) == "1010"
+    @test format(f"{:_b}", 0b10101) == "1_0101"
+    @test format(f"{:_b}", 0b101010) == "10_1010"
+
+    @test format(f"{:_o}", 0o1) == "1"
+    @test format(f"{:_o}", 0o12) == "12"
+    @test format(f"{:_o}", 0o123) == "123"
+    @test format(f"{:_o}", 0o1234) == "1234"
+    @test format(f"{:_o}", 0o12345) == "1_2345"
+    @test format(f"{:_o}", 0o123456) == "12_3456"
 end
 
 @testset "format (writer)" begin

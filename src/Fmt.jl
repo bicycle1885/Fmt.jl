@@ -254,7 +254,9 @@ end
         elseif base == 10
             p = decimal_grouping(data, p, u, m, f.grouping == GROUPING_COMMA ? UInt8(',') : UInt8('_'))
         elseif base == 8
+            p = octal_grouping(data, p, u, m, f.altform)
         elseif base == 2
+            p = binary_grouping(data, p, u, m, type == 'B', f.altform)
         else
             @assert false "invalid base"
         end
@@ -281,6 +283,30 @@ function binary(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int, uppercase::Boo
     return p + m
 end
 
+function binary_grouping(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int, uppercase::Bool, altform::Bool)
+    if altform
+        data[p  ] = Z
+        data[p+1] = uppercase ? UInt8('B') : UInt8('b')
+        p += 2
+    end
+    k = div(m - 1, 4)
+    n = m + k
+    while n ≥ 5
+        r1 = (x & 0x1) % UInt8; x >>= 1
+        r2 = (x & 0x1) % UInt8; x >>= 1
+        r3 = (x & 0x1) % UInt8; x >>= 1
+        r4 = (x & 0x1) % UInt8; x >>= 1
+        data[p+n-1] = r1 + Z
+        data[p+n-2] = r2 + Z
+        data[p+n-3] = r3 + Z
+        data[p+n-4] = r4 + Z
+        data[p+n-5] = UInt8('_')
+        n -= 5
+    end
+    binary(data, p, x, n, false, false)
+    return p + m + k
+end
+
 function octal(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int, altform::Bool)
     if altform
         data[p  ] = Z
@@ -295,6 +321,30 @@ function octal(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int, altform::Bool)
         n -= 1
     end
     return p + m
+end
+
+function octal_grouping(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int, altform::Bool)
+    if altform
+        data[p  ] = Z
+        data[p+1] = UInt8('o')
+        p += 2
+    end
+    k = div(m - 1, 4)
+    n = m + k
+    while n ≥ 5
+        r1 = (x & 0x7) % UInt8; x >>= 3
+        r2 = (x & 0x7) % UInt8; x >>= 3
+        r3 = (x & 0x7) % UInt8; x >>= 3
+        r4 = (x & 0x7) % UInt8; x >>= 3
+        data[p+n-1] = r1 + Z
+        data[p+n-2] = r2 + Z
+        data[p+n-3] = r3 + Z
+        data[p+n-4] = r4 + Z
+        data[p+n-5] = UInt8('_')
+        n -= 5
+    end
+    octal(data, p, x, n, false)
+    return p + m + k
 end
 
 const DECIMAL_DIGITS = [let (d, r) = divrem(x, 10); ((d + Z) << 8) % UInt16 + (r + Z) % UInt8; end for x in 0:99]
