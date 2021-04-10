@@ -22,12 +22,11 @@ This macro interpolates variables into a string with format specification.
 The syntax of the format specification is borrowed from [Python's Format String Syntax](https://docs.python.org/3/library/string.html#format-string-syntax), which is also ported to C++ as [C++20 std::format](https://en.cppreference.com/w/cpp/utility/format).
 
 ```julia
+# load @f_str
 using Fmt
 
-# integer
-x = 42
-
 # default format
+x = 42
 f"{$x}" == "42"
 
 # binary, octal, decimal, and hexadecimal format
