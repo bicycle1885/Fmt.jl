@@ -24,6 +24,10 @@ struct Foo end
     @test format(f"flag = {}", false) == "flag = false"
     @test format(f"flag = {}", true) == "flag = true"
 
+    @test format(f"char = {}", 'a') == "char = a"
+    @test format(f"char = {}", 'α') == "char = α"
+    @test format(f"char = {}", 'あ') == "char = あ"
+
     @test format(f"x = {1}", 2) == "x = 2"
     @test format(f"x = {1}, y = {2}", 2, 3) == "x = 2, y = 3"
     @test format(f"x = {2}, y = {1}", 2, 3) == "x = 3, y = 2"

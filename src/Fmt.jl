@@ -64,6 +64,43 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Any, (s, width)::
     return p
 end
 
+function formatinfo(f::Field, x::AbstractChar)
+    c = Char(x)
+    size = ncodeunits(c)
+    f.width == WIDTH_UNSPECIFIED && return size, c
+    return ncodeunits(f.fill) * max(f.width - 1, 0) + size, c
+end
+
+function formatfield(data::Vector{UInt8}, p::Int, f::Field, ::AbstractChar, c::Char)
+    padwidth = max(f.width - 1, 0)
+    if f.width != WIDTH_UNSPECIFIED && f.align == ALIGN_RIGHT
+        p = pad(data, p, f.fill, padwidth)
+    end
+    m = ncodeunits(c)
+    x = reinterpret(UInt32, c) >> 8(4 - m)
+    if m == 1
+        data[p]   =  x        % UInt8
+    elseif m == 2
+        data[p+1] =  x        % UInt8
+        data[p]   = (x >> 8)  % UInt8
+    elseif m == 3
+        data[p+2] =  x        % UInt8
+        data[p+1] = (x >>  8) % UInt8
+        data[p]   = (x >> 16) % UInt8
+    else
+        @assert m == 4
+        data[p+3] =  x        % UInt8
+        data[p+2] = (x >>  8) % UInt8
+        data[p+1] = (x >> 16) % UInt8
+        data[p]   = (x >> 24) % UInt8
+    end
+    p += m
+    if f.width != WIDTH_UNSPECIFIED && f.align != ALIGN_RIGHT
+        p = pad(data, p, f.fill, padwidth)
+    end
+    return p
+end
+
 function formatinfo(f::Field, x::AbstractString)
     size = ncodeunits(x) * sizeof(codeunit(x)) 
     len = length(x)
