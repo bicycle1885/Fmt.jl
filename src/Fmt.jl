@@ -8,19 +8,19 @@ const FILL_UNSPECIFIED = reinterpret(Char, 0xFFFFFFFF)
 @enum Alignment::UInt8 ALIGN_UNSPECIFIED ALIGN_LEFT ALIGN_RIGHT
 @enum Sign::UInt8 SIGN_PLUS SIGN_MINUS SIGN_SPACE
 const SIGN_UNSPECIFIED = SIGN_MINUS
-const WIDTH_UNSPECIFIED = -1
+const WIDTH_UNSPECIFIED = nothing
 const PRECISION_UNSPECIFIED = -1
 
 # type (Char)         : type specifier ('?' means unspecified)
 # arg (Int or Symbol) : argument position or name
-struct Field{type, arg}
+struct Field{type, arg, W}
     interp::Bool  # interpolated
     fill::Char
     align::Alignment
     sign::Sign
     altform::Bool
     zero::Bool  # zero padding
-    width::Int  # minimum width
+    width::W
     precision::Int  # precision
 end
 
@@ -34,12 +34,17 @@ function Field{type, arg}(
         width = WIDTH_UNSPECIFIED,
         precision = PRECISION_UNSPECIFIED,
         ) where {type, arg}
-    return Field{type, arg}(interp, fill, align, sign, altform, zero, width, precision)
+    return Field{type, arg, typeof(width)}(interp, fill, align, sign, altform, zero, width, precision)
 end
 
-argument(::Type{Field{_, arg}}) where {_, arg} = arg
+argument(::Type{Field{_, arg, __}}) where {_, arg, __} = arg
 argument(f::Field) = argument(typeof(f))
 interpolated(f::Field) = f.interp
+
+paddingwidth(f::Field{_, __, Int}, width::Int) where {_, __} = max(f.width - width, 0)
+paddingwidth(f::Field{_, __, Nothing}, width::Int) where {_, __} = 0
+
+paddingsize(f::Field, width::Int) = paddingwidth(f, width) * ncodeunits(f.fill)
 
 # generic fallback
 function formatinfo(f::Field, x::Any)
@@ -47,19 +52,19 @@ function formatinfo(f::Field, x::Any)
     size = ncodeunits(s)
     width = length(s)
     f.width == WIDTH_UNSPECIFIED && return size, (s, width)
-    return ncodeunits(f.fill) * max(f.width - width, 0) + size, (s, width)
+    return paddingsize(f, width) + size, (s, width)
 end
 
 function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Any, (s, width)::Tuple{String,Int})
-    padwidth = max(f.width - width, 0)
+    pw = paddingwidth(f, width)
     if f.width != WIDTH_UNSPECIFIED && f.align == ALIGN_RIGHT
-        p = pad(data, p, f.fill, padwidth)
+        p = pad(data, p, f.fill, pw)
     end
     n = ncodeunits(s)
     copyto!(data, p, codeunits(s), 1, n)
     p += n
     if f.width != WIDTH_UNSPECIFIED && f.align != ALIGN_RIGHT
-        p = pad(data, p, f.fill, padwidth)
+        p = pad(data, p, f.fill, pw)
     end
     return p
 end
@@ -68,13 +73,13 @@ function formatinfo(f::Field, x::AbstractChar)
     c = Char(x)
     size = ncodeunits(c)
     f.width == WIDTH_UNSPECIFIED && return size, c
-    return ncodeunits(f.fill) * max(f.width - 1, 0) + size, c
+    return paddingsize(f, 1) + size, c
 end
 
 function formatfield(data::Vector{UInt8}, p::Int, f::Field, ::AbstractChar, c::Char)
-    padwidth = max(f.width - 1, 0)
+    pw = paddingwidth(f, 1)
     if f.width != WIDTH_UNSPECIFIED && f.align == ALIGN_RIGHT
-        p = pad(data, p, f.fill, padwidth)
+        p = pad(data, p, f.fill, pw)
     end
     m = ncodeunits(c)
     x = reinterpret(UInt32, c) >> 8(4 - m)
@@ -96,28 +101,28 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field, ::AbstractChar, c::C
     end
     p += m
     if f.width != WIDTH_UNSPECIFIED && f.align != ALIGN_RIGHT
-        p = pad(data, p, f.fill, padwidth)
+        p = pad(data, p, f.fill, pw)
     end
     return p
 end
 
 function formatinfo(f::Field, x::AbstractString)
     size = ncodeunits(x) * sizeof(codeunit(x)) 
-    len = length(x)
-    f.width == WIDTH_UNSPECIFIED && return size, len
-    return ncodeunits(f.fill) * max(f.width - len, 0) + size, len
+    width = length(x)
+    f.width == WIDTH_UNSPECIFIED && return size, width
+    return paddingsize(f, width) + size, width
 end
 
-function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::AbstractString, len::Int)
-    padwidth = max(f.width - len, 0)
+function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::AbstractString, width::Int)
+    pw = paddingwidth(f, width)
     if f.align == ALIGN_RIGHT
-        p = pad(data, p, f.fill, padwidth)
+        p = pad(data, p, f.fill, pw)
     end
     n = ncodeunits(x)
     copyto!(data, p, codeunits(x), 1, n)
     p += n
     if f.align != ALIGN_RIGHT
-        p = pad(data, p, f.fill, padwidth)
+        p = pad(data, p, f.fill, pw)
     end
     return p
 end
@@ -128,18 +133,17 @@ function formatinfo(f::Field{'c'}, x::Integer)
     char = Char(x)
     size = ncodeunits(char)
     f.width == WIDTH_UNSPECIFIED && return size, char
-    return ncodeunits(f.fill) * max(f.width - 1, 0) + size, char
+    return paddingsize(f, 1) + size, char
 end
 
 function formatfield(data::Vector{UInt8}, p::Int, f::Field{'c'}, x::Integer, char::Char)
-    width = 1
-    padwidth = max(f.width - width, 0)
+    pw = paddingwidth(f, 1)
     if f.align != ALIGN_LEFT
-        p = pad(data, p, f.fill, padwidth)
+        p = pad(data, p, f.fill, pw)
     end
     p = pad(data, p, char, 1)
     if f.align == ALIGN_LEFT
-        p = pad(data, p, f.fill, padwidth)
+        p = pad(data, p, f.fill, pw)
     end
     return p
 end
@@ -147,14 +151,14 @@ end
 function formatinfo(f::Field, x::Bool)
     # true (4) or false (5)
     width = x ? 4 : 5
-    return ncodeunits(f.fill) * max(f.width - width, 0) + width, nothing
+    return paddingsize(f, width) + width, nothing
 end
 
 function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Bool, ::Nothing)
     width = x ? 4 : 5
-    padwidth = max(f.width - width, 0)
+    pw = paddingwidth(f, 0)
     if f.width != WIDTH_UNSPECIFIED && f.align != ALIGN_LEFT
-        p = pad(data, p, f.fill, padwidth)
+        p = pad(data, p, f.fill, pw)
     end
     if x
         data[p]   = UInt8('t')
@@ -171,7 +175,7 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Bool, ::Nothing)
         p += 5
     end
     if f.width != WIDTH_UNSPECIFIED && f.align == ALIGN_LEFT
-        p = pad(data, p, f.fill, padwidth)
+        p = pad(data, p, f.fill, pw)
     end
     return p
 end
@@ -184,15 +188,15 @@ function formatinfo(f::Field{type}, x::Integer) where type
         w += 2  # prefix (0b, 0o, 0x)
     end
     f.width == WIDTH_UNSPECIFIED && return w, m
-    return ncodeunits(f.fill) * max(f.width - w, 0) + w, m
+    return paddingsize(f, w) + w, m
 end
 
 @inline function formatfield(data::Vector{UInt8}, p::Int, f::Field{type}, x::Integer, m::Int) where type
     base = type == 'X' || type == 'x' ? 16 : type == 'o' ? 8 : type == 'b' ? 2 : 10
     width = m + (x < 0 || f.sign ≠ SIGN_MINUS) + (f.altform && base ≠ 10 && 2)
-    padwidth = max(f.width - width, 0)
+    pw = paddingwidth(f, width)
     if f.width != WIDTH_UNSPECIFIED && f.align != ALIGN_LEFT && !f.zero
-        p = pad(data, p, f.fill, padwidth)
+        p = pad(data, p, f.fill, pw)
     end
     if x < 0
         data[p] = UInt8('-')
@@ -202,7 +206,7 @@ end
         p += 1
     end
     if f.zero
-        p = pad(data, p, '0', padwidth)
+        p = pad(data, p, '0', pw)
     end
     u = unsigned(abs(x))
     if base == 16
@@ -217,7 +221,7 @@ end
         @assert false "invalid base"
     end
     if f.width != WIDTH_UNSPECIFIED && f.align == ALIGN_LEFT
-        p = pad(data, p, f.fill, padwidth)
+        p = pad(data, p, f.fill, pw)
     end
     return p
 end
@@ -418,22 +422,22 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field{type}, x::AbstractFlo
 
     if f.width != WIDTH_UNSPECIFIED
         width = p - start
-        padwidth = max(f.width - width, 0)
+        pw = paddingwidth(f, width)
         if f.zero
             if x < 0 || x === -zero(x) || f.sign == SIGN_PLUS || f.sign == SIGN_SPACE
                 start += 1
                 width -= 1
             end
-            copyto!(data, start + padwidth, data, start, width)
-            pad(data, start, '0', padwidth)
-            p += padwidth
+            copyto!(data, start + pw, data, start, width)
+            pad(data, start, '0', pw)
+            p += pw
         elseif f.align != ALIGN_LEFT
-            padsize = ncodeunits(f.fill) * padwidth
-            copyto!(data, start + padsize, data, start, width)
-            pad(data, start, f.fill, padwidth)
-            p += padsize
+            ps = paddingsize(f, width)
+            copyto!(data, start + ps, data, start, width)
+            pad(data, start, f.fill, pw)
+            p += ps
         elseif f.align == ALIGN_LEFT
-            p = pad(data, p, f.fill, padwidth)
+            p = pad(data, p, f.fill, pw)
         end
     end
     return p
