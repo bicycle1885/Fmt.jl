@@ -521,17 +521,17 @@ function parse_field(fmt::String, i::Int, serial::Int)
 
     # check spec
     if fmt[i] == ':'
-        spec, type, i = parse_spec(fmt, i + 1)
+        spec, type, i, serial = parse_spec(fmt, i + 1, serial)
         return Field{type}(arg; spec...), i + 1, serial
     else
         return Field{'?'}(arg), i + 1, serial
     end
 end
 
-function parse_spec(fmt::String, i::Int)
+function parse_spec(fmt::String, i::Int, serial::Int)
     c = fmt[i]  # the first character after ':'
 
-    fill = FILL_UNSPECIFIED
+    fill = ' '
     align = ALIGN_UNSPECIFIED
     if c ∉ ('{', '}') && nextind(fmt, i) ≤ lastindex(fmt) && fmt[nextind(fmt, i)] ∈ ('<', '>')
         # fill + align
@@ -563,32 +563,9 @@ function parse_spec(fmt::String, i::Int)
     zero = false
     width = WIDTH_UNSPECIFIED
     if c == '{'
-        if fill == FILL_UNSPECIFIED
-            fill = ' '
-        end
-        i += 1
-        if isdigit(fmt[i])
-            arg = 0
-            while isdigit(fmt[i])
-                arg = 10arg + (fmt[i] - UInt8('0'))
-                i += 1
-            end
-            width = Positional(arg)
-        elseif isletter(fmt[i]) || fmt[i] == '_'  # FIXME
-            arg, i = Meta.parse(fmt, i, greedy = false)
-            width = Keyword(arg, false)
-        elseif fmt[i] == '$'
-            arg, i = Meta.parse(fmt, i + 1, greedy = false)
-            width = Keyword(arg, true)
-        else
-            @assert false
-        end
-        @assert fmt[i] == '}'
-        c = fmt[i+=1]
+        width, i, serial = parse_argument(fmt, i + 1, serial)
+        c = fmt[i]
     elseif isdigit(c)
-        if fill == FILL_UNSPECIFIED
-            fill = ' '
-        end
         # minimum width
         if c == '0' && isdigit(fmt[i+1])
             # preceded by zero
@@ -623,7 +600,34 @@ function parse_spec(fmt::String, i::Int)
     end
 
     @assert c == '}'
-    return (; fill, align, sign, altform, zero, width, precision), type, i
+    return (; fill, align, sign, altform, zero, width, precision), type, i, serial
+end
+
+function parse_argument(s::String, i::Int, serial::Int)
+    c = s[i]  # the first character after '{'
+    if c == '}'
+        serial += 1
+        arg = Positional(serial)
+    elseif isdigit(c)
+        n = 0
+        while isdigit(s[i])
+            n = 10n + Int(s[i] - '0')
+            i += 1
+        end
+        @assert s[i] == '}'
+        arg = Positional(n)
+    elseif c == '$'
+        name, i = Meta.parse(s, i + 1, greedy = false)
+        @assert s[i] == '}'
+        arg = Keyword(name, true)
+    elseif isletter(c) || c == '_'
+        name, i = Meta.parse(s, i, greedy = false)
+        @assert s[i] == '}'
+        arg = Keyword(name, false)
+    else
+        @assert false
+    end
+    return arg, i + 1, serial
 end
 
 
