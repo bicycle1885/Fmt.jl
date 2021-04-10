@@ -9,6 +9,7 @@ const FILL_UNSPECIFIED = reinterpret(Char, 0xFFFFFFFF)
 @enum Sign::UInt8 SIGN_PLUS SIGN_MINUS SIGN_SPACE
 const SIGN_UNSPECIFIED = SIGN_MINUS
 const WIDTH_UNSPECIFIED = nothing
+@enum Grouping::UInt8 GROUPING_UNSPECIFIED GROUPING_COMMA
 const PRECISION_UNSPECIFIED = nothing
 
 struct Positional
@@ -31,6 +32,7 @@ struct Field{type}
     altform::Bool
     zero::Bool  # zero padding
     width::Union{Int, Nothing, Argument}
+    grouping::Grouping
     precision::Union{Int, Nothing, Argument}
 end
 
@@ -42,13 +44,14 @@ function Field{type}(
         altform = false,
         zero = false,
         width = WIDTH_UNSPECIFIED,
+        grouping = GROUPING_UNSPECIFIED,
         precision = PRECISION_UNSPECIFIED,
         ) where type
-    return Field{type}(argument, fill, align, sign, altform, zero, width, precision)
+    return Field{type}(argument, fill, align, sign, altform, zero, width, grouping, precision)
 end
 
 function Field(f::Field{type}; width = f.width, precision = f.precision) where type
-    return Field{type}(f.argument, f.fill, f.align, f.sign, f.altform, f.zero, width, precision)
+    return Field{type}(f.argument, f.fill, f.align, f.sign, f.altform, f.zero, width, f.grouping, precision)
 end
 
 argument(f::Field) = f.argument
@@ -204,6 +207,9 @@ function formatinfo(f::Field{type}, x::Integer) where type
     if f.altform && base != 10
         width += 2  # prefix (0b, 0o, 0x)
     end
+    if f.grouping == GROUPING_COMMA
+        width += div(m - 1, 3)
+    end
     f.width == WIDTH_UNSPECIFIED && return width, m
     return paddingsize(f, width) + width, m
 end
@@ -229,7 +235,11 @@ end
     if base == 16
         p = hexadecimal(data, p, u, m, type == 'X', f.altform)
     elseif base == 10
-        p = decimal(data, p, u, m)
+        if f.grouping == GROUPING_UNSPECIFIED
+            p = decimal(data, p, u, m)
+        else
+            p = decimal_comma(data, p, u, m)
+        end
     elseif base == 8
         p = octal(data, p, u, m, f.altform)
     elseif base == 2
@@ -290,6 +300,23 @@ function decimal(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int)
         data[p] = (rem(x, 0xa) % UInt8) + Z
     end
     return p + m
+end
+
+function decimal_comma(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int)
+    k = div(m - 1, 3)
+    n = m + k
+    while n ≥ 4
+        x, r = divrem(x, 0x64)  # 0x64 = 100
+        dd = DECIMAL_DIGITS[(r % Int) + 1]
+        data[p+n-1] = dd % UInt8
+        data[p+n-2] = (dd >> 8) % UInt8
+        x, r = divrem(x, 0xa)
+        data[p+n-3] = r % UInt8 + Z
+        data[p+n-4] = UInt8(',')
+        n -= 4
+    end
+    decimal(data, p, x, n)
+    return p + m + k
 end
 
 const HEXADECIMAL_DIGITS_UPPERCASE = zeros(UInt16, 256)
@@ -570,6 +597,12 @@ function parse_spec(fmt::String, i::Int, serial::Int)
         c = fmt[i]
     end
 
+    grouping = GROUPING_UNSPECIFIED
+    if c == ','
+        grouping = GROUPING_COMMA
+        c = fmt[i+=1]
+    end
+
     precision = PRECISION_UNSPECIFIED
     if c == '.'
         # precision
@@ -597,7 +630,7 @@ function parse_spec(fmt::String, i::Int, serial::Int)
     end
 
     @assert c == '}'
-    return (; fill, align, sign, altform, zero, width, precision), type, i, serial
+    return (; fill, align, sign, altform, zero, width, grouping, precision), type, i, serial
 end
 
 function parse_argument(s::String, i::Int, serial::Int)

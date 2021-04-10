@@ -331,6 +331,17 @@ struct Foo end
     @test format(f"{x:.{n}}", x = pi, n = 3) == format(f"{:.3}", pi)
     @test format(f"{x:.{n}}", x = pi, n = 4) == format(f"{:.4}", pi)
     @test format(f"{x:.{n}}", x = pi, n = 5) == format(f"{:.5}", pi)
+
+    @test format(f"{:,}", 1) == "1"
+    @test format(f"{:,}", 12) == "12"
+    @test format(f"{:,}", 123) == "123"
+    @test format(f"{:,}", 1234) == "1,234"
+    @test format(f"{:,}", 12345) == "12,345"
+    @test format(f"{:,}", 123456) == "123,456"
+    @test format(f"{:,}", 1234567) == "1,234,567"
+    @test format(f"{:,}", 12345678) == "12,345,678"
+    @test format(f"{:,}", 123456789) == "123,456,789"
+    @test format(f"{:,}", 1234567890) == "1,234,567,890"
 end
 
 @testset "format (writer)" begin
