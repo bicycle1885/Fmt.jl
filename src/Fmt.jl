@@ -623,13 +623,13 @@ end
 # --------
 
 function compile(fmt::String)
-    spec = parse_format(unescape_string(fmt))
+    format = parse_format(unescape_string(fmt))
 
     # no fields; return static string
-    if isempty(spec)
+    if isempty(format)
         return "", nothing
-    elseif length(spec) == 1 && spec[1] isa String
-        return spec[1], nothing
+    elseif length(format) == 1 && format[1] isa String
+        return format[1], nothing
     end
 
     n_positionals = 0
@@ -637,7 +637,7 @@ function compile(fmt::String)
     interpolated = Symbol[]
     code_info = Expr(:block)
     code_data = Expr(:block)
-    for (i, f) in enumerate(spec)
+    for (i, f) in enumerate(format)
         if f isa String
             n = ncodeunits(f)
             info = :(size += $n)
