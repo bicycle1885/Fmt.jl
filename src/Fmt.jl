@@ -9,7 +9,7 @@ const FILL_UNSPECIFIED = reinterpret(Char, 0xFFFFFFFF)
 @enum Sign::UInt8 SIGN_PLUS SIGN_MINUS SIGN_SPACE
 const SIGN_UNSPECIFIED = SIGN_MINUS
 const WIDTH_UNSPECIFIED = nothing
-const PRECISION_UNSPECIFIED = -1
+const PRECISION_UNSPECIFIED = nothing
 
 struct Positional
     position::Int
@@ -31,7 +31,7 @@ struct Field{type}
     altform::Bool
     zero::Bool  # zero padding
     width::Union{Int, Nothing, Argument}
-    precision::Int  # precision
+    precision::Union{Int, Nothing, Argument}
 end
 
 function Field{type}(
