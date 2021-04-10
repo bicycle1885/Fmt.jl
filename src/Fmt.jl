@@ -572,7 +572,7 @@ function parse_format(fmt::String)
     serial = 0
     i = firstindex(fmt)
     while (j = findnext('{', fmt, i)) !== nothing
-        j - 1 ≥ i && push!(list, fmt[i:j-1])
+        j - 1 ≥ i && push!(list, fmt[i:prevind(fmt, j)])
         field, i, serial = parse_field(fmt, j + 1, serial)
         push!(list, field)
     end
@@ -602,7 +602,7 @@ function parse_field(fmt::String, i::Int, serial::Int)
             arg = 10arg + Int(fmt[i] - '0')
             i += 1
         end
-    elseif 'A' ≤ c ≤ 'Z' || 'a' ≤ c ≤ 'z'  # FIXME
+    elseif isletter(c) || c == '_'  # FIXME
         arg, i = Meta.parse(fmt, i, greedy = false)
     end
 
