@@ -342,6 +342,17 @@ struct Foo end
     @test format(f"{:,}", 12345678) == "12,345,678"
     @test format(f"{:,}", 123456789) == "123,456,789"
     @test format(f"{:,}", 1234567890) == "1,234,567,890"
+
+    @test format(f"{:_}", 1) == "1"
+    @test format(f"{:_}", 12) == "12"
+    @test format(f"{:_}", 123) == "123"
+    @test format(f"{:_}", 1234) == "1_234"
+    @test format(f"{:_}", 12345) == "12_345"
+    @test format(f"{:_}", 123456) == "123_456"
+    @test format(f"{:_}", 1234567) == "1_234_567"
+    @test format(f"{:_}", 12345678) == "12_345_678"
+    @test format(f"{:_}", 123456789) == "123_456_789"
+    @test format(f"{:_}", 1234567890) == "1_234_567_890"
 end
 
 @testset "format (writer)" begin

@@ -9,7 +9,7 @@ const FILL_UNSPECIFIED = reinterpret(Char, 0xFFFFFFFF)
 @enum Sign::UInt8 SIGN_PLUS SIGN_MINUS SIGN_SPACE
 const SIGN_UNSPECIFIED = SIGN_MINUS
 const WIDTH_UNSPECIFIED = nothing
-@enum Grouping::UInt8 GROUPING_UNSPECIFIED GROUPING_COMMA
+@enum Grouping::UInt8 GROUPING_UNSPECIFIED GROUPING_COMMA GROUPING_UNDERSCORE
 const PRECISION_UNSPECIFIED = nothing
 
 struct Positional
@@ -207,7 +207,7 @@ function formatinfo(f::Field{type}, x::Integer) where type
     if f.altform && base != 10
         width += 2  # prefix (0b, 0o, 0x)
     end
-    if f.grouping == GROUPING_COMMA
+    if f.grouping == GROUPING_COMMA || f.grouping == GROUPING_UNDERSCORE
         width += div(m - 1, 3)
     end
     f.width == WIDTH_UNSPECIFIED && return width, m
@@ -238,7 +238,7 @@ end
         if f.grouping == GROUPING_UNSPECIFIED
             p = decimal(data, p, u, m)
         else
-            p = decimal_comma(data, p, u, m)
+            p = decimal_grouping(data, p, u, m, f.grouping == GROUPING_COMMA ? UInt8(',') : UInt8('_'))
         end
     elseif base == 8
         p = octal(data, p, u, m, f.altform)
@@ -302,7 +302,7 @@ function decimal(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int)
     return p + m
 end
 
-function decimal_comma(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int)
+function decimal_grouping(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int, sep::UInt8)
     k = div(m - 1, 3)
     n = m + k
     while n ≥ 4
@@ -312,7 +312,7 @@ function decimal_comma(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int)
         data[p+n-2] = (dd >> 8) % UInt8
         x, r = divrem(x, 0xa)
         data[p+n-3] = r % UInt8 + Z
-        data[p+n-4] = UInt8(',')
+        data[p+n-4] = sep
         n -= 4
     end
     decimal(data, p, x, n)
@@ -600,6 +600,9 @@ function parse_spec(fmt::String, i::Int, serial::Int)
     grouping = GROUPING_UNSPECIFIED
     if c == ','
         grouping = GROUPING_COMMA
+        c = fmt[i+=1]
+    elseif c == '_'
+        grouping = GROUPING_UNDERSCORE
         c = fmt[i+=1]
     end
 
