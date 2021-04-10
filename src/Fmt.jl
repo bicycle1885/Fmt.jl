@@ -53,7 +53,7 @@ end
 
 argument(f::Field) = f.argument
 
-function paddingwidth(f::Field, width::Int)
+@inline function paddingwidth(f::Field, width::Int)
     @assert f.width isa Int || f.width isa Nothing
     if f.width isa Int
         return max(f.width - width, 0)
