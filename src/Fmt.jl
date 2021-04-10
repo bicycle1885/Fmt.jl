@@ -269,7 +269,7 @@ end
             @assert false "invalid base"
         end
     end
-    if f.width != WIDTH_UNSPECIFIED
+    if f.width != WIDTH_UNSPECIFIED && !f.zero
         if f.align == ALIGN_LEFT
             p = pad(data, p, f.fill, pw)
         elseif f.align == ALIGN_CENTER
