@@ -47,8 +47,8 @@ function Field{type}(
     return Field{type}(argument, fill, align, sign, altform, zero, width, precision)
 end
 
-function Field(f::Field{type}; width) where type
-    return Field{type}(f.argument, f.fill, f.align, f.sign, f.altform, f.zero, width, f.precision)
+function Field(f::Field{type}; width = f.width, precision = f.precision) where type
+    return Field{type}(f.argument, f.fill, f.align, f.sign, f.altform, f.zero, width, precision)
 end
 
 argument(f::Field) = f.argument
@@ -574,12 +574,19 @@ function parse_spec(fmt::String, i::Int, serial::Int)
     if c == '.'
         # precision
         i += 1
-        precision = 0
-        while isdigit(fmt[i])
-            precision = 10precision + Int(fmt[i] - '0')
-            i += 1
+        if fmt[i] == '{'
+            precision, i, serial = parse_argument(fmt, i + 1, serial)
+            @assert fmt[i] == '}'
+            c = fmt[i+=1]
+        else
+            @assert isdigit(fmt[i])
+            precision = 0
+            while isdigit(fmt[i])
+                precision = 10precision + Int(fmt[i] - '0')
+                i += 1
+            end
+            c = fmt[i]
         end
-        c = fmt[i]
     end
 
     type = '?'  # unspecified
@@ -664,18 +671,40 @@ function compile(fmt::String)
                 end
                 x = esc(arg.name)
             end
-            if f.width isa Positional
+
+            # dynamic width
+            width = if f.width isa Positional
                 position = f.width.position
                 n_positionals = max(position, n_positionals)
-                f = :(Field($f, width = $(esc(Symbol(:_, position)))))
+                Symbol(:_, position)
             elseif f.width isa Keyword
                 keyword = f.width.name
                 if keyword ∉ keywords
                     push!(keywords, keyword)
                     f.width.interp && push!(interpolated, keyword)
                 end
-                f = :(Field($f, width = $(esc(keyword))))
+                keyword
+            else
+                f.width
             end
+
+            # dynamic precision
+            precision = if f.precision isa Positional
+                position = f.precision.position
+                n_positionals = max(position, n_positionals)
+                Symbol(:_, position)
+            elseif f.precision isa Keyword
+                keyword = f.precision.name
+                if keyword ∉ keywords
+                    push!(keywords, keyword)
+                    f.precision.interp && push!(interpolated, keyword)
+                end
+                keyword
+            else
+                f.precision
+            end
+
+            f = :(Field($f, width = $(esc(width)), precision = $(esc(precision))))
             meta = Symbol(:meta, i)
             info = quote
                 s, $meta = formatinfo($f, $x)

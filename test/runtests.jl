@@ -324,6 +324,12 @@ struct Foo end
 
     @test format(f"{x:{y}}", x = "foo", y = 5) == "foo  "
     @test format(f"{y:{x}}", x = 5, y = "foo") == "foo  "
+
+    pi = Float64(pi)
+    @test format(f"{x:.{n}}", x = pi, n = 2) == format(f"{:.2}", pi)
+    @test format(f"{x:.{n}}", x = pi, n = 3) == format(f"{:.3}", pi)
+    @test format(f"{x:.{n}}", x = pi, n = 4) == format(f"{:.4}", pi)
+    @test format(f"{x:.{n}}", x = pi, n = 5) == format(f"{:.5}", pi)
 end
 
 @testset "format (writer)" begin
