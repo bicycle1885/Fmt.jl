@@ -504,19 +504,8 @@ function parse_field(fmt::String, i::Int, serial::Int)
     elseif c == ':'
         serial += 1
         arg = Positional(serial)
-    elseif isdigit(c) && c != '0'
-        n = 0
-        while isdigit(fmt[i])
-            n = 10n + Int(fmt[i] - '0')
-            i += 1
-        end
-        arg = Positional(n)
-    elseif c == '$'  # interpolation
-        name, i = Meta.parse(fmt, i + 1, greedy = false)
-        arg = Keyword(name, true)
-    elseif isletter(c) || c == '_'  # FIXME
-        name, i = Meta.parse(fmt, i, greedy = false)
-        arg = Keyword(name, false)
+    else
+        arg, i, serial = parse_argument(fmt, i, serial)
     end
 
     # check spec
@@ -564,7 +553,8 @@ function parse_spec(fmt::String, i::Int, serial::Int)
     width = WIDTH_UNSPECIFIED
     if c == '{'
         width, i, serial = parse_argument(fmt, i + 1, serial)
-        c = fmt[i]
+        @assert fmt[i] == '}'
+        c = fmt[i+=1]
     elseif isdigit(c)
         # minimum width
         if c == '0' && isdigit(fmt[i+1])
@@ -614,20 +604,18 @@ function parse_argument(s::String, i::Int, serial::Int)
             n = 10n + Int(s[i] - '0')
             i += 1
         end
-        @assert s[i] == '}'
         arg = Positional(n)
     elseif c == '$'
         name, i = Meta.parse(s, i + 1, greedy = false)
-        @assert s[i] == '}'
         arg = Keyword(name, true)
     elseif isletter(c) || c == '_'
         name, i = Meta.parse(s, i, greedy = false)
-        @assert s[i] == '}'
         arg = Keyword(name, false)
     else
         @assert false
     end
-    return arg, i + 1, serial
+    @assert s[i] == '}' || s[i] == ':'
+    return arg, i, serial
 end
 
 
