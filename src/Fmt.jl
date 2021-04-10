@@ -43,7 +43,6 @@ interpolated(f::Field) = f.interp
 
 paddingwidth(f::Field{_, __, Int}, width::Int) where {_, __} = max(f.width - width, 0)
 paddingwidth(f::Field{_, __, Nothing}, width::Int) where {_, __} = 0
-
 paddingsize(f::Field, width::Int) = paddingwidth(f, width) * ncodeunits(f.fill)
 
 # generic fallback
