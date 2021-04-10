@@ -321,6 +321,9 @@ struct Foo end
 
     @test format(f"{1:{2}}", "foo", 5) == "foo  "
     @test format(f"{2:{1}}", 5, "foo") == "foo  "
+
+    @test format(f"{x:{y}}", x = "foo", y = 5) == "foo  "
+    @test format(f"{y:{x}}", x = 5, y = "foo") == "foo  "
 end
 
 @testset "format (writer)" begin

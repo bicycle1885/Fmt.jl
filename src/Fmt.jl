@@ -562,9 +562,20 @@ function parse_spec(fmt::String, i::Int)
             fill = ' '
         end
         i += 1
-        width = Positional(fmt[i] - UInt8('0'))
-        i += 1
-        @assert fmt[i+1] == '}'
+        if isdigit(fmt[i])
+            arg = 0
+            while isdigit(fmt[i])
+                arg = 10arg + (fmt[i] - UInt8('0'))
+                i += 1
+            end
+            width = Positional(arg)
+        elseif isletter(fmt[i]) || fmt[i] == '_'  # FIXME
+            arg, i = Meta.parse(fmt, i, greedy = false)
+            width = Keyword(arg)
+        else
+            @assert false
+        end
+        @assert fmt[i] == '}'
         c = fmt[i+=1]
     elseif isdigit(c)
         if fill == FILL_UNSPECIFIED
@@ -659,7 +670,11 @@ function compile(fmt::String)
                 n_positionals = max(position, n_positionals)
                 f = :(Field($f, width = $(esc(Symbol(:_, position)))))
             elseif f.width isa Keyword
-                f = :(Field($f, width = $(esc(f.width.name))))
+                keyword = f.width.name
+                if keyword ∉ keywords
+                    push!(keywords, keyword)
+                end
+                f = :(Field($f, width = $(esc(keyword))))
             end
             info = quote
                 s, $meta = formatinfo($f, $arg)
