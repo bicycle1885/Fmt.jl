@@ -137,12 +137,16 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::AbstractString, w
     pw = paddingwidth(f, width)
     if f.align == ALIGN_RIGHT
         p = pad(data, p, f.fill, pw)
+    elseif f.align == ALIGN_CENTER
+        p = pad(data, p, f.fill, pw ÷ 2)
     end
     n = ncodeunits(x)
     copyto!(data, p, codeunits(x), 1, n)
     p += n
-    if f.align != ALIGN_RIGHT
+    if f.align == ALIGN_LEFT || f.align == ALIGN_UNSPECIFIED
         p = pad(data, p, f.fill, pw)
+    elseif f.align == ALIGN_CENTER
+        p = pad(data, p, f.fill, pw - pw ÷ 2)
     end
     return p
 end

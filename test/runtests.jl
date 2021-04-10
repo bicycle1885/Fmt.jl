@@ -88,10 +88,13 @@ struct Foo end
     @test format(f"{:5}", "abc") == "abc  "
 
     @test format(f"{:<5}", "abc") == "abc  "
+    @test format(f"{:^5}", "abc") == " abc "
     @test format(f"{:>5}", "abc") == "  abc"
     @test format(f"{:_<5}", "abc") == "abc__"
+    @test format(f"{:_^5}", "abc") == "_abc_"
     @test format(f"{:_>5}", "abc") == "__abc"
     @test format(f"{:<<5}", "abc") == "abc<<"
+    @test format(f"{:^^5}", "abc") == "^abc^"
     @test format(f"{:>>5}", "abc") == ">>abc"
 
     @test format(f"{:0}", "αβ") == "αβ"
