@@ -17,6 +17,7 @@ end
 
 struct Keyword
     name::Symbol
+    interp::Bool
 end
 
 # type (Char)         : type specifier ('?' means unspecified)
@@ -571,7 +572,10 @@ function parse_spec(fmt::String, i::Int)
             width = Positional(arg)
         elseif isletter(fmt[i]) || fmt[i] == '_'  # FIXME
             arg, i = Meta.parse(fmt, i, greedy = false)
-            width = Keyword(arg)
+            width = Keyword(arg, false)
+        elseif fmt[i] == '$'
+            arg, i = Meta.parse(fmt, i + 1, greedy = false)
+            width = Keyword(arg, true)
         else
             @assert false
         end
@@ -673,6 +677,7 @@ function compile(fmt::String)
                 keyword = f.width.name
                 if keyword ∉ keywords
                     push!(keywords, keyword)
+                    f.width.interp && push!(interpolated, keyword)
                 end
                 f = :(Field($f, width = $(esc(keyword))))
             end
