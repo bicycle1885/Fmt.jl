@@ -460,11 +460,12 @@ function genformat(fmt, positionals, keywords)
     code_info = Expr(:block)  # compute data size and other info
     code_data = Expr(:block)  # write data
     for (i, F) in enumerate(fmt.types)
+        f = :(fmt[$i])
         if F === String
-            info = :(size += ncodeunits(fmt[$i]))
+            info = :(size += ncodeunits($f))
             data = quote
-                n = ncodeunits(fmt[$i])
-                copyto!(data, p, codeunits(fmt[$i]), 1, n)
+                n = ncodeunits($f)
+                copyto!(data, p, codeunits($f), 1, n)
                 p += n
             end
         else
@@ -477,10 +478,10 @@ function genformat(fmt, positionals, keywords)
                 arg = :(keywords[$(QuoteNode(arg))])
             end
             info = quote
-                s, $(Symbol(:info, i)) = formatinfo(fmt[$i], $arg)
+                s, $(Symbol(:info, i)) = formatinfo($f, $arg)
                 size += s
             end
-            data = :(p = formatfield(data, p, fmt[$i], $arg, $(Symbol(:info, i))))
+            data = :(p = formatfield(data, p, $f, $arg, $(Symbol(:info, i))))
         end
         push!(code_info.args, info)
         push!(code_data.args, data)
