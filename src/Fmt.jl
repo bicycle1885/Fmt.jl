@@ -107,6 +107,38 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field{'c'}, x::Integer, cha
     return p
 end
 
+function formatinfo(f::Field, x::Bool)
+    # true (4) or false (5)
+    width = x ? 4 : 5
+    return ncodeunits(f.fill) * max(f.width - width, 0) + width, nothing
+end
+
+function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Bool, ::Nothing)
+    width = x ? 4 : 5
+    padwidth = max(f.width - width, 0)
+    if f.width != WIDTH_UNSPECIFIED && f.align != ALIGN_LEFT
+        p = pad(data, p, f.fill, padwidth)
+    end
+    if x
+        data[p]   = UInt8('t')
+        data[p+1] = UInt8('r')
+        data[p+2] = UInt8('u')
+        data[p+3] = UInt8('e')
+        p += 4
+    else
+        data[p]   = UInt8('f')
+        data[p+1] = UInt8('a')
+        data[p+2] = UInt8('l')
+        data[p+3] = UInt8('s')
+        data[p+4] = UInt8('e')
+        p += 5
+    end
+    if f.width != WIDTH_UNSPECIFIED && f.align == ALIGN_LEFT
+        p = pad(data, p, f.fill, padwidth)
+    end
+    return p
+end
+
 function formatinfo(f::Field{type}, x::Integer) where type
     base = type == 'X' || type == 'x' ? 16 : type == 'o' ? 8 : type == 'b' ? 2 : 10
     m = base == 10 ? ndigits_decimal(x) : ndigits(x; base)

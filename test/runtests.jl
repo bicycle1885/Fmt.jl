@@ -21,6 +21,9 @@ struct Foo end
     @test format(f"pi = {}", 3.14) == "pi = 3.14"
     @test format(f"pi = {}", 3.141) == "pi = 3.141"
 
+    @test format(f"flag = {}", false) == "flag = false"
+    @test format(f"flag = {}", true) == "flag = true"
+
     @test format(f"x = {1}", 2) == "x = 2"
     @test format(f"x = {1}, y = {2}", 2, 3) == "x = 2, y = 3"
     @test format(f"x = {2}, y = {1}", 2, 3) == "x = 3, y = 2"
