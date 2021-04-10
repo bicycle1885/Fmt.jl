@@ -45,6 +45,11 @@ f"{$x:<6}"  == "42    "
 f"{$x:>6}"  == "    42"
 f"{$x:*<6}" == "42****"
 f"{$x:*>6}" == "****42"
+
+# dynamic width
+n = 6
+f"{$x:<{$n}}" == "42    "
+f"{$x:>{$n}}" == "    42"
 ```
 
 It also provides a formatting function. The `Fmt.format` function takes a format template as its first argument and other arguments are interpolated into the placeholders in the template.
