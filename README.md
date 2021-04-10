@@ -71,6 +71,16 @@ Fmt.format(f"{2}, {1}", 1, 2) == "2, 1"
 # keyword arguments
 Fmt.format(f"{x}, {y}", x = 1, y = 2) == "1, 2"
 Fmt.format(f"{y}, {x}", x = 1, y = 2) == "2, 1"
+
+# box drawing
+Fmt.format(stdout, f"""
+┌{1:─^{3}}┐
+│{2: ^{3}}│
+└{1:─^{3}}┘
+""", "", "Hello, world!", 21)
+# ┌─────────────────────┐
+# │    Hello, world!    │
+# └─────────────────────┘
 ```
 
 ## Performance
