@@ -11,6 +11,7 @@ const SIGN_UNSPECIFIED = SIGN_MINUS
 const WIDTH_UNSPECIFIED = nothing
 @enum Grouping::UInt8 GROUPING_UNSPECIFIED GROUPING_COMMA GROUPING_UNDERSCORE
 const PRECISION_UNSPECIFIED = nothing
+const TYPE_UNSPECIFIED = nothing
 
 struct Positional
     position::Int
@@ -23,8 +24,7 @@ end
 
 const Argument = Union{Positional, Keyword}
 
-# type (Char) : type specifier ('?' means unspecified)
-struct Field{type}
+struct Field
     argument::Argument
     fill::Char
     align::Alignment
@@ -34,9 +34,10 @@ struct Field{type}
     width::Union{Int, Nothing, Argument}
     grouping::Grouping
     precision::Union{Int, Nothing, Argument}
+    type::Union{Char, Nothing}
 end
 
-function Field{type}(
+function Field(
         argument;
         fill = FILL_UNSPECIFIED,
         align = ALIGN_UNSPECIFIED,
@@ -46,12 +47,13 @@ function Field{type}(
         width = WIDTH_UNSPECIFIED,
         grouping = GROUPING_UNSPECIFIED,
         precision = PRECISION_UNSPECIFIED,
-        ) where type
-    return Field{type}(argument, fill, align, sign, altform, zero, width, grouping, precision)
+        type = TYPE_UNSPECIFIED
+        )
+    return Field(argument, fill, align, sign, altform, zero, width, grouping, precision, type)
 end
 
-function Field(f::Field{type}; width = f.width, precision = f.precision) where type
-    return Field{type}(f.argument, f.fill, f.align, f.sign, f.altform, f.zero, width, f.grouping, precision)
+function Field(f::Field; width = f.width, precision = f.precision)
+    return Field(f.argument, f.fill, f.align, f.sign, f.altform, f.zero, width, f.grouping, precision, f.type)
 end
 
 argument(f::Field) = f.argument
@@ -75,7 +77,7 @@ function formatinfo(f::Field, x::Any)
     return paddingsize(f, width) + size, (s, width)
 end
 
-function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Any, (s, width)::Tuple{String,Int})
+function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Any, (s, width)::Tuple{String, Int})
     pw = paddingwidth(f, width)
     if f.width != WIDTH_UNSPECIFIED && f.align == ALIGN_RIGHT
         p = pad(data, p, f.fill, pw)
@@ -153,25 +155,6 @@ end
 
 const Z = UInt8('0')
 
-function formatinfo(f::Field{'c'}, x::Integer)
-    char = Char(x)
-    size = ncodeunits(char)
-    f.width == WIDTH_UNSPECIFIED && return size, char
-    return paddingsize(f, 1) + size, char
-end
-
-function formatfield(data::Vector{UInt8}, p::Int, f::Field{'c'}, x::Integer, char::Char)
-    pw = paddingwidth(f, 1)
-    if f.align != ALIGN_LEFT
-        p = pad(data, p, f.fill, pw)
-    end
-    p = pad(data, p, char, 1)
-    if f.align == ALIGN_LEFT
-        p = pad(data, p, f.fill, pw)
-    end
-    return p
-end
-
 function formatinfo(f::Field, x::Bool)
     # true (4) or false (5)
     width = x ? 4 : 5
@@ -204,8 +187,14 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Bool, ::Nothing)
     return p
 end
 
-function formatinfo(f::Field{type}, x::Integer) where type
-    base = type == 'X' || type == 'x' ? 16 : type == 'o' ? 8 : type == 'B' || type == 'b' ? 2 : 10
+@inline function formatinfo(f::Field, x::Integer)
+    if f.type == 'c'
+        char = Char(x)
+        size = ncodeunits(char)
+        f.width == WIDTH_UNSPECIFIED && return size, 0
+        return paddingsize(f, 1) + size, 0
+    end
+    base = f.type == 'X' || f.type == 'x' ? 16 : f.type == 'o' ? 8 : f.type == 'B' || f.type == 'b' ? 2 : 10
     m = base == 10 ? ndigits_decimal(x) : ndigits(x; base)
     width = m + (x < 0 || f.sign ≠ SIGN_MINUS)
     if f.altform && base != 10
@@ -222,8 +211,19 @@ function formatinfo(f::Field{type}, x::Integer) where type
     return paddingsize(f, width) + width, m
 end
 
-@inline function formatfield(data::Vector{UInt8}, p::Int, f::Field{type}, x::Integer, m::Int) where type
-    base = type == 'X' || type == 'x' ? 16 : type == 'o' ? 8 : type == 'B' || type == 'b' ? 2 : 10
+@inline function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Integer, m::Int)
+    if f.type == 'c'
+        pw = paddingwidth(f, 1)
+        if f.align != ALIGN_LEFT
+            p = pad(data, p, f.fill, pw)
+        end
+        p = pad(data, p, Char(x), 1)
+        if f.align == ALIGN_LEFT
+            p = pad(data, p, f.fill, pw)
+        end
+        return p
+    end
+    base = f.type == 'X' || f.type == 'x' ? 16 : f.type == 'o' ? 8 : f.type == 'B' || f.type == 'b' ? 2 : 10
     width = m + (x < 0 || f.sign ≠ SIGN_MINUS) + (f.altform && base ≠ 10 && 2)
     pw = paddingwidth(f, width)
     if f.width != WIDTH_UNSPECIFIED && !f.zero
@@ -246,25 +246,25 @@ end
     u = unsigned(abs(x))
     if f.grouping == GROUPING_UNSPECIFIED
         if base == 16
-            p = hexadecimal(data, p, u, m, type == 'X', f.altform)
+            p = hexadecimal(data, p, u, m, f.type == 'X', f.altform)
         elseif base == 10
             p = decimal(data, p, u, m)
         elseif base == 8
             p = octal(data, p, u, m, f.altform)
         elseif base == 2
-            p = binary(data, p, u, m, type == 'B', f.altform)
+            p = binary(data, p, u, m, f.type == 'B', f.altform)
         else
             @assert false "invalid base"
         end
     else
         if base == 16
-            p = hexadecimal_grouping(data, p, u, m, type == 'X', f.altform)
+            p = hexadecimal_grouping(data, p, u, m, f.type == 'X', f.altform)
         elseif base == 10
             p = decimal_grouping(data, p, u, m, f.grouping == GROUPING_COMMA ? UInt8(',') : UInt8('_'))
         elseif base == 8
             p = octal_grouping(data, p, u, m, f.altform)
         elseif base == 2
-            p = binary_grouping(data, p, u, m, type == 'B', f.altform)
+            p = binary_grouping(data, p, u, m, f.type == 'B', f.altform)
         else
             @assert false "invalid base"
         end
@@ -479,7 +479,7 @@ function formatinfo(f::Field, x::AbstractFloat)
     return Ryu.neededdigits(typeof(x)), nothing
 end
 
-function formatfield(data::Vector{UInt8}, p::Int, f::Field{type}, x::AbstractFloat, info) where type
+function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::AbstractFloat, info)
     # default parameters of Ryu.writeshortest
     precision = -1
     expchar = UInt8('e')
@@ -517,7 +517,7 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field{type}, x::AbstractFlo
             data[p] = UInt8(' ')
             p += 1
         end
-        if type == 'F' || type == 'E'
+        if f.type == 'F' || f.type == 'E'
             data[p  ] = UInt8('I')
             data[p+1] = UInt8('N')
             data[p+2] = UInt8('F')
@@ -528,7 +528,7 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field{type}, x::AbstractFlo
         end
         p += 3
     elseif isnan(x)
-        if type == 'F' || type == 'E'
+        if f.type == 'F' || f.type == 'E'
             data[p  ] = UInt8('N')
             data[p+1] = UInt8('A')
             data[p+2] = UInt8('N')
@@ -538,21 +538,21 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field{type}, x::AbstractFlo
             data[p+2] = UInt8('n')
         end
         p += 3
-    elseif type == 'F' || type == 'f'
+    elseif f.type == 'F' || f.type == 'f'
         precision = f.precision == PRECISION_UNSPECIFIED ? 6 : f.precision
         p = Ryu.writefixed(data, p, x, precision, plus, space, hash)
-    elseif type == 'E' || type == 'e'
+    elseif f.type == 'E' || f.type == 'e'
         precision = f.precision == PRECISION_UNSPECIFIED ? 6 : f.precision
-        expchar = type == 'E' ? UInt8('E') : UInt8('e')
+        expchar = f.type == 'E' ? UInt8('E') : UInt8('e')
         p = Ryu.writeexp(data, p, x, precision, plus, space, hash, expchar)
-    elseif type == '%'
+    elseif f.type == '%'
         precision = f.precision == PRECISION_UNSPECIFIED ? 6 : f.precision
         p = Ryu.writefixed(data, p, 100x, precision, plus, space, hash)
         data[p] = UInt8('%')
         p += 1
     else
-        @assert type == 'G' || type == 'g' || type == '?'
-        if type == '?' && isinteger(x)
+        @assert f.type == 'G' || f.type == 'g' || f.type == nothing
+        if f.type == nothing && isinteger(x)
             hash = true
         end
         if f.precision != PRECISION_UNSPECIFIED
@@ -626,7 +626,7 @@ function parse_field(fmt::String, i::Int, serial::Int)
     # check field name
     if c == '}'
         serial += 1
-        return Field{'?'}(Positional(serial)), i + 1, serial
+        return Field(Positional(serial)), i + 1, serial
     elseif c == ':'
         serial += 1
         arg = Positional(serial)
@@ -636,10 +636,10 @@ function parse_field(fmt::String, i::Int, serial::Int)
 
     # check spec
     if fmt[i] == ':'
-        spec, type, i, serial = parse_spec(fmt, i + 1, serial)
-        return Field{type}(arg; spec...), i + 1, serial
+        spec, i, serial = parse_spec(fmt, i + 1, serial)
+        return Field(arg; spec...), i + 1, serial
     else
-        return Field{'?'}(arg), i + 1, serial
+        return Field(arg), i + 1, serial
     end
 end
 
@@ -724,15 +724,14 @@ function parse_spec(fmt::String, i::Int, serial::Int)
         end
     end
 
-    type = '?'  # unspecified
+    type = TYPE_UNSPECIFIED
     if c in "dXxoBbcsFfEeGg%"
-        # type
         type = c
         c = fmt[i+=1]
     end
 
     @assert c == '}'
-    return (; fill, align, sign, altform, zero, width, grouping, precision), type, i, serial
+    return (; fill, align, sign, altform, zero, width, grouping, precision, type), i, serial
 end
 
 function parse_argument(s::String, i::Int, serial::Int)
