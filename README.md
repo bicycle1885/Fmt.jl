@@ -83,6 +83,41 @@ Fmt.format(stdout, f"""
 # └─────────────────────┘
 ```
 
+## Syntax
+
+Each replacement field is surrounded by a pair of curly braces.
+The syntax of a replacement field is formally defined as follows:
+```
+# replacement field
+field      = '{'[argument][':'spec]'}'
+argument   = number | ['$']identifier
+number     = digit+
+identifier = any valid variable name
+digit      = '0' | '1' | '2' | … | '9'
+
+# format specification
+spec       = [[fill]align][sign][altform][zero][width][grouping][.precision][type]
+fill       = any valid character
+align      = '<' | '^' | '>'
+sign       = '+' | '-' | ' '
+altform    = '#'
+zero       = '0'
+width      = digit+ | '{'argument'}'
+grouping   = ',' | '_'
+precision  = digit+ | '{'argument'}'
+type       = 'd' | 'X' | 'x' | 'o' | 'B' | 'b' | 'c' | 's' |
+             'F' | 'f' | 'E' | 'e' | 'G' | 'g' | '%'
+```
+
+Note that *syntactic* validity does not imply *semantic* validity.
+For example, `{:,s}` is syntactically valid but semantically invalid, because the string type `s` does not support the thousands separator `,`.
+
+## Semantic
+
+The semantic of the format specification is basically the same as that of Python.
+
+TBD
+
 ## Performance
 
 Fmt.jl is carefully optimized and will be faster than naive printing.
