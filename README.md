@@ -152,7 +152,7 @@ for printer in [fmt_print, naive_print, string_print, formatting_print]
 end
 ```
 
-The result on my machine (AMD Ryzen 9 3950X, Generic Linux on x86, v1.6.0) is:
+The result on my machine is:
 ```
 $ julia quickbenchmark.jl
            fmt_print:  34.710 ms (2000000 allocations: 91.55 MiB)
@@ -160,6 +160,11 @@ $ julia quickbenchmark.jl
         string_print:  296.764 ms (7975844 allocations: 365.84 MiB)
     formatting_print:  708.969 ms (23878703 allocations: 959.44 MiB)
 ```
+
+Benchmark environment:
+- CPU: AMD Ryzen 9 3950X
+- Julia: v1.6.0 (official binary distribution for generic Linux)
+- Formatting.jl: v0.4.2
 
 ## Related projects
 
