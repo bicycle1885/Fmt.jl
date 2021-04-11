@@ -528,8 +528,8 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::AbstractFloat, in
         data[p] = UInt8('%')
         p += 1
     else
-        @assert f.type == 'G' || f.type == 'g' || f.type == nothing
-        if f.type == nothing && isinteger(x)
+        @assert f.type == 'G' || f.type == 'g' || f.type === nothing
+        if f.type === nothing && isinteger(x)
             hash = true
         end
         if f.precision != PRECISION_UNSPECIFIED
