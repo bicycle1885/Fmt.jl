@@ -96,7 +96,7 @@ identifier = any valid variable name
 digit      = '0' | '1' | '2' | … | '9'
 
 # format specification
-spec       = [[fill]align][sign][altform][zero][width][grouping][.precision][type]
+spec       = [[fill]align][sign][altform][zero][width][grouping]['.'precision][type]
 fill       = any valid character
 align      = '<' | '^' | '>'
 sign       = '+' | '-' | ' '
