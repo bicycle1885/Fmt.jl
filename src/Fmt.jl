@@ -261,27 +261,23 @@ end
     u = unsigned(abs(x))
     if f.grouping == GROUPING_UNSPECIFIED
         if base == 16
-            p = hexadecimal(data, p, u, m, f.type == 'X', false)
+            p = hexadecimal(data, p, u, m, f.type == 'X')
         elseif base == 10
             p = decimal(data, p, u, m)
         elseif base == 8
-            p = octal(data, p, u, m, false)
+            p = octal(data, p, u, m)
         elseif base == 2
-            p = binary(data, p, u, m, f.type == 'B', false)
-        else
-            @assert false "invalid base"
+            p = binary(data, p, u, m)
         end
     else
         if base == 16
-            p = hexadecimal_grouping(data, p, u, m, f.type == 'X', false)
+            p = hexadecimal_grouping(data, p, u, m, f.type == 'X')
         elseif base == 10
             p = decimal_grouping(data, p, u, m, f.grouping == GROUPING_COMMA ? UInt8(',') : UInt8('_'))
         elseif base == 8
-            p = octal_grouping(data, p, u, m, false)
+            p = octal_grouping(data, p, u, m)
         elseif base == 2
-            p = binary_grouping(data, p, u, m, f.type == 'B', false)
-        else
-            @assert false "invalid base"
+            p = binary_grouping(data, p, u, m)
         end
     end
     @label right
@@ -295,12 +291,7 @@ end
     return p
 end
 
-function binary(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int, uppercase::Bool, altform::Bool)
-    if altform
-        data[p  ] = Z
-        data[p+1] = uppercase ? UInt8('B') : UInt8('b')
-        p += 2
-    end
+function binary(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int)
     n = m
     while n > 0
         r = (x & 0x1) % UInt8
@@ -311,12 +302,7 @@ function binary(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int, uppercase::Boo
     return p + m
 end
 
-function binary_grouping(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int, uppercase::Bool, altform::Bool)
-    if altform
-        data[p  ] = Z
-        data[p+1] = uppercase ? UInt8('B') : UInt8('b')
-        p += 2
-    end
+function binary_grouping(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int)
     k = div(m - 1, 4)
     n = m + k
     while n ≥ 5
@@ -331,16 +317,11 @@ function binary_grouping(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int, upper
         data[p+n-5] = UInt8('_')
         n -= 5
     end
-    binary(data, p, x, n, false, false)
+    binary(data, p, x, n)
     return p + m + k
 end
 
-function octal(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int, altform::Bool)
-    if altform
-        data[p  ] = Z
-        data[p+1] = UInt8('o')
-        p += 2
-    end
+function octal(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int)
     n = m
     while n > 0
         r = (x & 0x7) % UInt8
@@ -351,12 +332,7 @@ function octal(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int, altform::Bool)
     return p + m
 end
 
-function octal_grouping(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int, altform::Bool)
-    if altform
-        data[p  ] = Z
-        data[p+1] = UInt8('o')
-        p += 2
-    end
+function octal_grouping(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int)
     k = div(m - 1, 4)
     n = m + k
     while n ≥ 5
@@ -371,7 +347,7 @@ function octal_grouping(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int, altfor
         data[p+n-5] = UInt8('_')
         n -= 5
     end
-    octal(data, p, x, n, false)
+    octal(data, p, x, n)
     return p + m + k
 end
 
@@ -419,12 +395,7 @@ for x in 0:255
     HEXADECIMAL_DIGITS_LOWERCASE[x+1] = ((d < 10 ? d + Z : d - 10 + A) << 8) % UInt16 + (r < 10 ? r + Z : r - 10 + A) % UInt8
 end
 
-function hexadecimal(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int, uppercase::Bool, altform::Bool)
-    if altform
-        data[p  ] = Z
-        data[p+1] = uppercase ? UInt8('X') : UInt8('x')
-        p += 2
-    end
+function hexadecimal(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int, uppercase::Bool)
     n = m
     hexdigits = uppercase ? HEXADECIMAL_DIGITS_UPPERCASE : HEXADECIMAL_DIGITS_LOWERCASE
     while n ≥ 2
@@ -442,12 +413,7 @@ function hexadecimal(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int, uppercase
     return p + m
 end
 
-function hexadecimal_grouping(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int, uppercase::Bool, altform::Bool)
-    if altform
-        data[p  ] = Z
-        data[p+1] = uppercase ? UInt8('X') : UInt8('x')
-        p += 2
-    end
+function hexadecimal_grouping(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int, uppercase::Bool)
     k = div(m - 1, 4)
     n = m + k
     hexdigits = uppercase ? HEXADECIMAL_DIGITS_UPPERCASE : HEXADECIMAL_DIGITS_LOWERCASE
@@ -463,7 +429,7 @@ function hexadecimal_grouping(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int, 
         data[p+n-5] = UInt8('_')
         n -= 5
     end
-    hexadecimal(data, p, x, n, uppercase, false)
+    hexadecimal(data, p, x, n, uppercase)
     return p + m + k
 end
 
