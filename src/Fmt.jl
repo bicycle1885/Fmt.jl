@@ -549,12 +549,18 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::AbstractFloat, in
             copyto!(data, start + pw, data, start, width)
             pad(data, start, '0', pw)
             p += pw
-        elseif f.align != ALIGN_LEFT
+        elseif f.align == ALIGN_RIGHT || f.align == ALIGN_UNSPECIFIED
             ps = paddingsize(f, width)
             copyto!(data, start + ps, data, start, width)
             pad(data, start, f.fill, pw)
             p += ps
-        elseif f.align == ALIGN_LEFT
+        elseif f.align == ALIGN_CENTER
+            offset = ncodeunits(f.fill) * (pw ÷ 2)
+            copyto!(data, start + offset, data, start, width)
+            pad(data, start, f.fill, pw ÷ 2)
+            pad(data, start + offset + width, f.fill, pw - pw ÷ 2)
+            p += paddingsize(f, width)
+        else
             p = pad(data, p, f.fill, pw)
         end
     end

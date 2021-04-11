@@ -345,10 +345,13 @@ struct Foo end
 
     @test format(f"{:5}",   1.2) == "  1.2"
     @test format(f"{:>5}",  1.2) == "  1.2"
+    @test format(f"{:^5}",  1.2) == " 1.2 "
     @test format(f"{:<5}",  1.2) == "1.2  "
     @test format(f"{:*>5}", 1.2) == "**1.2"
+    @test format(f"{:*^5}", 1.2) == "*1.2*"
     @test format(f"{:*<5}", 1.2) == "1.2**"
     @test format(f"{:ζ>5}", 1.2) == "ζζ1.2"
+    @test format(f"{:ζ^5}", 1.2) == "ζ1.2ζ"
     @test format(f"{:ζ<5}", 1.2) == "1.2ζζ"
 
     @test format(f"{:10f}",  3.14) == "  3.140000"
