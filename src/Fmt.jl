@@ -163,8 +163,12 @@ end
 function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Bool, ::Nothing)
     width = f.type === nothing ? (x ? 4 : 5) : 1
     pw = paddingwidth(f, width)
-    if f.width != WIDTH_UNSPECIFIED && f.align != ALIGN_LEFT
-        p = pad(data, p, f.fill, pw)
+    if f.width != WIDTH_UNSPECIFIED && !f.zero
+        if f.align == ALIGN_RIGHT || f.align == ALIGN_UNSPECIFIED
+            p = pad(data, p, f.fill, pw)
+        elseif f.align == ALIGN_CENTER
+            p = pad(data, p, f.fill, pw ÷ 2)
+        end
     end
     if f.type === nothing
         if x
@@ -185,8 +189,12 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Bool, ::Nothing)
         data[p] = UInt8('0') + x
         p += 1
     end
-    if f.width != WIDTH_UNSPECIFIED && f.align == ALIGN_LEFT
-        p = pad(data, p, f.fill, pw)
+    if f.width != WIDTH_UNSPECIFIED && !f.zero
+        if f.align == ALIGN_LEFT
+            p = pad(data, p, f.fill, pw)
+        elseif f.align == ALIGN_CENTER
+            p = pad(data, p, f.fill, pw - pw ÷ 2)
+        end
     end
     return p
 end

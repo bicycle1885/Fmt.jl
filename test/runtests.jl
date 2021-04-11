@@ -150,6 +150,11 @@ struct Foo end
     @test format(f"{:X}", false) == "0"
     @test format(f"{:X}", true)  == "1"
 
+    @test format(f"{:4b}",  true) == "   1"
+    @test format(f"{:<4b}", true) == "1   "
+    @test format(f"{:^4b}", true) == " 1  "
+    @test format(f"{:>4b}", true) == "   1"
+
     # 'α': Unicode U+03B1 (category Ll: Letter, lowercase)
     @test format(f"{:c}",  0x03b1) == "α"
     @test format(f"{:0c}", 0x03b1) == "α"
