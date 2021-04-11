@@ -146,6 +146,10 @@ struct Foo end
     @test format(f"{:2c}", 0x03b1) == " α"
     @test format(f"{:3c}", 0x03b1) == "  α"
 
+    @test format(f"{:>3c}", 0x03b1) == "  α"
+    @test format(f"{:^3c}", 0x03b1) == " α "
+    @test format(f"{:<3c}", 0x03b1) == "α  "
+
     @test format(f"{:#B}", 42) == "0B101010"
     @test format(f"{:#b}", 42) == "0b101010"
     @test format(f"{:#o}", 42) == "0o52"

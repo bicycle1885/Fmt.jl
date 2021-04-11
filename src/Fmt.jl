@@ -212,19 +212,12 @@ end
 end
 
 @inline function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Integer, m::Int)
-    if f.type == 'c'
-        pw = paddingwidth(f, 1)
-        if f.align != ALIGN_LEFT
-            p = pad(data, p, f.fill, pw)
-        end
-        p = pad(data, p, Char(x), 1)
-        if f.align == ALIGN_LEFT
-            p = pad(data, p, f.fill, pw)
-        end
-        return p
-    end
     base = f.type == 'X' || f.type == 'x' ? 16 : f.type == 'o' ? 8 : f.type == 'B' || f.type == 'b' ? 2 : 10
-    width = m + (x < 0 || f.sign ≠ SIGN_MINUS) + (f.altform && base ≠ 10 && 2)
+    if f.type == 'c'
+        width = 1
+    else
+        width = m + (x < 0 || f.sign ≠ SIGN_MINUS) + (f.altform && base ≠ 10 && 2)
+    end
     pw = paddingwidth(f, width)
     if f.width != WIDTH_UNSPECIFIED && !f.zero
         if f.align == ALIGN_RIGHT || f.align == ALIGN_UNSPECIFIED
@@ -242,6 +235,10 @@ end
     end
     if f.zero
         p = pad(data, p, '0', pw)
+    end
+    if f.type == 'c'
+        p = pad(data, p, Char(x), 1)
+        @goto right
     end
     u = unsigned(abs(x))
     if f.grouping == GROUPING_UNSPECIFIED
@@ -269,6 +266,7 @@ end
             @assert false "invalid base"
         end
     end
+    @label right
     if f.width != WIDTH_UNSPECIFIED && !f.zero
         if f.align == ALIGN_LEFT
             p = pad(data, p, f.fill, pw)
