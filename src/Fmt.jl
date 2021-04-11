@@ -4,14 +4,9 @@ export @f_str
 
 using Base: StringVector, Ryu
 
-const FILL_UNSPECIFIED = nothing
-@enum Alignment::UInt8 ALIGN_UNSPECIFIED ALIGN_LEFT ALIGN_RIGHT ALIGN_CENTER
-@enum Sign::UInt8 SIGN_PLUS SIGN_MINUS SIGN_SPACE
-const SIGN_UNSPECIFIED = SIGN_MINUS
-const WIDTH_UNSPECIFIED = nothing
-@enum Grouping::UInt8 GROUPING_UNSPECIFIED GROUPING_COMMA GROUPING_UNDERSCORE
-const PRECISION_UNSPECIFIED = nothing
-const TYPE_UNSPECIFIED = nothing
+
+# Arguments
+# ---------
 
 struct Positional
     position::Int
@@ -24,9 +19,22 @@ end
 
 const Argument = Union{Positional, Keyword}
 
+
+# Fields
+# ------
+
+const FILL_DEFAULT = ' '
+@enum Alignment::UInt8 ALIGN_UNSPECIFIED ALIGN_LEFT ALIGN_RIGHT ALIGN_CENTER
+@enum Sign::UInt8 SIGN_PLUS SIGN_MINUS SIGN_SPACE
+const SIGN_UNSPECIFIED = SIGN_MINUS
+const WIDTH_UNSPECIFIED = nothing
+@enum Grouping::UInt8 GROUPING_UNSPECIFIED GROUPING_COMMA GROUPING_UNDERSCORE
+const PRECISION_UNSPECIFIED = nothing
+const TYPE_UNSPECIFIED = nothing
+
 struct Field
     argument::Argument
-    fill::Union{Char, Nothing, Argument}
+    fill::Union{Char, Argument}
     align::Alignment
     sign::Sign
     altform::Bool
@@ -39,7 +47,7 @@ end
 
 function Field(
         argument;
-        fill = FILL_UNSPECIFIED,
+        fill = FILL_DEFAULT,
         align = ALIGN_UNSPECIFIED,
         sign = SIGN_UNSPECIFIED,
         altform = false,
@@ -56,7 +64,9 @@ function Field(f::Field; fill = f.fill, width = f.width, precision = f.precision
     return Field(f.argument, fill, f.align, f.sign, f.altform, f.zero, width, f.grouping, precision, f.type)
 end
 
-argument(f::Field) = f.argument
+
+# Writer functions
+# ----------------
 
 @inline function paddingwidth(f::Field, width::Int)
     @assert f.width isa Int || f.width isa Nothing
@@ -613,7 +623,7 @@ end
 function parse_spec(fmt::String, i::Int, serial::Int)
     c = fmt[i]  # the first character after ':'
 
-    fill = ' '
+    fill = FILL_DEFAULT
     align = ALIGN_UNSPECIFIED
     if c == '{'
         # dynamic fill or dynamic width?
@@ -773,7 +783,7 @@ function compile(fmt::String)
                 end
             end
         else
-            arg = argument(f)
+            arg = f.argument
             if arg isa Positional
                 n_positionals = max(arg.position, n_positionals)
                 x = esc(Symbol(:_, arg.position))
