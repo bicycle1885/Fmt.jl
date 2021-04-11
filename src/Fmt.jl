@@ -157,6 +157,9 @@ const Z = UInt8('0')
 
 function formatinfo(f::Field, x::Bool)
     width = f.type === nothing ? (x ? 4 : 5) : 1
+    if f.altform
+        width += 2
+    end
     return paddingsize(f, width) + width, nothing
 end
 
@@ -186,6 +189,11 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Bool, ::Nothing)
             p += 5
         end
     else
+        if f.altform
+            data[p]   = Z
+            data[p+1] = UInt8(f.type)
+            p += 2
+        end
         data[p] = UInt8('0') + x
         p += 1
     end
