@@ -26,7 +26,7 @@ const Argument = Union{Positional, Keyword}
 const FILL_DEFAULT = ' '
 @enum Alignment::UInt8 ALIGN_UNSPECIFIED ALIGN_LEFT ALIGN_RIGHT ALIGN_CENTER
 @enum Sign::UInt8 SIGN_PLUS SIGN_MINUS SIGN_SPACE
-const SIGN_UNSPECIFIED = SIGN_MINUS
+const SIGN_DEFAULT = SIGN_MINUS
 const WIDTH_UNSPECIFIED = nothing
 @enum Grouping::UInt8 GROUPING_UNSPECIFIED GROUPING_COMMA GROUPING_UNDERSCORE
 const PRECISION_UNSPECIFIED = nothing
@@ -49,7 +49,7 @@ function Field(
         argument;
         fill = FILL_DEFAULT,
         align = ALIGN_UNSPECIFIED,
-        sign = SIGN_UNSPECIFIED,
+        sign = SIGN_DEFAULT,
         altform = false,
         zero = false,
         width = WIDTH_UNSPECIFIED,
@@ -650,7 +650,7 @@ function parse_spec(fmt::String, i::Int, serial::Int)
         c = fmt[i+=1]
     end
 
-    sign = SIGN_UNSPECIFIED
+    sign = SIGN_DEFAULT
     if c ∈ ('-', '+', ' ')
         # sign
         sign = c == '-' ? SIGN_MINUS : c == '+' ? SIGN_PLUS : SIGN_SPACE
