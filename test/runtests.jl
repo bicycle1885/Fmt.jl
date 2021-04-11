@@ -51,6 +51,7 @@ struct Foo end
     @test format(f"{:<9}",  Foo()) == "Foo()    "
     @test format(f"{:>9}",  Foo()) == "    Foo()"
     @test format(f"{:*>9}", Foo()) == "****Foo()"
+    @test format(f"{:*^9}", Foo()) == "**Foo()**"
     @test format(f"{:*<9}", Foo()) == "Foo()****"
     @test format(f"{}", (x = 1, y = 2)) == "(x = 1, y = 2)"
 

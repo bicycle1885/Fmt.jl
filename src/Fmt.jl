@@ -78,17 +78,7 @@ function formatinfo(f::Field, x::Any)
 end
 
 function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Any, (s, width)::Tuple{String, Int})
-    pw = paddingwidth(f, width)
-    if f.width != WIDTH_UNSPECIFIED && f.align == ALIGN_RIGHT
-        p = pad(data, p, f.fill, pw)
-    end
-    n = ncodeunits(s)
-    copyto!(data, p, codeunits(s), 1, n)
-    p += n
-    if f.width != WIDTH_UNSPECIFIED && f.align != ALIGN_RIGHT
-        p = pad(data, p, f.fill, pw)
-    end
-    return p
+    return formatfield(data, p, f, s, width)
 end
 
 function formatinfo(f::Field, x::AbstractChar)
