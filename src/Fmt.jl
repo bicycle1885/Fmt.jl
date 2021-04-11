@@ -573,7 +573,7 @@ end
 # ------
 
 function parse_format(fmt::String)
-    list = []
+    list = Union{String,Field}[]
     serial = 0
     i = firstindex(fmt)
     while (j = findnext('{', fmt, i)) !== nothing
@@ -582,7 +582,7 @@ function parse_format(fmt::String)
         push!(list, field)
     end
     lastindex(fmt) ≥ i && push!(list, fmt[i:end])
-    return (list...,)
+    return list
 end
 
 function parse_field(fmt::String, i::Int, serial::Int)
