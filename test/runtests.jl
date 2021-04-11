@@ -187,6 +187,9 @@ struct Foo end
     @test format(f"{:#X}", 42) == "0X2A"
     @test format(f"{:#x}", 42) == "0x2a"
 
+    @test format(f"{:#06X}", 42) == "0X002A"
+    @test format(f"{:#06x}", 42) == "0x002a"
+
     @test format(f"{:d}",   42) == "42"
     @test format(f"{:5d}",  42) == "   42"
     @test format(f"{:-5d}", 42) == "   42"

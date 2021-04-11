@@ -164,10 +164,10 @@ function formatinfo(f::Field, x::Bool)
 end
 
 function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Bool, ::Nothing)
-    width = f.type === nothing ? (x ? 4 : 5) : 1
-    if f.altform
-        width += 2
+    if f.type !== nothing
+        return formatfield(data, p, f, Int(x), 1)
     end
+    width = x ? 4 : 5
     pw = paddingwidth(f, width)
     if f.width != WIDTH_UNSPECIFIED && !f.zero
         if f.align == ALIGN_RIGHT || f.align == ALIGN_UNSPECIFIED
@@ -176,32 +176,19 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Bool, ::Nothing)
             p = pad(data, p, f.fill, pw ÷ 2)
         end
     end
-    if f.type === nothing
-        if x
-            data[p]   = UInt8('t')
-            data[p+1] = UInt8('r')
-            data[p+2] = UInt8('u')
-            data[p+3] = UInt8('e')
-            p += 4
-        else
-            data[p]   = UInt8('f')
-            data[p+1] = UInt8('a')
-            data[p+2] = UInt8('l')
-            data[p+3] = UInt8('s')
-            data[p+4] = UInt8('e')
-            p += 5
-        end
+    if x
+        data[p]   = UInt8('t')
+        data[p+1] = UInt8('r')
+        data[p+2] = UInt8('u')
+        data[p+3] = UInt8('e')
+        p += 4
     else
-        if f.altform
-            data[p]   = Z
-            data[p+1] = UInt8(f.type)
-            p += 2
-        end
-        if f.zero
-            p = pad(data, p, '0', pw)
-        end
-        data[p] = UInt8('0') + x
-        p += 1
+        data[p]   = UInt8('f')
+        data[p+1] = UInt8('a')
+        data[p+2] = UInt8('l')
+        data[p+3] = UInt8('s')
+        data[p+4] = UInt8('e')
+        p += 5
     end
     if f.width != WIDTH_UNSPECIFIED && !f.zero
         if f.align == ALIGN_LEFT
@@ -259,6 +246,11 @@ end
         data[p] = f.sign == SIGN_SPACE ? UInt8(' ') : UInt8('+')
         p += 1
     end
+    if f.altform && base ≠ 10
+        data[p] = Z
+        data[p+1] = UInt8(f.type)
+        p += 2
+    end
     if f.zero
         p = pad(data, p, '0', pw)
     end
@@ -269,25 +261,25 @@ end
     u = unsigned(abs(x))
     if f.grouping == GROUPING_UNSPECIFIED
         if base == 16
-            p = hexadecimal(data, p, u, m, f.type == 'X', f.altform)
+            p = hexadecimal(data, p, u, m, f.type == 'X', false)
         elseif base == 10
             p = decimal(data, p, u, m)
         elseif base == 8
-            p = octal(data, p, u, m, f.altform)
+            p = octal(data, p, u, m, false)
         elseif base == 2
-            p = binary(data, p, u, m, f.type == 'B', f.altform)
+            p = binary(data, p, u, m, f.type == 'B', false)
         else
             @assert false "invalid base"
         end
     else
         if base == 16
-            p = hexadecimal_grouping(data, p, u, m, f.type == 'X', f.altform)
+            p = hexadecimal_grouping(data, p, u, m, f.type == 'X', false)
         elseif base == 10
             p = decimal_grouping(data, p, u, m, f.grouping == GROUPING_COMMA ? UInt8(',') : UInt8('_'))
         elseif base == 8
-            p = octal_grouping(data, p, u, m, f.altform)
+            p = octal_grouping(data, p, u, m, false)
         elseif base == 2
-            p = binary_grouping(data, p, u, m, f.type == 'B', f.altform)
+            p = binary_grouping(data, p, u, m, f.type == 'B', false)
         else
             @assert false "invalid base"
         end
