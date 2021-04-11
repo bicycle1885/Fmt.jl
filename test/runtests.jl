@@ -421,6 +421,9 @@ struct Foo end
     @test format(f"{:_o}", 0o1234) == "1234"
     @test format(f"{:_o}", 0o12345) == "1_2345"
     @test format(f"{:_o}", 0o123456) == "12_3456"
+
+    @test format(f"{:15,}",  123456789) == "    123,456,789"
+    @test format(f"{:15,}", -123456789) == "   -123,456,789"
 end
 
 @testset "format (writer)" begin

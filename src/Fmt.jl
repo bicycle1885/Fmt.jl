@@ -160,14 +160,13 @@ function formatinfo(f::Field, x::Bool)
     if f.altform
         width += 2
     end
-    return paddingsize(f, width) + width, nothing
+    return paddingsize(f, width) + width, width
 end
 
-function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Bool, ::Nothing)
+function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Bool, width::Int)
     if f.type !== nothing
-        return formatfield(data, p, f, Int(x), 1)
+        return formatfield(data, p, f, Int(x), (1, width))
     end
-    width = x ? 4 : 5
     pw = paddingwidth(f, width)
     if f.width != WIDTH_UNSPECIFIED && !f.zero
         if f.align == ALIGN_RIGHT || f.align == ALIGN_UNSPECIFIED
@@ -204,8 +203,8 @@ end
     if f.type == 'c'
         char = Char(x)
         size = ncodeunits(char)
-        f.width == WIDTH_UNSPECIFIED && return size, 0
-        return paddingsize(f, 1) + size, 0
+        f.width == WIDTH_UNSPECIFIED && return size, (0, 1)
+        return paddingsize(f, 1) + size, (0, 1)
     end
     base = f.type == 'X' || f.type == 'x' ? 16 : f.type == 'o' ? 8 : f.type == 'B' || f.type == 'b' ? 2 : 10
     m = base == 10 ? ndigits_decimal(x) : ndigits(x; base)
@@ -220,17 +219,12 @@ end
             width += div(m - 1, 4)
         end
     end
-    f.width == WIDTH_UNSPECIFIED && return width, m
-    return paddingsize(f, width) + width, m
+    f.width == WIDTH_UNSPECIFIED && return width, (m, width)
+    return paddingsize(f, width) + width, (m, width)
 end
 
-@inline function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Integer, m::Int)
+@inline function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Integer, (m, width)::Tuple{Int, Int})
     base = f.type == 'X' || f.type == 'x' ? 16 : f.type == 'o' ? 8 : f.type == 'B' || f.type == 'b' ? 2 : 10
-    if f.type == 'c'
-        width = 1
-    else
-        width = m + (x < 0 || f.sign ≠ SIGN_MINUS) + (f.altform && base ≠ 10 && 2)
-    end
     pw = paddingwidth(f, width)
     if f.width != WIDTH_UNSPECIFIED && !f.zero
         if f.align == ALIGN_RIGHT || f.align == ALIGN_UNSPECIFIED
