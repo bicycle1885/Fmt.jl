@@ -97,14 +97,14 @@ digit      = '0' | '1' | '2' | … | '9'
 
 # format specification
 spec       = [[fill]align][sign][altform][zero][width][grouping]['.'precision][type]
-fill       = any valid character
+fill       = any valid character | '{'[argument]'}'
 align      = '<' | '^' | '>'
 sign       = '+' | '-' | ' '
 altform    = '#'
 zero       = '0'
-width      = digit+ | '{'argument'}'
+width      = digit+ | '{'[argument]'}'
 grouping   = ',' | '_'
-precision  = digit+ | '{'argument'}'
+precision  = digit+ | '{'[argument]'}'
 type       = 'd' | 'X' | 'x' | 'o' | 'B' | 'b' | 'c' | 's' |
              'F' | 'f' | 'E' | 'e' | 'G' | 'g' | '%'
 ```
