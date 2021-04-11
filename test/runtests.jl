@@ -443,6 +443,11 @@ end
     s = "(x = 123, y = -999)\n"
     @test n == sizeof(s)
     @test String(take!(buf)) == s
+
+    buf = IOBuffer()
+    n = format(buf, f"foobar")
+    @test n == 6
+    @test String(take!(buf)) == "foobar"
 end
 
 @testset "format (string)" begin

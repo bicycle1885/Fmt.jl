@@ -902,9 +902,10 @@ the formatted string to `out` and returns the number of the written bytes. In
 both methods, positional and keyword arguments can be supplied to replace
 fields in `fmt`.
 """
-format(fmt::String) = fmt
 format(fmt::Format, positionals...; keywords...) = fmt.fun(positionals...; keywords...)
 format(out::IO, fmt::Format, positionals...; keywords...) = write(out, fmt.fun(positionals...; keywords...))
+format(fmt::String, positionals...; keywords...) = fmt
+format(out::IO, fmt::String, positionals...; keywords...) = write(out, fmt)
 
 """
     @f_str fmt
