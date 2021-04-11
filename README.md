@@ -125,6 +125,13 @@ Let's see the next benchmarking script, which prints a pair of integers to devnu
 
 ```julia
 using Fmt
+using Formatting
+
+fmt_print(out, x, y)        = print(out, f"({$x}, {$y})\n")
+naive_print(out, x, y)      = print(out, '(', x, ", ", y, ")\n")
+string_print(out, x, y)     = print(out, "($x, $y)\n")
+const expr = FormatExpr("({1}, {2})\n")
+formatting_print(out, x, y) = print(out, format(expr, x, y))
 
 function benchmark(printer, out, x, y)
     @assert length(x) == length(y)
@@ -133,33 +140,25 @@ function benchmark(printer, out, x, y)
     end
 end
 
-naive_print(out, x, y)  = print(out, '(', x, ", ", y, ")\n")
-string_print(out, x, y) = print(out, "($x, $y)\n")
-fmt_print(out, x, y)    = print(out, f"({$x}, {$y})\n")
-
 using Random
 Random.seed!(1234)
 x = rand(-999:999, 1_000_000)
 y = rand(-999:999, 1_000_000)
 
 using BenchmarkTools
-println("naive_print:")
-@btime benchmark($naive_print, $devnull, $x, $y)
-println("string_print:")
-@btime benchmark($string_print, $devnull, $x, $y)
-println("fmt_print:")
-@btime benchmark($fmt_print, $devnull, $x, $y)
+for printer in [fmt_print, naive_print, string_print, formatting_print]
+    print(f"{$printer:>20}:")
+    @btime benchmark($printer, $devnull, $x, $y)
+end
 ```
 
 The result on my machine (AMD Ryzen 9 3950X, Generic Linux on x86, v1.6.0) is:
 ```
 $ julia quickbenchmark.jl
-naive_print:
-  208.051 ms (4975844 allocations: 198.00 MiB)
-string_print:
-  318.142 ms (7975844 allocations: 365.84 MiB)
-fmt_print:
-  36.850 ms (2000000 allocations: 91.55 MiB)
+           fmt_print:  34.710 ms (2000000 allocations: 91.55 MiB)
+         naive_print:  197.059 ms (4975844 allocations: 198.00 MiB)
+        string_print:  296.764 ms (7975844 allocations: 365.84 MiB)
+    formatting_print:  708.969 ms (23878703 allocations: 959.44 MiB)
 ```
 
 ## Related projects
