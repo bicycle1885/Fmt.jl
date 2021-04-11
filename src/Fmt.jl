@@ -4,7 +4,7 @@ export @f_str
 
 using Base: StringVector, Ryu
 
-const FILL_UNSPECIFIED = reinterpret(Char, 0xFFFFFFFF)
+const FILL_UNSPECIFIED = nothing
 @enum Alignment::UInt8 ALIGN_UNSPECIFIED ALIGN_LEFT ALIGN_RIGHT ALIGN_CENTER
 @enum Sign::UInt8 SIGN_PLUS SIGN_MINUS SIGN_SPACE
 const SIGN_UNSPECIFIED = SIGN_MINUS
@@ -26,7 +26,7 @@ const Argument = Union{Positional, Keyword}
 
 struct Field
     argument::Argument
-    fill::Char
+    fill::Union{Char, Nothing, Argument}
     align::Alignment
     sign::Sign
     altform::Bool
@@ -52,8 +52,8 @@ function Field(
     return Field(argument, fill, align, sign, altform, zero, width, grouping, precision, type)
 end
 
-function Field(f::Field; width = f.width, precision = f.precision)
-    return Field(f.argument, f.fill, f.align, f.sign, f.altform, f.zero, width, f.grouping, precision, f.type)
+function Field(f::Field; fill = f.fill, width = f.width, precision = f.precision)
+    return Field(f.argument, fill, f.align, f.sign, f.altform, f.zero, width, f.grouping, precision, f.type)
 end
 
 argument(f::Field) = f.argument
@@ -66,7 +66,7 @@ argument(f::Field) = f.argument
         return 0
     end
 end
-paddingsize(f::Field, width::Int) = paddingwidth(f, width) * ncodeunits(f.fill)
+paddingsize(f::Field, width::Int) = f.fill === nothing ? 0 : paddingwidth(f, width) * ncodeunits(f.fill)
 
 # generic fallback
 function formatinfo(f::Field, x::Any)
@@ -615,7 +615,19 @@ function parse_spec(fmt::String, i::Int, serial::Int)
 
     fill = ' '
     align = ALIGN_UNSPECIFIED
-    if c ∉ ('{', '}') && nextind(fmt, i) ≤ lastindex(fmt) && fmt[nextind(fmt, i)] ∈ ('<', '^', '>')
+    if c == '{'
+        # dynamic fill or dynamic width?
+        arg, _i, _serial = parse_argument(fmt, i + 1, serial)
+        @assert fmt[_i] == '}'
+        if fmt[_i+1] ∈ "<^>"
+            # it is a dynamic fill
+            fill = arg
+            align = fmt[_i+1] == '<' ? ALIGN_LEFT : fmt[_i+1] == '^' ? ALIGN_CENTER : ALIGN_RIGHT
+            serial = _serial
+            i = _i + 2
+            c = fmt[i]
+        end
+    elseif c ∉ ('{', '}') && nextind(fmt, i) ≤ lastindex(fmt) && fmt[nextind(fmt, i)] ∈ ('<', '^', '>')
         # fill + align
         fill = c
         i = nextind(fmt, i)
@@ -773,6 +785,22 @@ function compile(fmt::String)
                 x = esc(arg.name)
             end
 
+            # dynamic fill
+            fill = if f.fill isa Positional
+                position = f.fill.position
+                n_positionals = max(position, n_positionals)
+                Symbol(:_, position)
+            elseif f.fill isa Keyword
+                keyword = f.fill.name
+                if keyword ∉ keywords
+                    push!(keywords, keyword)
+                    f.fill.interp && push!(interpolated, keyword)
+                end
+                keyword
+            else
+                f.fill
+            end
+
             # dynamic width
             width = if f.width isa Positional
                 position = f.width.position
@@ -805,7 +833,7 @@ function compile(fmt::String)
                 f.precision
             end
 
-            f = :(Field($f, width = $(esc(width)), precision = $(esc(precision))))
+            f = :(Field($f, fill = $(esc(fill)), width = $(esc(width)), precision = $(esc(precision))))
             meta = Symbol(:meta, i)
             info = quote
                 s, $meta = formatinfo($f, $x)

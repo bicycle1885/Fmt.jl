@@ -430,6 +430,9 @@ struct Foo end
 
     @test format(f"{:15,}",  123456789) == "    123,456,789"
     @test format(f"{:15,}", -123456789) == "   -123,456,789"
+
+    @test format(f"{:{}>6}", "foo", '*') == "***foo"
+    @test format(f"{:{}<6}", "foo", '*') == "foo***"
 end
 
 @testset "format (writer)" begin
