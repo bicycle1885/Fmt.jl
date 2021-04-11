@@ -256,31 +256,20 @@ end
     end
     if f.type == 'c'
         p = pad(data, p, Char(x), 1)
-        @goto right
-    end
-    u = unsigned(abs(x))
-    if f.grouping == GROUPING_UNSPECIFIED
-        if base == 16
-            p = hexadecimal(data, p, u, m, f.type == 'X')
-        elseif base == 10
-            p = decimal(data, p, u, m)
-        elseif base == 8
-            p = octal(data, p, u, m)
-        elseif base == 2
-            p = binary(data, p, u, m)
-        end
     else
-        if base == 16
-            p = hexadecimal_grouping(data, p, u, m, f.type == 'X')
-        elseif base == 10
-            p = decimal_grouping(data, p, u, m, f.grouping == GROUPING_COMMA ? UInt8(',') : UInt8('_'))
-        elseif base == 8
-            p = octal_grouping(data, p, u, m)
-        elseif base == 2
-            p = binary_grouping(data, p, u, m)
+        u = unsigned(abs(x))
+        if f.grouping == GROUPING_UNSPECIFIED
+            p = base ==  2 ? binary(data, p, u, m) :
+                base ==  8 ? octal(data, p, u, m) :
+                base == 10 ? decimal(data, p, u, m) :
+                hexadecimal(data, p, u, m, f.type == 'X')
+        else
+            p = base ==  2 ? binary_grouping(data, p, u, m) :
+                base ==  8 ? octal_grouping(data, p, u, m) :
+                base == 10 ? decimal_grouping(data, p, u, m, f.grouping == GROUPING_COMMA ? UInt8(',') : UInt8('_')) :
+                hexadecimal_grouping(data, p, u, m, f.type == 'X')
         end
     end
-    @label right
     if f.width != WIDTH_UNSPECIFIED && !f.zero
         if f.align == ALIGN_LEFT
             p = pad(data, p, f.fill, pw)
