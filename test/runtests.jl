@@ -433,6 +433,8 @@ struct Foo end
 
     @test format(f"{:{}>6}", "foo", '*') == "***foo"
     @test format(f"{:{}<6}", "foo", '*') == "foo***"
+    @test format(f"{:{}>{}}", "foo", '*', 6) == "***foo"
+    @test format(f"{:{}<{}}", "foo", '*', 6) == "foo***"
 end
 
 @testset "format (writer)" begin
