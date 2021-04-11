@@ -529,9 +529,7 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::AbstractFloat, in
         p += 1
     else
         @assert f.type == 'G' || f.type == 'g' || f.type === nothing
-        if f.type === nothing && isinteger(x)
-            hash = true
-        end
+        hash = f.type === nothing
         if f.precision != PRECISION_UNSPECIFIED
             padexp = true
             precision = max(f.precision, 1)
