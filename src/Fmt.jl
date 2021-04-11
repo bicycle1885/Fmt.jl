@@ -156,30 +156,34 @@ end
 const Z = UInt8('0')
 
 function formatinfo(f::Field, x::Bool)
-    # true (4) or false (5)
-    width = x ? 4 : 5
+    width = f.type === nothing ? (x ? 4 : 5) : 1
     return paddingsize(f, width) + width, nothing
 end
 
 function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Bool, ::Nothing)
-    width = x ? 4 : 5
-    pw = paddingwidth(f, 0)
+    width = f.type === nothing ? (x ? 4 : 5) : 1
+    pw = paddingwidth(f, width)
     if f.width != WIDTH_UNSPECIFIED && f.align != ALIGN_LEFT
         p = pad(data, p, f.fill, pw)
     end
-    if x
-        data[p]   = UInt8('t')
-        data[p+1] = UInt8('r')
-        data[p+2] = UInt8('u')
-        data[p+3] = UInt8('e')
-        p += 4
+    if f.type === nothing
+        if x
+            data[p]   = UInt8('t')
+            data[p+1] = UInt8('r')
+            data[p+2] = UInt8('u')
+            data[p+3] = UInt8('e')
+            p += 4
+        else
+            data[p]   = UInt8('f')
+            data[p+1] = UInt8('a')
+            data[p+2] = UInt8('l')
+            data[p+3] = UInt8('s')
+            data[p+4] = UInt8('e')
+            p += 5
+        end
     else
-        data[p]   = UInt8('f')
-        data[p+1] = UInt8('a')
-        data[p+2] = UInt8('l')
-        data[p+3] = UInt8('s')
-        data[p+4] = UInt8('e')
-        p += 5
+        data[p] = UInt8('0') + x
+        p += 1
     end
     if f.width != WIDTH_UNSPECIFIED && f.align == ALIGN_LEFT
         p = pad(data, p, f.fill, pw)

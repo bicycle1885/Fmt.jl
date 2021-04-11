@@ -139,6 +139,17 @@ struct Foo end
     @test format(f"{:X}", 99999) == "1869F"
     @test format(f"{:x}", 99999) == "1869f"
 
+    @test format(f"{:b}", false) == "0"
+    @test format(f"{:b}", true)  == "1"
+    @test format(f"{:o}", false) == "0"
+    @test format(f"{:o}", true)  == "1"
+    @test format(f"{:d}", false) == "0"
+    @test format(f"{:d}", true)  == "1"
+    @test format(f"{:x}", false) == "0"
+    @test format(f"{:x}", true)  == "1"
+    @test format(f"{:X}", false) == "0"
+    @test format(f"{:X}", true)  == "1"
+
     # 'α': Unicode U+03B1 (category Ll: Letter, lowercase)
     @test format(f"{:c}",  0x03b1) == "α"
     @test format(f"{:0c}", 0x03b1) == "α"
