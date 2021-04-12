@@ -125,9 +125,11 @@ Let's see the next benchmarking script, which prints a pair of integers to devnu
 
 ```julia
 using Fmt
+using Printf
 using Formatting
 
 fmt_print(out, x, y)        = print(out, f"({$x}, {$y})\n")
+sprintf_print(out, x, y)    = print(out, @sprintf("(%d, %d)\n", x, y))
 naive_print(out, x, y)      = print(out, '(', x, ", ", y, ")\n")
 string_print(out, x, y)     = print(out, "($x, $y)\n")
 const expr = FormatExpr("({1}, {2})\n")
@@ -146,7 +148,8 @@ x = rand(-999:999, 1_000_000)
 y = rand(-999:999, 1_000_000)
 
 using BenchmarkTools
-for printer in [fmt_print, naive_print, string_print, formatting_print]
+for printer in [fmt_print, sprintf_print, naive_print,
+                string_print, formatting_print]
     print(f"{$printer:>20}:")
     @btime benchmark($printer, $devnull, $x, $y)
 end
@@ -155,10 +158,11 @@ end
 The result on my machine is:
 ```
 $ julia quickbenchmark.jl
-           fmt_print:  34.710 ms (2000000 allocations: 91.55 MiB)
-         naive_print:  197.059 ms (4975844 allocations: 198.00 MiB)
-        string_print:  296.764 ms (7975844 allocations: 365.84 MiB)
-    formatting_print:  708.969 ms (23878703 allocations: 959.44 MiB)
+           fmt_print:  37.928 ms (2000000 allocations: 91.55 MiB)
+       sprintf_print:  77.613 ms (2000000 allocations: 106.81 MiB)
+         naive_print:  202.531 ms (4975844 allocations: 198.00 MiB)
+        string_print:  316.838 ms (7975844 allocations: 365.84 MiB)
+    formatting_print:  716.088 ms (23878703 allocations: 959.44 MiB)
 ```
 
 Benchmark environment:
