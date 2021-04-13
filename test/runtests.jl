@@ -494,3 +494,12 @@ end
     @test f"{{{{$x}}}}" == "{{\$x}}"
     @test f"{{{{{$x}}}}}" == "{{42}}"
 end
+
+@testset "syntax error" begin
+    parse = Fmt.parse
+    FormatError = Fmt.FormatError
+    @test_throws FormatError("single '{' is not allowed; use '{{' instead") parse("{")
+    @test_throws FormatError("single '{' is not allowed; use '{{' instead") parse("{{{")
+    @test_throws FormatError("single '}' is not allowed; use '}}' instead") parse("}")
+    @test_throws FormatError("single '}' is not allowed; use '}}' instead") parse("}}}")
+end

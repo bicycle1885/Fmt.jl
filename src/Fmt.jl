@@ -588,7 +588,15 @@ end
 # Parser
 # ------
 
-function parse_format(fmt::String)
+struct FormatError <: Exception
+    msg::String
+end
+
+function Base.showerror(out::IO, e::FormatError)
+    print(out, "FormatError: ", e.msg)
+end
+
+function parse(fmt::String)
     list = Union{String, Field}[]
     serial = 0
     str = IOBuffer()
@@ -598,19 +606,22 @@ function parse_format(fmt::String)
         c = fmt[i]
         if c == '{'
             while i + 1 ≤ last && fmt[i] == fmt[i+1] == '{'
-                print(str, '{')
+                write(str, '{')
                 i += 2
             end
             if i ≤ last && fmt[i] == '{'
+                i == last && throw(FormatError("single '{' is not allowed; use '{{' instead"))
                 str.size > 0 && push!(list, String(take!(str)))
                 field, i, serial = parse_field(fmt, i + 1, serial)
                 push!(list, field)
             end
         elseif c == '}'
-            @assert i + 1 ≤ last && fmt[i] == fmt[i+1] == '}'
             while i + 1 ≤ last && fmt[i] == fmt[i+1] == '}'
-                print(str, '}')
+                write(str, '}')
                 i += 2
+            end
+            if i ≤ last && fmt[i] == '}' && !(i + 1 ≤ last && fmt[i+1] == '}')
+                throw(FormatError("single '}' is not allowed; use '}}' instead"))
             end
         else
             write(str, c)
@@ -777,7 +788,7 @@ end
 # --------
 
 function compile(fmt::String)
-    format = parse_format(unescape_string(fmt))
+    format = parse(unescape_string(fmt))
 
     # no fields; return static string
     if isempty(format)
