@@ -774,6 +774,8 @@ function parse_argument(s::String, i::Int, serial::Int)
         n == 0 && throw(FormatError("argument number 0 is not allowed; use 1 or above"))
         arg = Positional(n)
     elseif c == '$'
+        i < lastindex(s) && is_id_start_char(s[i+1]) ||
+            throw(FormatError("identifier is expected after '\$'"))
         name, i = Meta.parse(s, i + 1, greedy = false)
         arg = Keyword(name, true)
     elseif is_id_start_char(c)
@@ -782,7 +784,6 @@ function parse_argument(s::String, i::Int, serial::Int)
     else
         throw(FormatError("invalid character $(repr(c)) after '{'"))
     end
-    @assert s[i] == '}' || s[i] == ':'
     return arg, i, serial
 end
 
