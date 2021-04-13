@@ -635,7 +635,6 @@ end
 function parse_field(fmt::String, i::Int, serial::Int)
     c = fmt[i]  # the first character after '{'
 
-    # check field name
     if c == '}'
         serial += 1
         return Field(Positional(serial)), i + 1, serial
@@ -644,13 +643,16 @@ function parse_field(fmt::String, i::Int, serial::Int)
         arg = Positional(serial)
     else
         arg, i, serial = parse_argument(fmt, i, serial)
+        i ≤ lastindex(fmt) && fmt[i] ∈ (':', '}') || throw(FormatError("':' or '}' is expected"))
+        c = fmt[i]
     end
 
-    # check spec
-    if fmt[i] == ':'
+    if c == ':'
         spec, i, serial = parse_spec(fmt, i + 1, serial)
+        i ≤ lastindex(fmt) && fmt[i] == '}' || throw(FormatError("'}' is expected"))
         return Field(arg; spec...), i + 1, serial
     else
+        @assert c == '}'
         return Field(arg), i + 1, serial
     end
 end
