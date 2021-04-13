@@ -503,4 +503,5 @@ end
     @test_throws FormatError("single '}' is not allowed; use '}}' instead") parse("}")
     @test_throws FormatError("single '}' is not allowed; use '}}' instead") parse("}}}")
     @test_throws FormatError("invalid character '>' after '{'") parse("{>:}")
+    @test_throws FormatError("argument number 0 is not allowed; use 1 or above") parse("{0}")
 end
