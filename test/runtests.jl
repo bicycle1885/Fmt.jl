@@ -454,6 +454,9 @@ end
 end
 
 @testset "format (string)" begin
+    @test f"$" == "\$"
+    @test f"$x" == "\$x"
+
     x = 42
     y = "hi!"
     @test f"" == ""
