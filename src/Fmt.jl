@@ -668,30 +668,30 @@ function parse_spec(fmt::String, i::Int, serial::Int)
     align = ALIGN_UNSPECIFIED
     if c == '{'
         # dynamic fill or dynamic width?
-        arg, _i, _serial = parse_argument(fmt, i + 1, serial)
+        _arg, _i, _serial = parse_argument(fmt, i + 1, serial)
         _i ≤ last && fmt[_i] == '}' || throw(FormatError("'}' is expected"))
         if fmt[_i+1] ∈ "<^>"
-            # it is a dynamic fill
-            fill = arg
+            # it was a dynamic fill
+            fill = _arg
             align = char2align(fmt[_i+1])
             serial = _serial
             i = _i + 2
             c = fmt[i]
         end
-    elseif c ∉ "{}" && nextind(fmt, i) ≤ last && fmt[nextind(fmt, i)] ∈ "<^>"
+    elseif c != '}' && nextind(fmt, i) ≤ last && fmt[nextind(fmt, i)] ∈ "<^>"
         # fill + align
         fill = c
         i = nextind(fmt, i)
         align = char2align(fmt[i])
         c = fmt[i+=1]
     elseif c ∈ "<^>"
-        # align
+        # align only
         align = char2align(c)
         c = fmt[i+=1]
     end
 
     sign = SIGN_DEFAULT
-    if c ∈ ('-', '+', ' ')
+    if c ∈ "-+ "
         # sign
         sign = c == '-' ? SIGN_MINUS : c == '+' ? SIGN_PLUS : SIGN_SPACE
         c = fmt[i+=1]
@@ -699,7 +699,7 @@ function parse_spec(fmt::String, i::Int, serial::Int)
 
     altform = false
     if c == '#'
-        # alternative form (altform)
+        # alternative form
         altform = true
         c = fmt[i+=1]
     end
@@ -707,19 +707,22 @@ function parse_spec(fmt::String, i::Int, serial::Int)
     zero = false
     width = WIDTH_UNSPECIFIED
     if c == '{'
+        # dynamic width
         width, i, serial = parse_argument(fmt, i + 1, serial)
-        @assert fmt[i] == '}'
+        i ≤ last && fmt[i] == '}' || throw(FormatError("'}' is expected"))
         c = fmt[i+=1]
     elseif isdigit(c)
         # minimum width
-        if c == '0' && isdigit(fmt[i+1])
+        if c == '0' && i + 1 ≤ last && isdigit(fmt[i+1])
             # preceded by zero
             zero = true
             i += 1
         end
         width = 0
-        while isdigit(fmt[i])
-            width = 10*width + Int(fmt[i] - '0')
+        while i ≤ last && isdigit(fmt[i])
+            width′ = 10width + Int(fmt[i] - '0')
+            @assert width′ ≥ width "width overflow"
+            width = width′
             i += 1
         end
         c = fmt[i]
@@ -740,10 +743,9 @@ function parse_spec(fmt::String, i::Int, serial::Int)
         i += 1
         if fmt[i] == '{'
             precision, i, serial = parse_argument(fmt, i + 1, serial)
-            @assert fmt[i] == '}'
+            i ≤ last && fmt[i] == '}' || throw(FormatError("'}' is expected"))
             c = fmt[i+=1]
         else
-            @assert isdigit(fmt[i])
             precision = 0
             while isdigit(fmt[i])
                 precision = 10precision + Int(fmt[i] - '0')
