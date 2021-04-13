@@ -592,22 +592,31 @@ function parse_format(fmt::String)
     list = Union{String, Field}[]
     serial = 0
     str = IOBuffer()
+    last = lastindex(fmt)
     i = firstindex(fmt)
-    while (j = findnext('{', fmt, i)) !== nothing
-        write(str, @view fmt[i:prevind(fmt, j)])
-        i = j
-        # deduplicate "{{"
-        while i + 1 ≤ lastindex(fmt) && fmt[i] == '{' && fmt[i+1] == '{'
-            write(str, UInt8('{'))
-            i += 2
-        end
-        if i ≤ lastindex(fmt) && fmt[i] == '{'
-            str.size > 0 && push!(list, String(take!(str)))
-            field, i, serial = parse_field(fmt, i + 1, serial)
-            push!(list, field)
+    while i ≤ last
+        c = fmt[i]
+        if c == '{'
+            while i + 1 ≤ last && fmt[i] == fmt[i+1] == '{'
+                print(str, '{')
+                i += 2
+            end
+            if i ≤ last && fmt[i] == '{'
+                str.size > 0 && push!(list, String(take!(str)))
+                field, i, serial = parse_field(fmt, i + 1, serial)
+                push!(list, field)
+            end
+        elseif c == '}'
+            @assert i + 1 ≤ last && fmt[i] == fmt[i+1] == '}'
+            while i + 1 ≤ last && fmt[i] == fmt[i+1] == '}'
+                print(str, '}')
+                i += 2
+            end
+        else
+            write(str, c)
+            i = nextind(fmt, i)
         end
     end
-    write(str, @view fmt[i:end])
     str.size > 0 && push!(list, String(take!(str)))
     return list
 end
