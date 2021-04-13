@@ -659,31 +659,34 @@ end
 
 function parse_spec(fmt::String, i::Int, serial::Int)
     c = fmt[i]  # the first character after ':'
+    last = lastindex(fmt)
 
+    char2align(c) = c == '<' ? ALIGN_LEFT :
+                    c == '^' ? ALIGN_CENTER :
+                    c == '>' ? ALIGN_RIGHT : @assert false
     fill = FILL_DEFAULT
     align = ALIGN_UNSPECIFIED
     if c == '{'
         # dynamic fill or dynamic width?
         arg, _i, _serial = parse_argument(fmt, i + 1, serial)
-        @assert fmt[_i] == '}'
+        _i ≤ last && fmt[_i] == '}' || throw(FormatError("'}' is expected"))
         if fmt[_i+1] ∈ "<^>"
             # it is a dynamic fill
             fill = arg
-            align = fmt[_i+1] == '<' ? ALIGN_LEFT : fmt[_i+1] == '^' ? ALIGN_CENTER : ALIGN_RIGHT
+            align = char2align(fmt[_i+1])
             serial = _serial
             i = _i + 2
             c = fmt[i]
         end
-    elseif c ∉ ('{', '}') && nextind(fmt, i) ≤ lastindex(fmt) && fmt[nextind(fmt, i)] ∈ ('<', '^', '>')
+    elseif c ∉ "{}" && nextind(fmt, i) ≤ last && fmt[nextind(fmt, i)] ∈ "<^>"
         # fill + align
         fill = c
         i = nextind(fmt, i)
-        align = fmt[i] == '<' ? ALIGN_LEFT : fmt[i] == '^' ? ALIGN_CENTER : ALIGN_RIGHT
+        align = char2align(fmt[i])
         c = fmt[i+=1]
-    elseif c ∈ ('<', '^', '>')
+    elseif c ∈ "<^>"
         # align
-        fill = ' '
-        align = c == '<' ? ALIGN_LEFT : c == '^' ? ALIGN_CENTER : ALIGN_RIGHT
+        align = char2align(c)
         c = fmt[i+=1]
     end
 
