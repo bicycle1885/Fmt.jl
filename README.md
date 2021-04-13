@@ -18,8 +18,12 @@ julia> f"π ≈ {$pi:.4f}"  # format a float with precision
 ## Overview
 
 The `@f_str` macro is the only exported binding from the `Fmt` module.
-This macro interpolates variables into a string with format specification.
-The syntax of the format specification is borrowed from [Python's Format String Syntax](https://docs.python.org/3/library/string.html#format-string-syntax), which is also ported to C++ as [C++20 std::format](https://en.cppreference.com/w/cpp/utility/format).
+This macro can interpolate variables into a string with format specification.
+Interpolation happens inside replacement fields surrounded by a pair of curly braces `{}`; other parts of a format string are treated as usual strings.
+A replacement field usually has an argument `ARG` and a specification `SPEC` separated by a colon: `{ARG:SPEC}`, although both of them can be omitted.
+
+This formatting syntax is borrowed from [Python's Format String Syntax](https://docs.python.org/3/library/string.html#format-string-syntax), which is ported to C++ as [C++20 std::format](https://en.cppreference.com/w/cpp/utility/format) and Rust as [std:fmt](https://doc.rust-lang.org/std/fmt/).
+See [Syntax](#Syntax) Section for details.
 
 ```julia
 # load @f_str
@@ -27,7 +31,7 @@ using Fmt
 
 # default format
 x = 42
-f"{$x}" == "42"
+f"x is {$x}." == "x is 42."
 
 # binary, octal, decimal, and hexadecimal format
 f"{$x:b}" == "101010"
@@ -55,7 +59,7 @@ f"{$x:^{$n}}" == "  42  "
 f"{$x:>{$n}}" == "    42"
 ```
 
-It also provides a formatting function. The `Fmt.format` function takes a format template as its first argument and other arguments are interpolated into the placeholders in the template.
+Fmt.jl also provides a formatting function. The `Fmt.format` function takes a format template as its first argument and other arguments are interpolated into the placeholders in the template.
 
 ```julia
 using Fmt
@@ -86,6 +90,10 @@ Fmt.format(stdout, f"""
 ## Syntax
 
 Each replacement field is surrounded by a pair of curly braces.
+To escape curly braces, double curly braces (`{{` and `}}`) are interpreted as single curly braces (`{` and `}`).
+Backslash-escaped characters are treated in the same way as in usual strings.
+However, dollar signs `$` are no longer a special character for interpolation; that is, no interpolation happens outside replacement fields.
+
 The syntax of a replacement field is formally defined as follows:
 ```
 # replacement field
