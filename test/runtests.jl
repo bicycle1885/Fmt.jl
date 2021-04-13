@@ -502,4 +502,5 @@ end
     @test_throws FormatError("single '{' is not allowed; use '{{' instead") parse("{{{")
     @test_throws FormatError("single '}' is not allowed; use '}}' instead") parse("}")
     @test_throws FormatError("single '}' is not allowed; use '}}' instead") parse("}}}")
+    @test_throws FormatError("invalid character '>' after '{'") parse("{>:}")
 end

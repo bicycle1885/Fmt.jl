@@ -2,7 +2,7 @@ module Fmt
 
 export @f_str
 
-using Base: StringVector, Ryu
+using Base: StringVector, Ryu, is_id_start_char
 
 
 # Arguments
@@ -773,11 +773,11 @@ function parse_argument(s::String, i::Int, serial::Int)
     elseif c == '$'
         name, i = Meta.parse(s, i + 1, greedy = false)
         arg = Keyword(name, true)
-    elseif isletter(c) || c == '_'
+    elseif is_id_start_char(c)
         name, i = Meta.parse(s, i, greedy = false)
         arg = Keyword(name, false)
     else
-        @assert false
+        throw(FormatError("invalid character $(repr(c)) after '{'"))
     end
     @assert s[i] == '}' || s[i] == ':'
     return arg, i, serial
