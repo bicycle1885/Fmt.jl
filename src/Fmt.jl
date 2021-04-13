@@ -589,15 +589,26 @@ end
 # ------
 
 function parse_format(fmt::String)
-    list = Union{String,Field}[]
+    list = Union{String, Field}[]
     serial = 0
+    str = IOBuffer()
     i = firstindex(fmt)
     while (j = findnext('{', fmt, i)) !== nothing
-        j - 1 ≥ i && push!(list, fmt[i:prevind(fmt, j)])
-        field, i, serial = parse_field(fmt, j + 1, serial)
-        push!(list, field)
+        write(str, @view fmt[i:prevind(fmt, j)])
+        i = j
+        # deduplicate "{{"
+        while i + 1 ≤ lastindex(fmt) && fmt[i] == '{' && fmt[i+1] == '{'
+            write(str, UInt8('{'))
+            i += 2
+        end
+        if i ≤ lastindex(fmt) && fmt[i] == '{'
+            str.size > 0 && push!(list, String(take!(str)))
+            field, i, serial = parse_field(fmt, i + 1, serial)
+            push!(list, field)
+        end
     end
-    lastindex(fmt) ≥ i && push!(list, fmt[i:end])
+    write(str, @view fmt[i:end])
+    str.size > 0 && push!(list, String(take!(str)))
     return list
 end
 
