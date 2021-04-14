@@ -107,25 +107,7 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field, ::AbstractChar, c::C
             p = pad(data, p, f.fill, pw ÷ 2)
         end
     end
-    m = ncodeunits(c)
-    x = reinterpret(UInt32, c) >> 8(4 - m)
-    if m == 1
-        data[p]   =  x        % UInt8
-    elseif m == 2
-        data[p+1] =  x        % UInt8
-        data[p]   = (x >> 8)  % UInt8
-    elseif m == 3
-        data[p+2] =  x        % UInt8
-        data[p+1] = (x >>  8) % UInt8
-        data[p]   = (x >> 16) % UInt8
-    else
-        @assert m == 4
-        data[p+3] =  x        % UInt8
-        data[p+2] = (x >>  8) % UInt8
-        data[p+1] = (x >> 16) % UInt8
-        data[p]   = (x >> 24) % UInt8
-    end
-    p += m
+    p = char(data, p, c)
     if f.width != WIDTH_UNSPECIFIED
         if f.align == ALIGN_LEFT || f.align == ALIGN_UNSPECIFIED
             p = pad(data, p, f.fill, pw)
@@ -571,20 +553,32 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::AbstractFloat, in
 end
 
 function pad(data::Vector{UInt8}, p::Int, fill::Char, w::Int)
-    m = ncodeunits(fill)
-    x = reinterpret(UInt32, fill) >> 8(4 - m)
-    while w > 0
-        n = m
-        y = x
-        while n > 0
-            data[p+n-1] = y % UInt8
-            y >>= 8
-            n -= 1
-        end
-        p += m
-        w -= 1
+    for _ in 1:w
+        p = char(data, p, fill)
     end
     return p
+end
+
+function char(data::Vector{UInt8}, p::Int, char::Char)
+    m = ncodeunits(char)
+    x = reinterpret(UInt32, char) >> 8(4 - m)
+    if m == 1
+        data[p]   =  x        % UInt8
+    elseif m == 2
+        data[p+1] =  x        % UInt8
+        data[p]   = (x >> 8)  % UInt8
+    elseif m == 3
+        data[p+2] =  x        % UInt8
+        data[p+1] = (x >>  8) % UInt8
+        data[p]   = (x >> 16) % UInt8
+    else
+        @assert m == 4
+        data[p+3] =  x        % UInt8
+        data[p+2] = (x >>  8) % UInt8
+        data[p+1] = (x >> 16) % UInt8
+        data[p]   = (x >> 24) % UInt8
+    end
+    return p + m
 end
 
 
