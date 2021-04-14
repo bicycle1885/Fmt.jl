@@ -639,12 +639,16 @@ function parse_field(fmt::String, i::Int, serial::Int)
     if fmt[i] == ':'
         i + 1 ≤ lastindex(fmt) || incomplete_field()
         spec, i, serial = parse_spec(fmt, i + 1, serial)
-        i ≤ lastindex(fmt) && fmt[i] == '}' || incomplete_field()
+        if i ≤ lastindex(fmt)
+            fmt[i] == '}' || throw(FormatError("invalid character $(repr(fmt[i]))"))
+        else
+            incomplete_field()
+        end
         return Field(arg; spec...), i + 1, serial
     elseif fmt[i] == '}'
         return Field(arg), i + 1, serial
     else
-        throw(FormatError("invalid character $(repr(fmt[i])) after '{'"))
+        throw(FormatError("invalid character $(repr(fmt[i]))"))
     end
 end
 
@@ -788,7 +792,7 @@ function parse_digits(s::String, i::Int)
     last = lastindex(s)
     while i ≤ last && isdigit(s[i])
         n′ = 10n + Int(s[i] - '0')
-        @assert n′ ≥ n "overflow"
+        n′ ≥ n || throw(FormatError("number overflows"))
         n = n′
         i += 1
     end
