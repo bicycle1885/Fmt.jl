@@ -806,7 +806,7 @@ end
 # --------
 
 function compile(fmt::String)
-    format = parse(unescape_string(fmt))
+    format = parse(fmt)
 
     # no fields; return static string
     if isempty(format)
@@ -988,7 +988,7 @@ julia> Fmt.format(fmt; x, y)  # substitute variables
 ```
 """
 macro f_str(s)
-    code, interped = compile(s)
+    code, interped = compile(unescape_string(s))
     if code isa String
         code
     elseif isempty(interped)
