@@ -687,16 +687,14 @@ function parse_spec(fmt::String, i::Int, serial::Int)
     precision = PRECISION_UNSPECIFIED
     type = TYPE_UNSPECIFIED
 
-    c = fmt[i]  # the first character after ':'
-    last = lastindex(fmt)
-
     incomplete_argument() = throw(FormatError("incomplete argument"))
     char2align(c) = c == '<' ? ALIGN_LEFT :
                     c == '^' ? ALIGN_CENTER :
                     c == '>' ? ALIGN_RIGHT : @assert false
 
     # align
-    if c == '{'
+    last = lastindex(fmt)
+    if fmt[i] == '{'
         # dynamic fill or dynamic width?
         _arg, _i, _serial = parse_argument(fmt, i + 1, serial)
         _i ≤ last && fmt[_i] == '}' || incomplete_argument()
@@ -707,49 +705,43 @@ function parse_spec(fmt::String, i::Int, serial::Int)
             serial = _serial
             i = _i + 2
             i ≤ last || @goto END
-            c = fmt[i]
         end
-    elseif c != '}' && nextind(fmt, i) ≤ last && fmt[nextind(fmt, i)] ∈ "<^>"
+    elseif fmt[i] != '}' && nextind(fmt, i) ≤ last && fmt[nextind(fmt, i)] ∈ "<^>"
         # fill + align
-        fill = c
+        fill = fmt[i]
         i = nextind(fmt, i)
         align = char2align(fmt[i])
         i += 1
         i ≤ last || @goto END
-        c = fmt[i]
-    elseif c ∈ "<^>"
+    elseif fmt[i] ∈ "<^>"
         # align only
-        align = char2align(c)
+        align = char2align(fmt[i])
         i += 1
         i ≤ last || @goto END
-        c = fmt[i]
     end
 
     # sign
-    if c ∈ "-+ "
-        sign = c == '-' ? SIGN_MINUS : c == '+' ? SIGN_PLUS : SIGN_SPACE
+    if fmt[i] ∈ "-+ "
+        sign = fmt[i] == '-' ? SIGN_MINUS : fmt[i] == '+' ? SIGN_PLUS : SIGN_SPACE
         i += 1
         i ≤ last || @goto END
-        c = fmt[i]
     end
 
     # alternative form
-    if c == '#'
+    if fmt[i] == '#'
         altform = true
         i += 1
         i ≤ last || @goto END
-        c = fmt[i]
     end
 
     # width
-    if c == '{'
+    if fmt[i] == '{'
         width, i, serial = parse_argument(fmt, i + 1, serial)
         i ≤ last && fmt[i] == '}' || incomplete_argument()
         i += 1
         i ≤ last || @goto END
-        c = fmt[i]
-    elseif isdigit(c)
-        if c == '0' && i + 1 ≤ last && isdigit(fmt[i+1])
+    elseif isdigit(fmt[i])
+        if fmt[i] == '0' && i + 1 ≤ last && isdigit(fmt[i+1])
             # preceded by zero
             zero = true
             i += 1
@@ -762,24 +754,21 @@ function parse_spec(fmt::String, i::Int, serial::Int)
             i += 1
         end
         i ≤ last || @goto END
-        c = fmt[i]
     end
 
     # grouping
-    if c == ','
+    if fmt[i] == ','
         grouping = GROUPING_COMMA
         i += 1
         i ≤ last || @goto END
-        c = fmt[i]
-    elseif c == '_'
+    elseif fmt[i] == '_'
         grouping = GROUPING_UNDERSCORE
         i += 1
         i ≤ last || @goto END
-        c = fmt[i]
     end
 
     # precision
-    if c == '.'
+    if fmt[i] == '.'
         i += 1
         i ≤ last || @goto END
         if fmt[i] == '{'
@@ -787,7 +776,6 @@ function parse_spec(fmt::String, i::Int, serial::Int)
             i ≤ last && fmt[i] == '}' || incomplete_argument()
             i += 1
             i ≤ last || @goto END
-            c = fmt[i]
         elseif isdigit(fmt[i])
             precision = 0
             while i ≤ last && isdigit(fmt[i])
@@ -795,18 +783,16 @@ function parse_spec(fmt::String, i::Int, serial::Int)
                 i += 1
             end
             i ≤ last || @goto END
-            c = fmt[i]
         else
             throw(FormatError("unexpected $(repr(fmt[i])) after '.'"))
         end
     end
 
     # type
-    if c ∈ "dXxoBbcsFfEeGg%"
-        type = c
+    if fmt[i] ∈ "dXxoBbcsFfEeGg%"
+        type = fmt[i]
         i += 1
         i ≤ last || @goto END
-        c = fmt[i]
     end
 
     @label END
