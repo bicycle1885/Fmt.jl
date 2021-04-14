@@ -633,28 +633,44 @@ function parse(fmt::String)
 end
 
 function parse_field(fmt::String, i::Int, serial::Int)
-    c = fmt[i]  # the first character after '{'
-
-    if c == '}'
-        serial += 1
-        return Field(Positional(serial)), i + 1, serial
-    elseif c == ':'
-        serial += 1
-        arg = Positional(serial)
-    else
-        arg, i, serial = parse_argument(fmt, i, serial)
-        i ≤ lastindex(fmt) && fmt[i] ∈ (':', '}') || throw(FormatError("':' or '}' is expected"))
-        c = fmt[i]
-    end
-
-    if c == ':'
+    arg, i, serial = parse_argument(fmt, i, serial)
+    i ≤ lastindex(fmt) || throw(FormatError("incomplete replacement field; '}' is missing"))
+    if fmt[i] == ':'
         spec, i, serial = parse_spec(fmt, i + 1, serial)
         i ≤ lastindex(fmt) && fmt[i] == '}' || throw(FormatError("'}' is expected"))
         return Field(arg; spec...), i + 1, serial
-    else
-        @assert c == '}'
+    elseif fmt[i] == '}'
         return Field(arg), i + 1, serial
+    else
+        throw(FormatError("invalid character $(repr(fmt[i])) after '{'"))
     end
+end
+
+function parse_argument(s::String, i::Int, serial::Int)
+    c = s[i]  # the first character after '{'
+    if isdigit(c)
+        n = 0
+        while i ≤ lastindex(s) && isdigit(s[i])
+            n′ = 10n + Int(s[i] - '0')
+            @assert n′ ≥ n "argument number overflow"
+            n = n′
+            i += 1
+        end
+        n == 0 && throw(FormatError("argument number 0 is not allowed; use 1 or above"))
+        arg = Positional(n)
+    elseif c == '$'
+        i < lastindex(s) && is_id_start_char(s[i+1]) ||
+            throw(FormatError("identifier is expected after '\$'"))
+        name, i = Meta.parse(s, i + 1, greedy = false)
+        arg = Keyword(name, true)
+    elseif is_id_start_char(c)
+        name, i = Meta.parse(s, i, greedy = false)
+        arg = Keyword(name, false)
+    else
+        serial += 1
+        arg = Positional(serial)
+    end
+    return arg, i, serial
 end
 
 function parse_spec(fmt::String, i::Int, serial::Int)
@@ -763,35 +779,6 @@ function parse_spec(fmt::String, i::Int, serial::Int)
 
     @assert c == '}'
     return (; fill, align, sign, altform, zero, width, grouping, precision, type), i, serial
-end
-
-function parse_argument(s::String, i::Int, serial::Int)
-    c = s[i]  # the first character after '{'
-    if c == '}'
-        serial += 1
-        arg = Positional(serial)
-    elseif isdigit(c)
-        n = 0
-        while i ≤ lastindex(s) && isdigit(s[i])
-            n′ = 10n + Int(s[i] - '0')
-            @assert n′ ≥ n "argument number overflow"
-            n = n′
-            i += 1
-        end
-        n == 0 && throw(FormatError("argument number 0 is not allowed; use 1 or above"))
-        arg = Positional(n)
-    elseif c == '$'
-        i < lastindex(s) && is_id_start_char(s[i+1]) ||
-            throw(FormatError("identifier is expected after '\$'"))
-        name, i = Meta.parse(s, i + 1, greedy = false)
-        arg = Keyword(name, true)
-    elseif is_id_start_char(c)
-        name, i = Meta.parse(s, i, greedy = false)
-        arg = Keyword(name, false)
-    else
-        throw(FormatError("invalid character $(repr(c)) after '{'"))
-    end
-    return arg, i, serial
 end
 
 
