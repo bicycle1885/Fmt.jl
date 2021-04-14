@@ -633,11 +633,13 @@ function parse(fmt::String)
 end
 
 function parse_field(fmt::String, i::Int, serial::Int)
+    incomplete_field() = throw(FormatError("incomplete field"))
     arg, i, serial = parse_argument(fmt, i, serial)
-    i ≤ lastindex(fmt) || throw(FormatError("incomplete replacement field; '}' is missing"))
+    i ≤ lastindex(fmt) || incomplete_field()
     if fmt[i] == ':'
+        i + 1 ≤ lastindex(fmt) || incomplete_field()
         spec, i, serial = parse_spec(fmt, i + 1, serial)
-        i ≤ lastindex(fmt) && fmt[i] == '}' || throw(FormatError("'}' is expected"))
+        i ≤ lastindex(fmt) && fmt[i] == '}' || incomplete_field()
         return Field(arg; spec...), i + 1, serial
     elseif fmt[i] == '}'
         return Field(arg), i + 1, serial
@@ -674,6 +676,7 @@ function parse_argument(s::String, i::Int, serial::Int)
 end
 
 function parse_spec(fmt::String, i::Int, serial::Int)
+    incomplete_argument() = throw(ArgumentError("incomplete argument"))
     c = fmt[i]  # the first character after ':'
     last = lastindex(fmt)
 
@@ -685,7 +688,7 @@ function parse_spec(fmt::String, i::Int, serial::Int)
     if c == '{'
         # dynamic fill or dynamic width?
         _arg, _i, _serial = parse_argument(fmt, i + 1, serial)
-        _i ≤ last && fmt[_i] == '}' || throw(FormatError("'}' is expected"))
+        _i ≤ last && fmt[_i] == '}' || incomplete_argument()
         if fmt[_i+1] ∈ "<^>"
             # it was a dynamic fill
             fill = _arg
@@ -725,7 +728,7 @@ function parse_spec(fmt::String, i::Int, serial::Int)
     if c == '{'
         # dynamic width
         width, i, serial = parse_argument(fmt, i + 1, serial)
-        i ≤ last && fmt[i] == '}' || throw(FormatError("'}' is expected"))
+        i ≤ last && fmt[i] == '}' || incomplete_argument()
         c = fmt[i+=1]
     elseif isdigit(c)
         # minimum width
@@ -759,7 +762,7 @@ function parse_spec(fmt::String, i::Int, serial::Int)
         i += 1
         if fmt[i] == '{'
             precision, i, serial = parse_argument(fmt, i + 1, serial)
-            i ≤ last && fmt[i] == '}' || throw(FormatError("'}' is expected"))
+            i ≤ last && fmt[i] == '}' || incomplete_argument()
             c = fmt[i+=1]
         else
             precision = 0
