@@ -505,4 +505,12 @@ end
     @test_throws FormatError("invalid character '>' after '{'") parse("{>:}")
     @test_throws FormatError("argument number 0 is not allowed; use 1 or above") parse("{0}")
     @test_throws FormatError("identifier is expected after '\$'") parse("{\$:}")
+    @test_throws FormatError("incomplete field") parse("{:")
+    @test_throws FormatError("incomplete field") parse("{:>")
+    @test_throws FormatError("incomplete field") parse("{:*>")
+    @test_throws FormatError("incomplete field") parse("{:+")
+    @test_throws FormatError("incomplete field") parse("{:#")
+    @test_throws FormatError("incomplete field") parse("{:3")
+    @test_throws FormatError("incomplete field") parse("{:,")
+    @test_throws FormatError("incomplete field") parse("{:d")
 end
