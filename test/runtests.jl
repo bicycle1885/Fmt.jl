@@ -517,7 +517,7 @@ end
     @test_throws FormatError("single '}' is not allowed; use '}}' instead") parse("}}}")
     @test_throws FormatError("invalid character '>'") parse("{>:}")
     @test_throws FormatError("invalid character 'Z'") parse("{:Z}")
-    @test_throws FormatError("argument number 0 is not allowed; use 1 or above") parse("{0}")
+    @test_throws FormatError("argument 0 is not allowed; use 1 or above") parse("{0}")
     @test_throws FormatError("identifier is expected after '\$'") parse("{\$:}")
     @test_throws FormatError("number overflows") parse("{9999999999999999999}")
     @test_throws FormatError("incomplete field") parse("{:")

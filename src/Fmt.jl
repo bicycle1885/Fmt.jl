@@ -636,22 +636,21 @@ function parse(fmt::String)
 end
 
 function parse_field(fmt::String, i::Int, serial::Int)
+    invalid_char(c) = throw(FormatError("invalid character $(repr(c))"))
     incomplete_field() = throw(FormatError("incomplete field"))
+    last = lastindex(fmt)
     arg, i, serial = parse_argument(fmt, i, serial)
-    i ≤ lastindex(fmt) || incomplete_field()
+    i ≤ last || incomplete_field()
     if fmt[i] == ':'
-        i + 1 ≤ lastindex(fmt) || incomplete_field()
+        i + 1 ≤ last || incomplete_field()
         spec, i, serial = parse_spec(fmt, i + 1, serial)
-        if i ≤ lastindex(fmt)
-            fmt[i] == '}' || throw(FormatError("invalid character $(repr(fmt[i]))"))
-        else
-            incomplete_field()
-        end
+        i ≤ last || incomplete_field()
+        fmt[i] == '}' || invalid_char(fmt[i])
         return Field(arg; spec...), i + 1, serial
     elseif fmt[i] == '}'
         return Field(arg), i + 1, serial
     else
-        throw(FormatError("invalid character $(repr(fmt[i]))"))
+        invalid_char(fmt[i])
     end
 end
 
@@ -659,7 +658,7 @@ function parse_argument(s::String, i::Int, serial::Int)
     c = s[i]  # the first character after '{'
     if isdigit(c)
         n, i = parse_digits(s, i)
-        n == 0 && throw(FormatError("argument number 0 is not allowed; use 1 or above"))
+        n == 0 && throw(FormatError("argument 0 is not allowed; use 1 or above"))
         arg = Positional(n)
     elseif c == '$'
         i < lastindex(s) && is_id_start_char(s[i+1]) ||
