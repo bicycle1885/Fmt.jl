@@ -153,6 +153,9 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::AbstractString, w
         end
     end
     n = ncodeunits(x)
+    if f.precision != PRECISION_UNSPECIFIED
+        n = min(nextind(x, 1, f.precision) - 1, n)
+    end
     copyto!(data, p, codeunits(x), 1, n)
     p += n
     if f.width != WIDTH_UNSPECIFIED

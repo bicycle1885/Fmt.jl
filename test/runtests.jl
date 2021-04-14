@@ -438,6 +438,19 @@ struct Foo end
     @test format(f"{:{}<6}", "foo", '*') == "foo***"
     @test format(f"{:{}>{}}", "foo", '*', 6) == "***foo"
     @test format(f"{:{}<{}}", "foo", '*', 6) == "foo***"
+
+    @test format(f"{:.0}", "abc") == ""
+    @test format(f"{:.1}", "abc") == "a"
+    @test format(f"{:.2}", "abc") == "ab"
+    @test format(f"{:.3}", "abc") == "abc"
+    @test format(f"{:.4}", "abc") == "abc"
+    @test format(f"{:.5}", "abc") == "abc"
+    @test format(f"{:.0}", "αβγ") == ""
+    @test format(f"{:.1}", "αβγ") == "α"
+    @test format(f"{:.2}", "αβγ") == "αβ"
+    @test format(f"{:.3}", "αβγ") == "αβγ"
+    @test format(f"{:.4}", "αβγ") == "αβγ"
+    @test format(f"{:.5}", "αβγ") == "αβγ"
 end
 
 @testset "format (writer)" begin
