@@ -651,13 +651,7 @@ end
 function parse_argument(s::String, i::Int, serial::Int)
     c = s[i]  # the first character after '{'
     if isdigit(c)
-        n = 0
-        while i ≤ lastindex(s) && isdigit(s[i])
-            n′ = 10n + Int(s[i] - '0')
-            @assert n′ ≥ n "argument number overflow"
-            n = n′
-            i += 1
-        end
+        n, i = parse_digits(s, i)
         n == 0 && throw(FormatError("argument number 0 is not allowed; use 1 or above"))
         arg = Positional(n)
     elseif c == '$'
@@ -746,13 +740,7 @@ function parse_spec(fmt::String, i::Int, serial::Int)
             zero = true
             i += 1
         end
-        width = 0
-        while i ≤ last && isdigit(fmt[i])
-            width′ = 10width + Int(fmt[i] - '0')
-            @assert width′ ≥ width "width overflow"
-            width = width′
-            i += 1
-        end
+        width, i = parse_digits(fmt, i)
         i ≤ last || @goto END
     end
 
@@ -777,11 +765,7 @@ function parse_spec(fmt::String, i::Int, serial::Int)
             i += 1
             i ≤ last || @goto END
         elseif isdigit(fmt[i])
-            precision = 0
-            while i ≤ last && isdigit(fmt[i])
-                precision = 10precision + Int(fmt[i] - '0')
-                i += 1
-            end
+            precision, i = parse_digits(fmt, i)
             i ≤ last || @goto END
         else
             throw(FormatError("unexpected $(repr(fmt[i])) after '.'"))
@@ -797,6 +781,18 @@ function parse_spec(fmt::String, i::Int, serial::Int)
 
     @label END
     return (; fill, align, sign, altform, zero, width, grouping, precision, type), i, serial
+end
+
+function parse_digits(s::String, i::Int)
+    n = 0
+    last = lastindex(s)
+    while i ≤ last && isdigit(s[i])
+        n′ = 10n + Int(s[i] - '0')
+        @assert n′ ≥ n "overflow"
+        n = n′
+        i += 1
+    end
+    return n, i
 end
 
 
