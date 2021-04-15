@@ -22,9 +22,7 @@ This macro can interpolate variables into a string with format specification.
 Interpolation happens inside replacement fields surrounded by a pair of curly braces `{}`; other parts of a format string are treated as usual strings.
 A replacement field usually has an argument `ARG` and a specification `SPEC` separated by a colon: `{ARG:SPEC}`, although both of them can be omitted.
 
-This formatting syntax is borrowed from [Python's Format String Syntax](https://docs.python.org/3/library/string.html#format-string-syntax), which is ported to C++ as [C++20 std::format](https://en.cppreference.com/w/cpp/utility/format) and Rust as [std:fmt](https://doc.rust-lang.org/std/fmt/).
-See [Syntax](#Syntax) Section for details.
-
+Let's see several examples.
 ```julia
 # load @f_str
 using Fmt
@@ -59,33 +57,36 @@ f"{$x:^{$n}}" == "  42  "
 f"{$x:>{$n}}" == "    42"
 ```
 
-Fmt.jl also provides a formatting function. The `Fmt.format` function takes a format template as its first argument and other arguments are interpolated into the placeholders in the template.
-
+Fmt.jl also provides a formatting function.
+The `Fmt.format` function takes a format template as its first argument and other arguments are interpolated into the replacement fields in the template.
+If an I/O stream is passed before the format template, it outputs the formatted string into the stream directly.
 ```julia
 using Fmt
 
 # positional arguments with implicit numbering
-Fmt.format(f"{}", 1) == "1"
-Fmt.format(f"{}, {}", 1, 2) == "1, 2"
+Fmt.format(f"{} and {}", "Alice", "Bob") == "Alice and Bob"
 
 # positional arguments with explicit numbering
-Fmt.format(f"{1}, {2}", 1, 2) == "1, 2"
-Fmt.format(f"{2}, {1}", 1, 2) == "2, 1"
+Fmt.format(f"{1} and {2}", "Alice", "Bob") == "Alice and Bob"
+Fmt.format(f"{2} and {1}", "Alice", "Bob") == "Bob and Alice"
 
 # keyword arguments
-Fmt.format(f"{x}, {y}", x = 1, y = 2) == "1, 2"
-Fmt.format(f"{y}, {x}", x = 1, y = 2) == "2, 1"
+Fmt.format(f"{A} and {B}", A = "Alice", B = "Bob") == "Alice and Bob"
+Fmt.format(f"{B} and {A}", A = "Alice", B = "Bob") == "Bob and Alice"
 
 # box drawing
 Fmt.format(stdout, f"""
-┌{1:─^{3}}┐
-│{2: ^{3}}│
-└{1:─^{3}}┘
-""", "", "Hello, world!", 21)
-# ┌─────────────────────┐
-# │    Hello, world!    │
-# └─────────────────────┘
+┌{1:─^{2}}┐             ┌{1:─^{2}}┐
+│{A: ^{2}}│ ──────────> │{B: ^{2}}│
+└{1:─^{2}}┘             └{1:─^{2}}┘
+""", "", 15, A = "Alice", B = "Bob")
+# ┌───────────────┐             ┌───────────────┐
+# │     Alice     │ ──────────> │      Bob      │
+# └───────────────┘             └───────────────┘
 ```
+
+This formatting syntax is borrowed from [Python's Format String Syntax](https://docs.python.org/3/library/string.html#format-string-syntax), which is ported to C++ as [C++20 std::format](https://en.cppreference.com/w/cpp/utility/format) and Rust as [std:fmt](https://doc.rust-lang.org/std/fmt/).
+See the next sections for details of the syntax and its semantic supported by Fmt.jl.
 
 ## Syntax
 
