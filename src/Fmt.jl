@@ -600,29 +600,23 @@ function hexadecimal(data::Vector{UInt8}, p::Int, x::IEEEFloat, precision::Int, 
             # fr ∈ (1, 2)
             data[p] = UInt8('.')
             p += 1
+            # NOTE: u is non-zero
             u = reinterpret(Unsigned, fr) & significand_mask(typeof(fr))
             m = ndigits(u, base = 16)
             if precision > 0
                 if m > precision
                     u >>= 4(m - precision - 1)
                     u = (u >> 4) + ((u & 0xf) ≥ 0x8)
-                    if (u >> 4precision) != 0
-                        exp += 1
-                    end
+                    exp += (u >> 4precision) != 0
                     p = hexadecimal(data, p, u, precision, uppercase)
                 else
                     p = hexadecimal(data, p, u, m, uppercase)
                     p = pad(data, p, '0', precision - m)
                 end
             else
-                # trim trailing zeros
-                while true
-                    d, r = divrem(u, 0x10)
-                    r == 0 || break
-                    u = d
-                    m -= 1
-                end
-                p = hexadecimal(data, p, u, m, uppercase)
+                # trim trailing zero nibbles
+                z = trailing_zeros(u) ÷ 4
+                p = hexadecimal(data, p, u >> 4z, m - z, uppercase)
             end
         end
     end
