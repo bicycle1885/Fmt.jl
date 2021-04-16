@@ -372,6 +372,20 @@ struct Foo end
     @test format(f"{:.1g}", 1.0) == "1"
     @test format(f"{:.2g}", 1.0) == "1"
 
+    @test format(f"{:a}",  0.0) == "0x0p+0"
+    @test format(f"{:a}", -0.0) == "-0x0p+0"
+    @test format(f"{:a}",  1.0) == "0x1p+0"
+    @test format(f"{:a}", -1.0) == "-0x1p+0"
+    @test format(f"{:a}", 3.14) == "0x1.91eb851eb851fp+1"
+    @test format(f"{:a}", 10.0) == "0x1.4p+3"
+    @test format(f"{:a}", 1234.56789) == "0x1.34a4584f4c6e7p+10"
+    @test format(f"{:A}", 1234.56789) == "0X1.34A4584F4C6E7P+10"
+    @test format(f"{:a}",  Inf) == "inf"
+    @test format(f"{:a}", -Inf) == "-inf"
+    @test format(f"{:A}",  Inf) == "INF"
+    @test format(f"{:a}",  NaN) == "nan"
+    @test format(f"{:A}",  NaN) == "NAN"
+
     @test format(f"{1:{2}}", "foo", 5) == "foo  "
     @test format(f"{2:{1}}", 5, "foo") == "foo  "
 

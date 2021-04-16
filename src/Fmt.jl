@@ -2,7 +2,7 @@ module Fmt
 
 export @f_str
 
-using Base: StringVector, Ryu, is_id_start_char
+using Base: StringVector, Ryu, IEEEFloat, is_id_start_char
 
 
 # Arguments
@@ -479,7 +479,7 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::AbstractFloat, in
             data[p] = UInt8(' ')
             p += 1
         end
-        if f.type == 'F' || f.type == 'E'
+        if f.type == 'F' || f.type == 'E' || f.type == 'A'
             data[p  ] = UInt8('I')
             data[p+1] = UInt8('N')
             data[p+2] = UInt8('F')
@@ -490,7 +490,7 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::AbstractFloat, in
         end
         p += 3
     elseif isnan(x)
-        if f.type == 'F' || f.type == 'E'
+        if f.type == 'F' || f.type == 'E' || f.type == 'A'
             data[p  ] = UInt8('N')
             data[p+1] = UInt8('A')
             data[p+2] = UInt8('N')
@@ -507,6 +507,8 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::AbstractFloat, in
         precision = f.precision == PRECISION_UNSPECIFIED ? 6 : f.precision
         expchar = f.type == 'E' ? UInt8('E') : UInt8('e')
         p = Ryu.writeexp(data, p, x, precision, plus, space, hash, expchar)
+    elseif f.type == 'A' || f.type == 'a'
+        p = hexadecimal(data, p, x, f.sign, f.type == 'A')
     elseif f.type == '%'
         precision = f.precision == PRECISION_UNSPECIFIED ? 6 : f.precision
         p = Ryu.writefixed(data, p, 100x, precision, plus, space, hash)
@@ -550,6 +552,56 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::AbstractFloat, in
         end
     end
     return p
+end
+
+function hexadecimal(data::Vector{UInt8}, p::Int, x::IEEEFloat, sign, uppercase::Bool)
+    # sign part
+    fr, exp = frexp(x)
+    if fr < 0 || fr === -zero(fr)
+        data[p] = UInt8('-')
+        p += 1
+    elseif sign == SIGN_PLUS
+        data[p] = UInt8('+')
+        p += 1
+    elseif sign == SIGN_SPACE
+        data[p] = UInt8(' ')
+        p += 1
+    end
+
+    # prefix part
+    data[p]   = Z
+    data[p+1] = uppercase ? UInt8('X') : UInt8('x')
+    p += 2
+
+    # fraction part
+    if iszero(fr)
+        data[p] = Z
+        p += 1
+    else
+        data[p] = UInt8('1')
+        p += 1
+        fr  *= 2  # fr ∈ [1, 2)
+        exp -= 1
+        u = reinterpret(Unsigned, fr) & Base.significand_mask(typeof(fr))
+        if u != 0
+            while true
+                d, r = divrem(u, 0x10)
+                r == 0 || break
+                u = d
+            end
+            data[p] = UInt8('.')
+            p += 1
+            p = hexadecimal(data, p, u, ndigits(u, base = 16), uppercase)
+        end
+    end
+
+    # exponent part
+    data[p] = uppercase ? UInt8('P') : UInt8('p')
+    p += 1
+    data[p] = exp < 0 ? UInt8('-') : UInt8('+')
+    p += 1
+    uexp = unsigned(abs(exp))
+    return decimal(data, p, uexp, ndigits_decimal(uexp))
 end
 
 function pad(data::Vector{UInt8}, p::Int, fill::Char, w::Int)
@@ -773,7 +825,7 @@ function parse_spec(fmt::String, i::Int, serial::Int)
     end
 
     # type
-    if fmt[i] ∈ "dXxoBbcsFfEeGg%"
+    if fmt[i] ∈ "dXxoBbcsFfEeGgAa%"
         type = fmt[i]
         i += 1
         i ≤ last || @goto END

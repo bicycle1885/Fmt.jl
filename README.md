@@ -115,7 +115,7 @@ width      = digit+ | '{'[argument]'}'
 grouping   = ',' | '_'
 precision  = digit+ | '{'[argument]'}'
 type       = 'd' | 'X' | 'x' | 'o' | 'B' | 'b' | 'c' | 's' |
-             'F' | 'f' | 'E' | 'e' | 'G' | 'g' | '%'
+             'F' | 'f' | 'E' | 'e' | 'G' | 'g' | 'A' | 'a' | '%'
 ```
 
 Note that *syntactic* validity does not imply *semantic* validity.
