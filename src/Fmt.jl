@@ -2,7 +2,7 @@ module Fmt
 
 export @f_str
 
-using Base: StringVector, Ryu, IEEEFloat, is_id_start_char
+using Base: StringVector, Ryu, IEEEFloat, is_id_start_char, significand_mask
 
 
 # Arguments
@@ -521,7 +521,8 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::AbstractFloat, in
         data[p]   = Z
         data[p+1] = f.type == 'A' ? UInt8('X') : UInt8('x')
         p += 2
-        p = hexadecimal(data, p, x, f.type == 'A')
+        precision = f.precision == PRECISION_UNSPECIFIED ? -1 : f.precision
+        p = hexadecimal(data, p, x, precision, f.type == 'A')
     elseif f.type == '%'
         precision = f.precision == PRECISION_UNSPECIFIED ? 6 : f.precision
         p = Ryu.writefixed(data, p, 100x, precision, plus, space, hash)
@@ -567,26 +568,56 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::AbstractFloat, in
     return p
 end
 
-function hexadecimal(data::Vector{UInt8}, p::Int, x::IEEEFloat, uppercase::Bool)
-    fr, exp = frexp(x)
-    if iszero(fr)
+# NOTE: the sign of `x` is ignored
+function hexadecimal(data::Vector{UInt8}, p::Int, x::IEEEFloat, precision::Int, uppercase::Bool)
+    if iszero(x)
         data[p] = Z
         p += 1
-    else
-        data[p] = UInt8('1')
-        p += 1
-        fr  *= 2  # fr ∈ [1, 2)
-        exp -= 1
-        u = reinterpret(Unsigned, fr) & Base.significand_mask(typeof(fr))
-        if u != 0
-            while true
-                d, r = divrem(u, 0x10)
-                r == 0 || break
-                u = d
-            end
+        if precision > 0
             data[p] = UInt8('.')
             p += 1
-            p = hexadecimal(data, p, u, ndigits(u, base = 16), uppercase)
+            p = pad(data, p, '0', precision)
+        end
+        exp = 0
+    else
+        # make fr ∈ [1, 2) so that the digit before point is always '1'
+        fr, exp = frexp(abs(x))
+        fr *= 2
+        exp -= 1
+        data[p] = UInt8('1')
+        p += 1
+        if isone(fr)
+            if precision > 0
+                data[p] = UInt8('.')
+                p += 1
+                p = pad(data, p, '0', precision)
+            end
+        elseif precision == 0
+            # pass
+        else
+            # fr ∈ (1, 2)
+            data[p] = UInt8('.')
+            p += 1
+            u = reinterpret(Unsigned, fr) & significand_mask(typeof(fr))
+            m = ndigits(u, base = 16)
+            if precision > 0
+                if m ≥ precision
+                    u = (u >> 4(m - precision))
+                    p = hexadecimal(data, p, u, precision, uppercase)
+                else
+                    p = hexadecimal(data, p, u, m, uppercase)
+                    p = pad(data, p, '0', precision - m)
+                end
+            else
+                # trim trailing zeros
+                while true
+                    d, r = divrem(u, 0x10)
+                    r == 0 || break
+                    u = d
+                    m -= 1
+                end
+                p = hexadecimal(data, p, u, m, uppercase)
+            end
         end
     end
     data[p] = uppercase ? UInt8('P') : UInt8('p')

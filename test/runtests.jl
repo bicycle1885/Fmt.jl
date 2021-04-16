@@ -386,6 +386,21 @@ struct Foo end
     @test format(f"{:a}",  NaN) == "nan"
     @test format(f"{:A}",  NaN) == "NAN"
 
+    @test format(f"{:.0a}", 0.0) == "0x0p+0"
+    @test format(f"{:.1a}", 0.0) == "0x0.0p+0"
+    @test format(f"{:.2a}", 0.0) == "0x0.00p+0"
+    @test format(f"{:.3a}", 0.0) == "0x0.000p+0"
+    @test format(f"{:.0a}", 1.0) == "0x1p+0"
+    @test format(f"{:.1a}", 1.0) == "0x1.0p+0"
+    @test format(f"{:.2a}", 1.0) == "0x1.00p+0"
+    @test format(f"{:.3a}", 1.0) == "0x1.000p+0"
+
+    x = 0x1.123456789abp+0
+    @test format(f"{:.0a}", x) == "0x1p+0"
+    @test format(f"{:.1a}", x) == "0x1.1p+0"
+    @test format(f"{:.2a}", x) == "0x1.12p+0"
+    @test format(f"{:.3a}", x) == "0x1.123p+0"
+
     @test format(f"{1:{2}}", "foo", 5) == "foo  "
     @test format(f"{2:{1}}", 5, "foo") == "foo  "
 
