@@ -606,7 +606,9 @@ function hexadecimal(data::Vector{UInt8}, p::Int, x::IEEEFloat, precision::Int, 
             if precision > 0
                 if m > precision
                     u >>= 4(m - precision - 1)
-                    u = (u >> 4) + ((u & 0xf) ≥ 0x8)
+                    # round half to even
+                    r = ((u & 0xf) > 0x8) | (((u & 0xf) == 0x8) & ((u >> 4) & 0x1))
+                    u = (u >> 4) + r
                     exp += (u >> 4precision) ≥ 0x2
                     p = hexadecimal(data, p, u, precision, uppercase)
                 else
