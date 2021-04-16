@@ -593,7 +593,9 @@ function hexadecimal(data::Vector{UInt8}, p::Int, x::IEEEFloat, precision::Int, 
                 p = pad(data, p, '0', precision)
             end
         elseif precision == 0
-            # pass
+            if fr ≥ oftype(fr, 1.5)
+                exp += 1
+            end
         else
             # fr ∈ (1, 2)
             data[p] = UInt8('.')
@@ -601,8 +603,12 @@ function hexadecimal(data::Vector{UInt8}, p::Int, x::IEEEFloat, precision::Int, 
             u = reinterpret(Unsigned, fr) & significand_mask(typeof(fr))
             m = ndigits(u, base = 16)
             if precision > 0
-                if m ≥ precision
-                    u = (u >> 4(m - precision))
+                if m > precision
+                    u >>= 4(m - precision - 1)
+                    u = (u >> 4) + ((u & 0xf) ≥ 0x8)
+                    if (u >> 4precision) != 0
+                        exp += 1
+                    end
                     p = hexadecimal(data, p, u, precision, uppercase)
                 else
                     p = hexadecimal(data, p, u, m, uppercase)
