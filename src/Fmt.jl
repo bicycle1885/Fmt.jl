@@ -508,7 +508,20 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::AbstractFloat, in
         expchar = f.type == 'E' ? UInt8('E') : UInt8('e')
         p = Ryu.writeexp(data, p, x, precision, plus, space, hash, expchar)
     elseif f.type == 'A' || f.type == 'a'
-        p = hexadecimal(data, p, x, f.sign, f.type == 'A')
+        if x < 0 || x === -zero(x)
+            data[p] = UInt8('-')
+            p += 1
+        elseif sign == SIGN_PLUS
+            data[p] = UInt8('+')
+            p += 1
+        elseif sign == SIGN_SPACE
+            data[p] = UInt8(' ')
+            p += 1
+        end
+        data[p]   = Z
+        data[p+1] = f.type == 'A' ? UInt8('X') : UInt8('x')
+        p += 2
+        p = hexadecimal(data, p, x, f.type == 'A')
     elseif f.type == '%'
         precision = f.precision == PRECISION_UNSPECIFIED ? 6 : f.precision
         p = Ryu.writefixed(data, p, 100x, precision, plus, space, hash)
@@ -554,26 +567,8 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::AbstractFloat, in
     return p
 end
 
-function hexadecimal(data::Vector{UInt8}, p::Int, x::IEEEFloat, sign, uppercase::Bool)
-    # sign part
+function hexadecimal(data::Vector{UInt8}, p::Int, x::IEEEFloat, uppercase::Bool)
     fr, exp = frexp(x)
-    if fr < 0 || fr === -zero(fr)
-        data[p] = UInt8('-')
-        p += 1
-    elseif sign == SIGN_PLUS
-        data[p] = UInt8('+')
-        p += 1
-    elseif sign == SIGN_SPACE
-        data[p] = UInt8(' ')
-        p += 1
-    end
-
-    # prefix part
-    data[p]   = Z
-    data[p+1] = uppercase ? UInt8('X') : UInt8('x')
-    p += 2
-
-    # fraction part
     if iszero(fr)
         data[p] = Z
         p += 1
@@ -594,8 +589,6 @@ function hexadecimal(data::Vector{UInt8}, p::Int, x::IEEEFloat, sign, uppercase:
             p = hexadecimal(data, p, u, ndigits(u, base = 16), uppercase)
         end
     end
-
-    # exponent part
     data[p] = uppercase ? UInt8('P') : UInt8('p')
     p += 1
     data[p] = exp < 0 ? UInt8('-') : UInt8('+')
