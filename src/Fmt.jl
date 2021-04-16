@@ -600,14 +600,14 @@ function hexadecimal(data::Vector{UInt8}, p::Int, x::IEEEFloat, precision::Int, 
             # fr ∈ (1, 2)
             data[p] = UInt8('.')
             p += 1
-            # NOTE: u is non-zero
             u = reinterpret(Unsigned, fr) & significand_mask(typeof(fr))
-            m = ndigits(u, base = 16)
+            u |= UInt(1) << (Base.precision(fr) - 1)  # set implicit bit
+            m = ndigits(u, base = 16) - 1
             if precision > 0
                 if m > precision
                     u >>= 4(m - precision - 1)
                     u = (u >> 4) + ((u & 0xf) ≥ 0x8)
-                    exp += (u >> 4precision) != 0
+                    exp += (u >> 4precision) ≥ 0x2
                     p = hexadecimal(data, p, u, precision, uppercase)
                 else
                     p = hexadecimal(data, p, u, m, uppercase)
