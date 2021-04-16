@@ -410,6 +410,9 @@ struct Foo end
     @test format(f"{:.0a}", 0x1.fffp+1) == "0x1p+2"
     @test format(f"{:.1a}", 0x1.fffp+1) == "0x1.0p+2"
     @test format(f"{:.2a}", 0x1.fffp+1) == "0x1.00p+2"
+    @test format(f"{:.3a}", 0x1.fffp+1) == "0x1.fffp+1"
+    @test format(f"{:.4a}", 0x1.fffp+1) == "0x1.fff0p+1"
+    @test format(f"{:.5a}", 0x1.fffp+1) == "0x1.fff00p+1"
 
     @test format(f"{1:{2}}", "foo", 5) == "foo  "
     @test format(f"{2:{1}}", 5, "foo") == "foo  "
