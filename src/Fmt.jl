@@ -55,13 +55,22 @@ function Field(
         width = WIDTH_UNSPECIFIED,
         grouping = GROUPING_UNSPECIFIED,
         precision = PRECISION_UNSPECIFIED,
-        type = TYPE_UNSPECIFIED
-        )
+        type = TYPE_UNSPECIFIED)
     return Field(argument, fill, align, sign, altform, zero, width, grouping, precision, type)
 end
 
-function Field(f::Field; fill = f.fill, altform = f.altform, zero = f.zero, width = f.width, precision = f.precision, type = f.type)
-    return Field(f.argument, fill, f.align, f.sign, altform, zero, width, f.grouping, precision, type)
+function Field(
+        f::Field;
+        fill = f.fill,
+        align = f.align,
+        sign = f.sign,
+        altform = f.altform,
+        zero = f.zero,
+        width = f.width,
+        grouping = f.grouping,
+        precision = f.precision,
+        type = f.type)
+    return Field(f.argument, fill, align, sign, altform, zero, width, grouping, precision, type)
 end
 
 
