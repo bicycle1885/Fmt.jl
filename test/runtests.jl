@@ -69,6 +69,11 @@ struct Foo end
     @test format(f"{:}", 123) == "123"
     @test format(f"{:}", "abc") == "abc"
 
+    @test format(f"{!s}", 'a') == "a"
+    @test format(f"{!r}", 'a') == "'a'"
+    @test format(f"{!s}", 123) == "123"
+    @test format(f"{!r}", 123) == "123"
+
     @test format(f"{:0}", 123) == "123"
     @test format(f"{:1}", 123) == "123"
     @test format(f"{:2}", 123) == "123"
@@ -581,6 +586,7 @@ end
     @test_throws FormatError("invalid character 'Z'") parse("{:Z}")
     @test_throws FormatError("argument 0 is not allowed; use 1 or above") parse("{0}")
     @test_throws FormatError("identifier is expected after '\$'") parse("{\$:}")
+    @test_throws FormatError("invalid conversion character 'K'") parse("{!K}")
     @test_throws FormatError("number overflows") parse("{9999999999999999999}")
     @test_throws FormatError("incomplete field") parse("{:")
     @test_throws FormatError("incomplete field") parse("{:>")

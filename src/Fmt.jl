@@ -25,6 +25,7 @@ const Argument = Union{Positional, Keyword}
 
 const FILL_DEFAULT = ' '
 @enum Alignment::UInt8 ALIGN_UNSPECIFIED ALIGN_LEFT ALIGN_RIGHT ALIGN_CENTER
+@enum Conversion::UInt8 CONV_UNSPECIFIED CONV_REPR CONV_STRING
 @enum Sign::UInt8 SIGN_PLUS SIGN_MINUS SIGN_SPACE
 const SIGN_DEFAULT = SIGN_MINUS
 const WIDTH_UNSPECIFIED = nothing
@@ -34,6 +35,7 @@ const TYPE_UNSPECIFIED = nothing
 
 struct Field
     argument::Argument
+    conv::Conversion
     fill::Union{Char, Argument}
     align::Alignment
     sign::Sign
@@ -47,6 +49,7 @@ end
 
 function Field(
         argument;
+        conv = CONV_UNSPECIFIED,
         fill = FILL_DEFAULT,
         align = ALIGN_UNSPECIFIED,
         sign = SIGN_DEFAULT,
@@ -56,11 +59,12 @@ function Field(
         grouping = GROUPING_UNSPECIFIED,
         precision = PRECISION_UNSPECIFIED,
         type = TYPE_UNSPECIFIED)
-    return Field(argument, fill, align, sign, altform, zero, width, grouping, precision, type)
+    return Field(argument, conv, fill, align, sign, altform, zero, width, grouping, precision, type)
 end
 
 function Field(
         f::Field;
+        conv = f.conv,
         fill = f.fill,
         align = f.align,
         sign = f.sign,
@@ -70,7 +74,7 @@ function Field(
         grouping = f.grouping,
         precision = f.precision,
         type = f.type)
-    return Field(f.argument, fill, align, sign, altform, zero, width, grouping, precision, type)
+    return Field(f.argument, conv, fill, align, sign, altform, zero, width, grouping, precision, type)
 end
 
 
@@ -759,14 +763,19 @@ function parse_field(fmt::String, i::Int, serial::Int)
     last = lastindex(fmt)
     arg, i, serial = parse_argument(fmt, i, serial)
     i ≤ last || incomplete_field()
+    conv = CONV_UNSPECIFIED
+    if fmt[i] == '!'
+        i + 1 ≤ last || incomplete_field()
+        conv, i = parse_conv(fmt, i + 1)
+    end
     if fmt[i] == ':'
         i + 1 ≤ last || incomplete_field()
         spec, i, serial = parse_spec(fmt, i + 1, serial)
         i ≤ last || incomplete_field()
         fmt[i] == '}' || invalid_char(fmt[i])
-        return Field(arg; spec...), i + 1, serial
+        return Field(arg; conv, spec...), i + 1, serial
     elseif fmt[i] == '}'
-        return Field(arg), i + 1, serial
+        return Field(arg; conv), i + 1, serial
     else
         invalid_char(fmt[i])
     end
@@ -791,6 +800,17 @@ function parse_argument(s::String, i::Int, serial::Int)
         arg = Positional(serial)
     end
     return arg, i, serial
+end
+
+function parse_conv(fmt::String, i::Int)
+    c = fmt[i]
+    if c == 'r'
+        return CONV_REPR, i + 1
+    elseif c == 's'
+        return CONV_STRING, i + 1
+    else
+        throw(FormatError("invalid conversion character $(repr(c))"))
+    end
 end
 
 function parse_spec(fmt::String, i::Int, serial::Int)
@@ -1014,13 +1034,16 @@ function compile(fmt::String)
                 f.precision
             end
 
+            conv = f.conv == CONV_REPR ? repr : f.conv == CONV_STRING ? string : identity
             f = :(Field($f, fill = $(esc(fill)), width = $(esc(width)), precision = $(esc(precision))))
+            arg = Symbol(:arg, i)
             meta = Symbol(:meta, i)
             info = quote
-                s, $meta = formatinfo($f, $x)
+                $arg = $(conv)($x)
+                s, $meta = formatinfo($f, $arg)
                 size += s
             end
-            data = :(p = formatfield(data, p, $f, $x, $meta))
+            data = :(p = formatfield(data, p, $f, $arg, $meta))
         end
         push!(code_info.args, info)
         push!(code_data.args, data)
