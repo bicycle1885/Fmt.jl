@@ -598,7 +598,7 @@ function hexadecimal(data::Vector{UInt8}, p::Int, x::IEEEFloat, precision::Int, 
                 data[p] = UInt8('.')
                 p += 1
             end
-            p, carry = hexadecimal_fraction(data, p, fr, precision, uppercase)
+            p, carry = hexadecimal_fraction(data, p, Float64(fr), precision, uppercase)
             exp += carry
         end
     end
