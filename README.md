@@ -212,7 +212,111 @@ Fmt.format(f"{: }",  3) == " 3"
 Fmt.format(f"{: }", -3) == "-3"
 ```
 
+### Alternate form (altform)
+
+`altform` (`#`) indicates that the value should be formatted in a different way, depending on the type of the value and the `type` character.
+For integers, it indicates that the prefix (`0b`, `0o`, `0x`, or `0X`) should be added before digits:
+```julia
+# Standard form of integers
+Fmt.format("{:o}", 42) == "52"
+Fmt.format("{:x}", 42) == "2a"
+
+# Alternate form of integers
+Fmt.format("{:#o}", 42) == "0o52"
+Fmt.format("{:#x}", 42) == "0x2a"
+```
+
+For floating-point numbers, it indicates ... (TBD).
+
+### Zero
+
+`zero` (`0`) indicates that sign-aware zero paddings should be added to fill the width specified by `width`.
+That is, zeros for padding are added after the sign, not before the sign.
+The following example illustrates the difference between sign-aware padding and sign-ignorant padding:
+```julia
+# Sign-aware zero padding
+Fmt.format(f"{:+08}",  42) == "+0000042"
+
+# Sign-ignorant zero padding
+Fmt.format(f"{:0>+8}", 42) == "00000+42"
+```
+
+### Width
+
+`width` indicates the minimum width of a formatted string.
+```julia
+# Format an integer with minimum width 4
+Fmt.format(f"{:4}", 123)   == " 123"
+Fmt.format(f"{:4}", 1234)  == "1234"
+Fmt.format(f"{:4}", 12345) == "12345"
+```
+
+The default alignment depends on the type of a value.
+For example, numbers are left-aligned while strings are right-aligned.
+```julia
+Fmt.format(f"{:4}", 1)   == "   1"
+Fmt.format(f"{:4}", "a") == "a   "
+```
+
+### Grouping
+
+`grouping` spcifies the way of grouping digits.
+For integers with the decimal format, `,` and `_` indicates thousand separator (e.g., `1,234,567`).
+For integers with the binary, octal or hexadecimal format, `_` indicates four-digit separator (e.g., `0x1234_5678`).
+
+```julia
+Fmt.format(f"{:,}",   123456789)  == "123,456,789"
+Fmt.format(f"{:_}",   123456789)  == "123_456_789"
+Fmt.format(f"{:#_x}", 0xdeadbeef) == "0xdead_beef"
+```
+
+### Precision
+
+For floating-point numbers, `precision` specifies the precision of a formatted representation string of a number.
+
 TBD
+
+```julia
+Fmt.format(f"{:.2f}", Float64(pi)) == "3.14"
+Fmt.format(f"{:.3f}", Float64(pi)) == "3.142"
+Fmt.format(f"{:.4f}", Float64(pi)) == "3.1416"
+```
+
+### Type
+
+#### Integers
+
+| Type | Description |
+| :--: | ----------- |
+| `d`  | decimal     |
+| `X`  | hexadecimal (uppercase) |
+| `x`  | hexadecimal (lowercase) |
+| `o`  | octal |
+| `B`  | binary (uppercase) |
+| `b`  | binary (lowecase)  |
+| `c`  | character |
+| none | decimal |
+
+#### Floating-point numbers
+
+| Type | Description |
+| :--: | ----------- |
+| `F`  | fixed-point notation (uppercase) |
+| `f`  | fixed-point notation (lowercase) |
+| `E`  | scientific notation (uppercase) |
+| `e`  | scientific notation (lowercase) |
+| `G`  | general notation (uppercase) |
+| `g`  | general notation (lowercase) |
+| `A`  | hexadecimal notation (uppercase) |
+| `a`  | hexadecimal notation (lowercase) |
+| `%`  | percentage (multiplied by 100) |
+| none | general notation |
+
+#### Other values
+
+`p` is for pointers and `s` for strings.
+These are the default for each type and do not specify any special format.
+
 
 ## Performance
 
