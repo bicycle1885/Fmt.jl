@@ -767,6 +767,7 @@ function parse_field(fmt::String, i::Int, serial::Int)
     if fmt[i] == '!'
         i + 1 ≤ last || incomplete_field()
         conv, i = parse_conv(fmt, i + 1)
+        i ≤ last || incomplete_field()
     end
     if fmt[i] == ':'
         i + 1 ≤ last || incomplete_field()

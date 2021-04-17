@@ -588,6 +588,7 @@ end
     @test_throws FormatError("identifier is expected after '\$'") parse("{\$:}")
     @test_throws FormatError("invalid conversion character 'K'") parse("{!K}")
     @test_throws FormatError("number overflows") parse("{9999999999999999999}")
+    @test_throws FormatError("incomplete field") parse("{!s")
     @test_throws FormatError("incomplete field") parse("{:")
     @test_throws FormatError("incomplete field") parse("{:>")
     @test_throws FormatError("incomplete field") parse("{:*>")
