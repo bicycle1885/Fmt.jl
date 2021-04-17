@@ -480,7 +480,25 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Ptr, width::Int)
 end
 
 function formatinfo(f::Field, x::IEEEFloat)
-    return Ryu.neededdigits(typeof(x)), nothing
+    # The cost of computing the exact size is high, so we estimate an upper bound.
+    if f.type == 'f' || f.type == 'F' || f.type == '%'
+        width = Ryu.neededdigits(typeof(x))
+        if f.type == '%'
+            width += 1
+        end
+    else
+        # Otherwise, the scientific notation of Float64 will be an upper bound.
+        # sign (1) + fraction (17) + point (1) + e/E (1) + sign (1) + exponent (3)
+        width = 24
+    end
+    if f.precision != PRECISION_UNSPECIFIED
+        width += f.precision
+    end
+    size = width
+    if f.width != PRECISION_UNSPECIFIED
+        size += paddingsize(f, width)
+    end
+    return size, nothing
 end
 
 @inline function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::IEEEFloat, info)

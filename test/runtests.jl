@@ -509,6 +509,9 @@ struct Foo end
     @test format(f"{:.4}", "αβγ") == "αβγ"
     @test format(f"{:.5}", "αβγ") == "αβγ"
 
+    @test format(f"{:1000f}", 1.0) == lpad("1.000000", 1000)
+    @test format(f"{:.1000f}", 1.0) == rpad("1.", 1002, '0')
+
     if Sys.WORD_SIZE == 64
         ptr = reinterpret(Ptr{Cvoid}, 0x000012340000abcd)
         @test format(f"{}",      ptr) == "0x000012340000abcd"
