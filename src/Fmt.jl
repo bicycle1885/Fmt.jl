@@ -624,18 +624,17 @@ function hexadecimal_fraction(data::Vector{UInt8}, p::Int, fr::Float64, precisio
         p = hexadecimal(data, p, u, m, uppercase)
         return pad(data, p, '0', precision - m), 0
     else
-        # rounding
+        # half-to-even rounding
         k = m - precision
         u1 = u >> 4k
         u2 = u & ((one(u) << 4k) - 0x1)
-        y = oftype(u, 0x8) << 4(k - 1)
+        half = oftype(u, 0x8) << 4(k - 1)
         carry = 0
-        if u2 > y || u2 == y && (u1 & 0x1) == 0x1
+        if u2 > half || u2 == half && (u1 & 0x1) > 0
             u1 += 1
             carry = Int(u1 ≥ (one(u) << 4precision))
         end
-        p = hexadecimal(data, p, u1, precision, uppercase)
-        return p, carry
+        return hexadecimal(data, p, u1, precision, uppercase), carry
     end
 end
 
