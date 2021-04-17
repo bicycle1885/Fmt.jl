@@ -600,26 +600,8 @@ function hexadecimal(data::Vector{UInt8}, p::Int, x::IEEEFloat, precision::Int, 
             # fr ∈ (1, 2)
             data[p] = UInt8('.')
             p += 1
-            u = reinterpret(Unsigned, fr) & significand_mask(typeof(fr))
-            u |= UInt(1) << (Base.precision(fr) - 1)  # set implicit bit
-            m = ndigits(u, base = 16) - 1
-            if precision > 0
-                if m > precision
-                    u >>= 4(m - precision - 1)
-                    # round half to even
-                    r = ((u & 0xf) > 0x8) | (((u & 0xf) == 0x8) & ((u >> 4) & 0x1))
-                    u = (u >> 4) + r
-                    exp += (u >> 4precision) ≥ 0x2
-                    p = hexadecimal(data, p, u, precision, uppercase)
-                else
-                    p = hexadecimal(data, p, u, m, uppercase)
-                    p = pad(data, p, '0', precision - m)
-                end
-            else
-                # trim trailing zero nibbles
-                z = trailing_zeros(u) ÷ 4
-                p = hexadecimal(data, p, u >> 4z, m - z, uppercase)
-            end
+            p, carry = hexadecimal_fraction(data, p, fr, precision, uppercase)
+            exp += carry
         end
     end
     data[p] = uppercase ? UInt8('P') : UInt8('p')
@@ -628,6 +610,35 @@ function hexadecimal(data::Vector{UInt8}, p::Int, x::IEEEFloat, precision::Int, 
     p += 1
     uexp = unsigned(abs(exp))
     return decimal(data, p, uexp, ndigits_decimal(uexp))
+end
+
+# fr must be in (1, 2)
+function hexadecimal_fraction(data::Vector{UInt8}, p::Int, fr::Float64, precision::Int, uppercase::Bool)
+    @assert 1 < fr < 2
+    m = 13
+    u = reinterpret(UInt64, fr) & significand_mask(Float64)
+    if precision < 0
+        # trim trailing zero nibbles
+        tz = trailing_zeros(u) ÷ 4
+        return hexadecimal(data, p, u >> 4tz, m - tz, uppercase), 0
+    elseif precision ≥ m
+        # emit all digits and padding zeros
+        p = hexadecimal(data, p, u, m, uppercase)
+        return pad(data, p, '0', precision - m), 0
+    else
+        # rounding
+        k = m - precision
+        u1 = u >> 4k
+        u2 = u & ((one(u) << 4k) - 0x1)
+        y = oftype(u, 0x8) << 4(k - 1)
+        carry = 0
+        if u2 > y || u2 == y && (u1 & 0x1) == 0x1
+            u1 += 1
+            carry = Int(u1 ≥ (one(u) << 4precision))
+        end
+        p = hexadecimal(data, p, u1, precision, uppercase)
+        return p, carry
+    end
 end
 
 function pad(data::Vector{UInt8}, p::Int, fill::Char, w::Int)
