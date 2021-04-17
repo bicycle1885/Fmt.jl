@@ -107,7 +107,7 @@ conv       = 's' | 'r'
 
 # format specification
 spec       = [[fill]align][sign][altform][zero][width][grouping]['.'precision][type]
-fill       = any valid character | '{'[argument]'}'
+fill       = any valid character (except '{' and '}') | '{'[argument]'}'
 align      = '<' | '^' | '>'
 sign       = '+' | '-' | ' '
 altform    = '#'
@@ -125,6 +125,92 @@ For example, `{:,s}` is syntactically valid but semantically invalid, because th
 ## Semantic
 
 The semantic of the format specification is basically the same as that of Python.
+
+### Argument
+
+The `argument` is either positional or keyword.
+Positional arguments are numbered from one, and their values are supplied from arguments passed to the `Fmt.format` function.
+If numbers are omitted, they are automatically numbered incrementally from left to right.
+Keyword arguments are named by a variable and may be interpolated.
+If a keyword argument is interpolated (indicated by `$`), its value is supplied from the context where the replacement field is placed; otherwise, its value is supplied from a keyword argument with the same name passed to the `Fmt.format` function.
+Currently, you cannot mix interpolated keyword arguments with other kinds of arguments in a single format.
+
+Interpolated formats immediately return a string of the `String` type, while other formats are evaluated to an `Fmt.Format` object.
+The `Fmt.format` object can be passed to the `Fmt.format` function as its first argument to create a formatted string.
+
+```julia
+# Positional arguments
+Fmt.format(f"{1} {2}", "foo", "bar") == "foo bar"
+
+# Positional arguments (implicit numbers)
+Fmt.format(f"{} {}", "foo", "bar") == "foo bar"
+
+# Keyword arguments
+Fmt.format(f"{x} {y}", x = "foo", y = "bar") == "foo bar"
+
+# Positional and keyword arguments
+Fmt.format(f"{1} {x} {2}", "foo", "bar", x = "and") == "foo and bar"
+
+# Keyword arguments with interpolation
+x, y = "foo", "bar"
+f"{$x} {$y}" == "foo bar"
+```
+
+### Conversion
+
+Conversion is indicated by `!` followed by `s` or `r`.
+If conversion is specified, the argument is first converted to a string representation using the `string` or `repr` function.
+As the conversion characters suggest, `!s` converts the argument using the `string` function and `!r` with the `repr` function.
+
+```julia
+# Conversion
+Fmt.format(f"{!s}", 'a') == "a"
+Fmt.format(f"{!r}", 'a') == "'a'"
+```
+
+### Fill and alignment
+
+The content of a formatted value can be aligned within the specified `width`.
+Note that text alignment does not make sense unless `width` is specified.
+
+The `align` character indicates an alignment type as follows:
+- `<` : left alignment
+- `^` : center alignment
+- `>` : right alignment
+
+The left and right margins are filled with `fill`.
+It can be any character except `{` and `}`.
+If omitted, a space character (i.e., U+0020) is used.
+
+```julia
+# Alignment with the default fill
+Fmt.format(f"{:<7}", "foo") == "foo    "
+Fmt.format(f"{:^7}", "foo") == "  foo  "
+Fmt.format(f"{:>7}", "foo") == "    foo"
+
+# Alignment with a specified fill
+Fmt.format(f"{:*<7}", "foo") == "foo****"
+Fmt.format(f"{:*^7}", "foo") == "**foo**"
+Fmt.format(f"{:*>7}", "foo") == "****foo"
+```
+
+### Sign
+
+`sign` controls the character indicating the sign of a number:
+- `-` : a sign should be used only for negative values (default)
+- `+` : a sign should be used for both non-negative and negative values
+- ` ` : a sign should be used only for negative values and a space should be used for non-negative values
+
+Note that `sign` is only meaningful for numbers.
+
+```julia
+Fmt.format(f"{:-}",  3) == "3"
+Fmt.format(f"{:-}", -3) == "-3"
+Fmt.format(f"{:+}",  3) == "+3"
+Fmt.format(f"{:+}", -3) == "-3"
+Fmt.format(f"{: }",  3) == " 3"
+Fmt.format(f"{: }", -3) == "-3"
+```
 
 TBD
 
