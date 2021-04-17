@@ -60,8 +60,8 @@ function Field(
     return Field(argument, fill, align, sign, altform, zero, width, grouping, precision, type)
 end
 
-function Field(f::Field; fill = f.fill, width = f.width, precision = f.precision)
-    return Field(f.argument, fill, f.align, f.sign, f.altform, f.zero, width, f.grouping, precision, f.type)
+function Field(f::Field; fill = f.fill, altform = f.altform, zero = f.zero, width = f.width, precision = f.precision, type = f.type)
+    return Field(f.argument, fill, f.align, f.sign, altform, zero, width, f.grouping, precision, type)
 end
 
 
@@ -439,15 +439,30 @@ end
 
 function formatinfo(f::Field, x::Ptr)
     width = 2sizeof(x) + 2
-    return width, nothing
+    f.width == WIDTH_UNSPECIFIED && return width, width
+    return width + max(f.width - width, 0), width
 end
 
-function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Ptr, ::Nothing)
-    data[p] = Z
+function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Ptr, width::Int)
+    pw = paddingwidth(f, width)
+    if f.width != WIDTH_UNSPECIFIED
+        if f.align == ALIGN_RIGHT || f.align == ALIGN_UNSPECIFIED
+            p = pad(data, p, f.fill, pw)
+        elseif f.align == ALIGN_CENTER
+            p = pad(data, p, f.fill, pw ÷ 2)
+        end
+    end
+    data[p]   = Z
     data[p+1] = UInt8('x')
     p += 2
-    w = sizeof(x) * 2
-    p = hexadecimal(data, p, reinterpret(UInt, x), w, false)
+    p = hexadecimal(data, p, reinterpret(UInt, x), width - 2, false)
+    if f.width != WIDTH_UNSPECIFIED
+        if f.align == ALIGN_LEFT
+            p = pad(data, p, f.fill, pw)
+        elseif f.align == ALIGN_CENTER
+            p = pad(data, p, f.fill, pw - pw ÷ 2)
+        end
+    end
     return p
 end
 

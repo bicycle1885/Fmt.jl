@@ -504,7 +504,15 @@ struct Foo end
     @test format(f"{:.4}", "αβγ") == "αβγ"
     @test format(f"{:.5}", "αβγ") == "αβγ"
 
-    @test format(f"{:p}", C_NULL) == "0x0000000000000000"
+    if Sys.WORD_SIZE == 64
+        ptr = reinterpret(Ptr{Cvoid}, 0x000012340000abcd)
+        @test format(f"{}",      ptr) == "0x000012340000abcd"
+        @test format(f"{:p}",    ptr) == "0x000012340000abcd"
+        @test format(f"{:20p}",  ptr) == "  0x000012340000abcd"
+        @test format(f"{:<20p}", ptr) == "0x000012340000abcd  "
+        @test format(f"{:^20p}", ptr) == " 0x000012340000abcd "
+        @test format(f"{:>20p}", ptr) == "  0x000012340000abcd"
+    end
 end
 
 @testset "format (writer)" begin
