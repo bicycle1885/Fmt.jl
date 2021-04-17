@@ -467,9 +467,7 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Ptr, width::Int)
             p = pad(data, p, f.fill, pw ÷ 2)
         end
     end
-    data[p]   = Z
-    data[p+1] = UInt8('x')
-    p += 2
+    p = @copy data p "0x"
     p = hexadecimal(data, p, reinterpret(UInt, x), width - 2, false)
     if f.width != WIDTH_UNSPECIFIED
         if f.align == ALIGN_LEFT
