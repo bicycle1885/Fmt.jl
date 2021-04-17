@@ -592,14 +592,12 @@ function hexadecimal(data::Vector{UInt8}, p::Int, x::IEEEFloat, precision::Int, 
                 p += 1
                 p = pad(data, p, '0', precision)
             end
-        elseif precision == 0
-            if fr ≥ oftype(fr, 1.5)
-                exp += 1
-            end
         else
             # fr ∈ (1, 2)
-            data[p] = UInt8('.')
-            p += 1
+            if precision != 0
+                data[p] = UInt8('.')
+                p += 1
+            end
             p, carry = hexadecimal_fraction(data, p, fr, precision, uppercase)
             exp += carry
         end
