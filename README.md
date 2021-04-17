@@ -167,7 +167,7 @@ end
 
 The result on my machine is:
 ```
-$ julia quickbenchmark.jl
+$ julia benchmark/compare.jl
            fmt_print:  37.928 ms (2000000 allocations: 91.55 MiB)
        sprintf_print:  77.613 ms (2000000 allocations: 106.81 MiB)
          naive_print:  202.531 ms (4975844 allocations: 198.00 MiB)
@@ -177,7 +177,8 @@ $ julia quickbenchmark.jl
 
 Benchmark environment:
 - CPU: AMD Ryzen 9 3950X
-- Julia: v1.6.0 (official binary distribution for generic Linux)
+- OS: GNU/Linux 5.9.12
+- Julia: v1.6.0
 - Formatting.jl: v0.4.2
 
 ## Related projects
