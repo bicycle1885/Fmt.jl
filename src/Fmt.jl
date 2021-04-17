@@ -81,6 +81,17 @@ end
 # Writer functions
 # ----------------
 
+# inlined copy of static data
+macro copy(dst, p, src::String)
+    block = Expr(:block)
+    n = ncodeunits(src)
+    for i in 1:n
+        push!(block.args, :($dst[$p+$i-1] = $(codeunit(src, i))))
+    end
+    push!(block.args, :(p + $n))
+    return esc(block)
+end
+
 @inline function paddingwidth(f::Field, width::Int)
     @assert f.width isa Int || f.width isa Nothing
     if f.width isa Int
@@ -186,18 +197,9 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Bool, width::Int)
         end
     end
     if x
-        data[p]   = UInt8('t')
-        data[p+1] = UInt8('r')
-        data[p+2] = UInt8('u')
-        data[p+3] = UInt8('e')
-        p += 4
+        p = @copy data p "true"
     else
-        data[p]   = UInt8('f')
-        data[p+1] = UInt8('a')
-        data[p+2] = UInt8('l')
-        data[p+3] = UInt8('s')
-        data[p+4] = UInt8('e')
-        p += 5
+        p = @copy data p "false"
     end
     if f.width != WIDTH_UNSPECIFIED && !f.zero
         if f.align == ALIGN_LEFT
@@ -484,87 +486,51 @@ function formatinfo(f::Field, x::IEEEFloat)
 end
 
 @inline function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::IEEEFloat, info)
-    # default parameters of Ryu.writeshortest
-    precision = -1
-    expchar = UInt8('e')
-    padexp = false
-    decchar = UInt8('.')
-    typed = false
-    compact = false
-
-    if f.sign == SIGN_SPACE
-        plus = false
-        space = true
-    elseif f.sign == SIGN_PLUS
-        plus = true
-        space = false
-    else
-        plus = false
-        space = false
-    end
-    
-    if f.altform
-        hash = true
-    else
-        hash = false
-    end
-
     start = p
+    if x < 0 || x === -zero(x)
+        data[p] = UInt8('-')
+        p += 1
+    elseif f.sign == SIGN_PLUS
+        data[p] = UInt8('+')
+        p += 1
+    elseif f.sign == SIGN_SPACE
+        data[p] = UInt8(' ')
+        p += 1
+    end
+    x = abs(x)
+    signed = p > start
+
+    uppercase = f.type == 'F' || f.type == 'E' || f.type == 'A' || f.type == 'G'
+    plus = false
+    space = false
+    hash = f.altform
+    expchar = uppercase ? UInt8('E') : UInt8('e')
     if isinf(x)
-        if x < 0
-            data[p] = UInt8('-')
-            p += 1
-        elseif plus
-            data[p] = UInt8('+')
-            p += 1
-        elseif space
-            data[p] = UInt8(' ')
-            p += 1
-        end
-        if f.type == 'F' || f.type == 'E' || f.type == 'A'
-            data[p  ] = UInt8('I')
-            data[p+1] = UInt8('N')
-            data[p+2] = UInt8('F')
+        if uppercase
+            p = @copy data p "INF"
         else
-            data[p  ] = UInt8('i')
-            data[p+1] = UInt8('n')
-            data[p+2] = UInt8('f')
+            p = @copy data p "inf"
         end
-        p += 3
     elseif isnan(x)
-        if f.type == 'F' || f.type == 'E' || f.type == 'A'
-            data[p  ] = UInt8('N')
-            data[p+1] = UInt8('A')
-            data[p+2] = UInt8('N')
+        if uppercase
+            p = @copy data p "NAN"
         else
-            data[p  ] = UInt8('n')
-            data[p+1] = UInt8('a')
-            data[p+2] = UInt8('n')
+            p = @copy data p "nan"
         end
-        p += 3
     elseif f.type == 'F' || f.type == 'f'
         precision = f.precision == PRECISION_UNSPECIFIED ? 6 : f.precision
         p = Ryu.writefixed(data, p, x, precision, plus, space, hash)
     elseif f.type == 'E' || f.type == 'e'
         precision = f.precision == PRECISION_UNSPECIFIED ? 6 : f.precision
-        expchar = f.type == 'E' ? UInt8('E') : UInt8('e')
         p = Ryu.writeexp(data, p, x, precision, plus, space, hash, expchar)
     elseif f.type == 'A' || f.type == 'a'
-        if x < 0 || x === -zero(x)
-            data[p] = UInt8('-')
-            p += 1
-        elseif sign == SIGN_PLUS
-            data[p] = UInt8('+')
-            p += 1
-        elseif sign == SIGN_SPACE
-            data[p] = UInt8(' ')
-            p += 1
+        if uppercase
+            p = @copy data p "0X"
+        else
+            p = @copy data p "0x"
         end
-        data[p]   = Z
-        data[p+1] = f.type == 'A' ? UInt8('X') : UInt8('x')
-        p += 2
         precision = f.precision == PRECISION_UNSPECIFIED ? -1 : f.precision
-        p = hexadecimal(data, p, x, precision, f.type == 'A')
+        p = hexadecimal(data, p, x, precision, uppercase)
     elseif f.type == '%'
         precision = f.precision == PRECISION_UNSPECIFIED ? 6 : f.precision
         p = Ryu.writefixed(data, p, 100x, precision, plus, space, hash)
@@ -573,19 +539,21 @@ end
     else
         @assert f.type == 'G' || f.type == 'g' || f.type === nothing
         hash = f.type === nothing
+        padexp = false
+        precision = -1
         if f.precision != PRECISION_UNSPECIFIED
             padexp = true
             precision = max(f.precision, 1)
             x = round(x, sigdigits = precision)
         end
-        p = Ryu.writeshortest(data, p, x, plus, space, hash, precision, expchar, padexp, decchar, typed, compact)
+        p = Ryu.writeshortest(data, p, x, plus, space, hash, precision, expchar, padexp)
     end
 
     if f.width != WIDTH_UNSPECIFIED
         width = p - start
         pw = paddingwidth(f, width)
         if f.zero
-            if x < 0 || x === -zero(x) || f.sign == SIGN_PLUS || f.sign == SIGN_SPACE
+            if signed
                 start += 1
                 width -= 1
             end
