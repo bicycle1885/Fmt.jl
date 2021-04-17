@@ -1,19 +1,24 @@
-# Fmt.jl ― Python-style string format meets Julia
-
 **This package is still under active development. The API may change anytime. Almost no error checks. Only handful basic types are supported.**
 
-Fmt.jl provides Python-style format language with interpolation. It is an
-alternative of Printf.jl and other utility functions in Base.
+# Fmt.jl ― Python-style format strings for Julia
 
+Fmt.jl provides a Python-style format language.
+It is an alternative of Printf.jl and string utility functions in Base.
+Parts of a string surrounded curly braces `{` `}` are replaced with a string formatted according to a format specification as follows:
 ```
 julia> using Fmt
 
 julia> pi = float(π)
 3.141592653589793
 
-julia> f"π ≈ {$pi:.4f}"  # format a float with precision
+julia> f"π ≈ {$pi:.4f}"
 "π ≈ 3.1416"
 ```
+
+The Fmt.jl package is
+- **Full-fledged**: It supports almost complete features of Python's format strings.
+- **Performant**: The formatter is much faster than `string` and other functions.
+- **Lightweight**: It has no dependencies except the Base library.
 
 ## Overview
 
@@ -85,7 +90,7 @@ Fmt.format(stdout, f"""
 # └───────────────┘             └───────────────┘
 ```
 
-This formatting syntax is borrowed from [Python's Format String Syntax](https://docs.python.org/3/library/string.html#format-string-syntax), which is ported to C++ as [C++20 std::format](https://en.cppreference.com/w/cpp/utility/format) and Rust as [std:fmt](https://doc.rust-lang.org/std/fmt/).
+This formatting syntax is borrowed from [Python's Format String Syntax](https://docs.python.org/3/library/string.html#format-string-syntax), which is ported to C++ as [C++20 std::format](https://en.cppreference.com/w/cpp/utility/format) and Rust as [std::fmt](https://doc.rust-lang.org/std/fmt/).
 See the next sections for details of the syntax and its semantic supported by Fmt.jl.
 
 ## Syntax
