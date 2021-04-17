@@ -199,7 +199,7 @@ Fmt.format(f"{:*>7}", "foo") == "****foo"
 `sign` controls the character indicating the sign of a number:
 - `-` : a sign should be used only for negative values (default)
 - `+` : a sign should be used for both non-negative and negative values
-- ` ` : a sign should be used only for negative values and a space should be used for non-negative values
+- space : a sign should be used only for negative values and a space should be used for non-negative values
 
 Note that `sign` is only meaningful for numbers.
 
