@@ -98,11 +98,12 @@ However, dollar signs `$` are no longer a special character for interpolation; t
 The syntax of a replacement field is formally defined as follows:
 ```
 # replacement field
-field      = '{'[argument][':'spec]'}'
+field      = '{'[argument]['!'conv][':'spec]'}'
 argument   = number | ['$']identifier
 number     = digit+
 identifier = any valid variable name
 digit      = '0' | '1' | '2' | … | '9'
+conv       = 's' | 'r'
 
 # format specification
 spec       = [[fill]align][sign][altform][zero][width][grouping]['.'precision][type]
