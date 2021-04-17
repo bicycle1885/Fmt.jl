@@ -466,11 +466,11 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Ptr, width::Int)
     return p
 end
 
-function formatinfo(f::Field, x::AbstractFloat)
+function formatinfo(f::Field, x::IEEEFloat)
     return Ryu.neededdigits(typeof(x)), nothing
 end
 
-@inline function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::AbstractFloat, info)
+@inline function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::IEEEFloat, info)
     # default parameters of Ryu.writeshortest
     precision = -1
     expchar = UInt8('e')
