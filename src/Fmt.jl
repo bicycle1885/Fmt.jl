@@ -758,7 +758,6 @@ function parse(fmt::String)
 end
 
 function parse_field(fmt::String, i::Int, serial::Int)
-    invalid_char(c) = throw(FormatError("invalid character $(repr(c))"))
     incomplete_field() = throw(FormatError("incomplete field"))
     last = lastindex(fmt)
     arg, i, serial = parse_argument(fmt, i, serial)
@@ -769,17 +768,14 @@ function parse_field(fmt::String, i::Int, serial::Int)
         conv, i = parse_conv(fmt, i + 1)
         i ≤ last || incomplete_field()
     end
+    spec = ()
     if fmt[i] == ':'
         i + 1 ≤ last || incomplete_field()
         spec, i, serial = parse_spec(fmt, i + 1, serial)
         i ≤ last || incomplete_field()
-        fmt[i] == '}' || invalid_char(fmt[i])
-        return Field(arg; conv, spec...), i + 1, serial
-    elseif fmt[i] == '}'
-        return Field(arg; conv), i + 1, serial
-    else
-        invalid_char(fmt[i])
     end
+    fmt[i] == '}' || throw(FormatError("invalid character $(repr(fmt[i]))"))
+    return Field(arg; conv, spec...), i + 1, serial
 end
 
 function parse_argument(s::String, i::Int, serial::Int)
