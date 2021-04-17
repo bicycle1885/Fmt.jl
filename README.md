@@ -114,7 +114,7 @@ zero       = '0'
 width      = digit+ | '{'[argument]'}'
 grouping   = ',' | '_'
 precision  = digit+ | '{'[argument]'}'
-type       = 'd' | 'X' | 'x' | 'o' | 'B' | 'b' | 'c' | 's' |
+type       = 'd' | 'X' | 'x' | 'o' | 'B' | 'b' | 'c' | 'p' | 's'
              'F' | 'f' | 'E' | 'e' | 'G' | 'g' | 'A' | 'a' | '%'
 ```
 

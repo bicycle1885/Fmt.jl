@@ -437,6 +437,20 @@ function ndigits_decimal(x::Unsigned)
     return n
 end
 
+function formatinfo(f::Field, x::Ptr)
+    width = 2sizeof(x) + 2
+    return width, nothing
+end
+
+function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Ptr, ::Nothing)
+    data[p] = Z
+    data[p+1] = UInt8('x')
+    p += 2
+    w = sizeof(x) * 2
+    p = hexadecimal(data, p, reinterpret(UInt, x), w, false)
+    return p
+end
+
 function formatinfo(f::Field, x::AbstractFloat)
     return Ryu.neededdigits(typeof(x)), nothing
 end
@@ -859,7 +873,7 @@ function parse_spec(fmt::String, i::Int, serial::Int)
     end
 
     # type
-    if fmt[i] ∈ "dXxoBbcsFfEeGgAa%"
+    if fmt[i] ∈ "dXxoBbcpsFfEeGgAa%"
         type = fmt[i]
         i += 1
         i ≤ last || @goto END

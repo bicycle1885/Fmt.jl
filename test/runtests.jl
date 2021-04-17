@@ -503,6 +503,8 @@ struct Foo end
     @test format(f"{:.3}", "αβγ") == "αβγ"
     @test format(f"{:.4}", "αβγ") == "αβγ"
     @test format(f"{:.5}", "αβγ") == "αβγ"
+
+    @test format(f"{:p}", C_NULL) == "0x0000000000000000"
 end
 
 @testset "format (writer)" begin
