@@ -121,11 +121,11 @@ function formatinfo(f::Field, ::Nothing)
 end
 
 function formatfield(data::Vector{UInt8}, p::Int, f::Field, ::Nothing, ::Nothing)
-    pw = paddingwidth(f, 7)
     align = f.align == ALIGN_UNSPECIFIED ? ALIGN_LEFT : f.align
-    p = padleft(data, p, pw, f.fill, align)
+    pw = paddingwidth(f, 7)
+    p = padleft(data, p, f.fill, align, pw)
     p = @copy data p "nothing"
-    p = padright(data, p, pw, f.fill, align)
+    p = padright(data, p, f.fill, align, pw)
     return p
 end
 
@@ -137,11 +137,11 @@ function formatinfo(f::Field, x::AbstractChar)
 end
 
 function formatfield(data::Vector{UInt8}, p::Int, f::Field, ::AbstractChar, c::Char)
-    pw = paddingwidth(f, 1)
     align = f.align == ALIGN_UNSPECIFIED ? ALIGN_LEFT : f.align
-    p = padleft(data, p, pw, f.fill, align)
+    pw = paddingwidth(f, 1)
+    p = padleft(data, p, f.fill, align, pw)
     p = char(data, p, c)
-    p = padright(data, p, pw, f.fill, align)
+    p = padright(data, p, f.fill, align, pw)
     return p
 end
 
@@ -153,16 +153,16 @@ function formatinfo(f::Field, x::AbstractString)
 end
 
 function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::AbstractString, width::Int)
-    pw = paddingwidth(f, width)
     align = f.align == ALIGN_UNSPECIFIED ? ALIGN_LEFT : f.align
-    p = padleft(data, p, pw, f.fill, align)
+    pw = paddingwidth(f, width)
+    p = padleft(data, p, f.fill, align, pw)
     n = ncodeunits(x)
     if f.precision != PRECISION_UNSPECIFIED
         n = min(nextind(x, 1, f.precision) - 1, n)
     end
     copyto!(data, p, codeunits(x), 1, n)
     p += n
-    p = padright(data, p, pw, f.fill, align)
+    p = padright(data, p, f.fill, align, pw)
     return p
 end
 
@@ -180,15 +180,15 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Bool, width::Int)
     if f.type !== nothing
         return formatfield(data, p, f, Int(x), (1, width))
     end
-    pw = paddingwidth(f, width)
     align = f.align == ALIGN_UNSPECIFIED ? ALIGN_RIGHT : f.align
-    p = padleft(data, p, pw, f.fill, align)
+    pw = paddingwidth(f, width)
+    p = padleft(data, p, f.fill, align, pw)
     if x
         p = @copy data p "true"
     else
         p = @copy data p "false"
     end
-    p = padright(data, p, pw, f.fill, align)
+    p = padright(data, p, f.fill, align, pw)
     return p
 end
 
@@ -218,10 +218,10 @@ end
 
 @inline function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Integer, (m, width)::Tuple{Int, Int})
     base = f.type == 'X' || f.type == 'x' ? 16 : f.type == 'o' ? 8 : f.type == 'B' || f.type == 'b' ? 2 : 10
-    pw = paddingwidth(f, width)
     align = f.align == ALIGN_UNSPECIFIED ? ALIGN_RIGHT : f.align
+    pw = paddingwidth(f, width)
     if !f.zero
-        p = padleft(data, p, pw, f.fill, align)
+        p = padleft(data, p, f.fill, align, pw)
     end
     if x < 0
         data[p] = UInt8('-')
@@ -255,7 +255,7 @@ end
         end
     end
     if !f.zero
-        p = padright(data, p, pw, f.fill, align)
+        p = padright(data, p, f.fill, align, pw)
     end
     return p
 end
@@ -433,12 +433,12 @@ function formatinfo(f::Field, x::Ptr)
 end
 
 function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Ptr, width::Int)
-    pw = paddingwidth(f, width)
     align = f.align == ALIGN_UNSPECIFIED ? ALIGN_RIGHT : f.align
-    p = padleft(data, p, pw, f.fill, align)
+    pw = paddingwidth(f, width)
+    p = padleft(data, p, f.fill, align, pw)
     p = @copy data p "0x"
     p = hexadecimal(data, p, reinterpret(UInt, x), width - 2, false)
-    p = padright(data, p, pw, f.fill, align)
+    p = padright(data, p, f.fill, align, pw)
     return p
 end
 
@@ -627,7 +627,7 @@ function hexadecimal_fraction(data::Vector{UInt8}, p::Int, fr::Float64, precisio
     end
 end
 
-@inline function padleft(data::Vector{UInt8}, p::Int, pw::Int, fill::Char, align::Alignment)
+@inline function padleft(data::Vector{UInt8}, p::Int, fill::Char, align::Alignment, pw::Int)
     @assert align != ALIGN_UNSPECIFIED
     if align == ALIGN_RIGHT
         p = pad(data, p, fill, pw)
@@ -637,7 +637,7 @@ end
     return p
 end
 
-@inline function padright(data::Vector{UInt8}, p::Int, pw::Int, fill::Char, align::Alignment)
+@inline function padright(data::Vector{UInt8}, p::Int,fill::Char, align::Alignment, pw::Int)
     @assert align != ALIGN_UNSPECIFIED
     if align == ALIGN_LEFT
         p = pad(data, p, fill, pw)
