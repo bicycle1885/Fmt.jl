@@ -74,6 +74,12 @@ struct Foo end
     @test format(f"{!s}", 123) == "123"
     @test format(f"{!r}", 123) == "123"
 
+    @test format(f"{:}",    nothing) == "nothing"
+    @test format(f"{:10}",  nothing) == "nothing   "
+    @test format(f"{:<10}", nothing) == "nothing   "
+    @test format(f"{:^10}", nothing) == " nothing  "
+    @test format(f"{:>10}", nothing) == "   nothing"
+
     @test format(f"{:0}", 123) == "123"
     @test format(f"{:1}", 123) == "123"
     @test format(f"{:2}", 123) == "123"
