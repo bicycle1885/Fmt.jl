@@ -16,6 +16,13 @@ end
 N = 1_000_000
 SEED = 1234
 
+println(f"character (N = {$N:,})")
+Random.seed!(SEED)
+x = rand('a':'z', N)
+for fmt in [f"{}", f"{:<9}", f"{:^9}", f"{:>9}"]
+    benchmark(fmt, x)
+end
+
 println(f"string (N = {$N:,})")
 Random.seed!(SEED)
 x = [randstring(rand(1:20)) for _ in 1:N]
