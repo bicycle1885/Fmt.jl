@@ -92,23 +92,12 @@ macro copy(dst, p, src::String)
     return esc(block)
 end
 
-@inline function paddingwidth(f::Field, width::Int)
-    @assert f.width isa Int || f.width isa Nothing
-    if f.width isa Int
-        return max(f.width - width, 0)
-    else
-        return 0
-    end
-end
-paddingsize(f::Field, width::Int) = f.fill === nothing ? 0 : paddingwidth(f, width) * ncodeunits(f.fill)
-
 # generic fallback
 function formatinfo(f::Field, x::Any)
     s = string(x)
     size = ncodeunits(s)
     width = length(s)
-    f.width == WIDTH_UNSPECIFIED && return size, (s, width)
-    return paddingsize(f, width) + size, (s, width)
+    return size + paddingsize(f, width), (s, width)
 end
 
 function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Any, (s, width)::Tuple{String, Int})
@@ -132,8 +121,7 @@ end
 function formatinfo(f::Field, x::AbstractChar)
     c = Char(x)
     size = ncodeunits(c)
-    f.width == WIDTH_UNSPECIFIED && return size, c
-    return paddingsize(f, 1) + size, c
+    return size + paddingsize(f, 1), c
 end
 
 function formatfield(data::Vector{UInt8}, p::Int, f::Field, ::AbstractChar, c::Char)
@@ -148,8 +136,7 @@ end
 function formatinfo(f::Field, x::AbstractString)
     size = ncodeunits(x) * sizeof(codeunit(x)) 
     width = length(x)
-    f.width == WIDTH_UNSPECIFIED && return size, width
-    return paddingsize(f, width) + size, width
+    return size + paddingsize(f, width), width
 end
 
 function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::AbstractString, width::Int)
@@ -428,16 +415,16 @@ end
 
 function formatinfo(f::Field, x::Ptr)
     width = 2sizeof(x) + 2
-    f.width == WIDTH_UNSPECIFIED && return width, width
-    return width + max(f.width - width, 0), width
+    return width + paddingsize(f, width), nothing
 end
 
-function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Ptr, width::Int)
+function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Ptr, ::Nothing)
+    w = 2sizeof(x) + 2
+    pw = paddingwidth(f, w)
     align = f.align == ALIGN_UNSPECIFIED ? ALIGN_RIGHT : f.align
-    pw = paddingwidth(f, width)
     p = padleft(data, p, f.fill, align, pw)
     p = @copy data p "0x"
-    p = hexadecimal(data, p, reinterpret(UInt, x), width - 2, false)
+    p = hexadecimal(data, p, reinterpret(UInt, x), w - 2, false)
     p = padright(data, p, f.fill, align, pw)
     return p
 end
@@ -602,7 +589,7 @@ end
 # fr must be in (1, 2)
 function hexadecimal_fraction(data::Vector{UInt8}, p::Int, fr::Float64, precision::Int, uppercase::Bool)
     @assert 1 < fr < 2
-    m = 13
+    m = 13  # the number of nibbles in significand (excluding implicit bit)
     u = reinterpret(UInt64, fr) & significand_mask(Float64)
     if precision < 0
         # trim trailing zero nibbles
@@ -626,6 +613,14 @@ function hexadecimal_fraction(data::Vector{UInt8}, p::Int, fr::Float64, precisio
         return hexadecimal(data, p, u1, precision, uppercase), carry
     end
 end
+
+@inline function paddingwidth(f::Field, width::Int)
+    @assert f.width isa Int || f.width isa Nothing
+    return f.width isa Int ? max(f.width - width, 0) : 0
+end
+
+paddingsize(f::Field, width::Int) =
+    f.fill === nothing ? 0 : paddingwidth(f, width) * ncodeunits(f.fill)
 
 @inline function padleft(data::Vector{UInt8}, p::Int, fill::Char, align::Alignment, pw::Int)
     @assert align != ALIGN_UNSPECIFIED
