@@ -582,6 +582,9 @@ end
     @test f"{{{$x}}}" == "{42}"
     @test f"{{{{$x}}}}" == "{{\$x}}"
     @test f"{{{{{$x}}}}}" == "{{42}}"
+
+    @test f"{{αβ" == "{αβ"
+    @test f"}}αβ" == "}αβ"
 end
 
 @testset "syntax error" begin

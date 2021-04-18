@@ -692,7 +692,7 @@ function parse(fmt::String)
     while i ≤ last
         c = fmt[i]
         if c == '{'
-            while i + 1 ≤ last && fmt[i] == fmt[i+1] == '{'
+            while i + 1 ≤ last && fmt[i] == '{' && fmt[i+1] == '{'
                 write(str, '{')
                 i += 2
             end
@@ -703,7 +703,7 @@ function parse(fmt::String)
                 push!(list, field)
             end
         elseif c == '}'
-            while i + 1 ≤ last && fmt[i] == fmt[i+1] == '}'
+            while i + 1 ≤ last && fmt[i] == '}' && fmt[i+1] == '}'
                 write(str, '}')
                 i += 2
             end
