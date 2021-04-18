@@ -725,7 +725,7 @@ function parse_field(fmt::String, i::Int, serial::Int)
     arg, i, serial = parse_argument(fmt, i, serial)
     i ≤ last || incomplete_field()
     conv = CONV_UNSPECIFIED
-    if fmt[i] == '!'
+    if fmt[i] == '/'
         i + 1 ≤ last || incomplete_field()
         conv, i = parse_conv(fmt, i + 1)
         i ≤ last || incomplete_field()

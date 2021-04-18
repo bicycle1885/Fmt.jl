@@ -103,7 +103,7 @@ However, dollar signs `$` are no longer a special character for interpolation; t
 The syntax of a replacement field is formally defined as follows:
 ```
 # replacement field
-field      = '{'[argument]['!'conv][':'spec]'}'
+field      = '{'[argument]['/'conv][':'spec]'}'
 argument   = number | ['$']identifier
 number     = digit+
 identifier = any valid variable name
@@ -163,15 +163,18 @@ f"{$x} {$y}" == "foo bar"
 
 ### Conversion
 
-Conversion is indicated by `!` followed by `s` or `r`.
+Conversion is indicated by `/` followed by `s` or `r`.
 If conversion is specified, the argument is first converted to a string representation using the `string` or `repr` function.
-As the conversion characters suggest, `!s` converts the argument using the `string` function and `!r` with the `repr` function.
+As the conversion characters suggest, `/s` converts the argument using the `string` function and `/r` with the `repr` function.
 
 ```julia
 # Conversion
-Fmt.format(f"{!s}", 'a') == "a"
-Fmt.format(f"{!r}", 'a') == "'a'"
+Fmt.format(f"{/s}", 'a') == "a"
+Fmt.format(f"{/r}", 'a') == "'a'"
 ```
+
+Python uses `!` to mark the conversion syntax.
+Fmt.jl uses `/` instead to avoid syntactic ambiguity, because Julia allows `!` as a valid character for identifiers.
 
 ### Fill and alignment
 
