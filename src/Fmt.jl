@@ -212,8 +212,8 @@ end
             # no leading zeros
             width += div(m - 1, k)
         else
-            # leading zeros
-            width = f.width + (rem(f.width, k + 1) == 0)
+            # some leading zeros
+            width = l + (f.width - l) + (rem(f.width - l, k + 1) == 0)
             m = (width - l) - div(width - l, k + 1)
         end
     else

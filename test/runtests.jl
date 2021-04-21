@@ -530,6 +530,10 @@ struct Foo end
     @test format(f"{:09,d}",  1234) == "0,001,234"
     @test format(f"{:010,d}", 1234) == "00,001,234"
 
+    @test format(f"{:+#012_b}", 42) == "+0b0010_1010"
+    @test format(f"{:+#013_b}", 42) == "+0b0_0010_1010"
+    @test format(f"{:+#014_b}", 42) == "+0b0_0010_1010"
+
     if Sys.WORD_SIZE == 64
         ptr = reinterpret(Ptr{Cvoid}, 0x000012340000abcd)
         @test format(f"{}",      ptr) == "0x000012340000abcd"
