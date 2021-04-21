@@ -156,16 +156,16 @@ end
 const Z = UInt8('0')
 
 function formatinfo(f::Field, x::Bool)
-    width = f.type === nothing ? (x ? 4 : 5) : 1
-    if f.altform
-        width += 2
+    if f.type !== nothing
+        return formatinfo(f, Int(x))
     end
-    return paddingsize(f, width) + width, width
+    width = x ? 4 : 5
+    return paddingsize(f, width) + width, (0, width)
 end
 
-function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Bool, width::Int)
+function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Bool, (m, width)::Tuple{Int, Int})
     if f.type !== nothing
-        return formatfield(data, p, f, Int(x), (1, width))
+        return formatfield(data, p, f, Int(x), (m, width))
     end
     align = f.align == ALIGN_UNSPECIFIED ? ALIGN_RIGHT : f.align
     pw = paddingwidth(f, width)
@@ -187,20 +187,42 @@ end
         return paddingsize(f, 1) + size, (0, 1)
     end
     base = f.type == 'X' || f.type == 'x' ? 16 : f.type == 'o' ? 8 : f.type == 'B' || f.type == 'b' ? 2 : 10
-    m = base == 10 ? ndigits_decimal(x) : ndigits(x; base)
-    width = m + (x < 0 || f.sign ≠ SIGN_MINUS)
+    k = base == 10 ? 3 : 4  # number of digits between grouping separators
+
+    # sign + prefix width
+    l = 0
+    if x < 0 || f.sign != SIGN_MINUS
+        l += 1
+    end
     if f.altform && base != 10
-        width += 2  # prefix (0b, 0o, 0x)
+        l += 2
     end
-    if f.grouping == GROUPING_COMMA || f.grouping == GROUPING_UNDERSCORE
-        if base == 10
-            width += div(m - 1, 3)
-        else
-            width += div(m - 1, 4)
+
+    # digits width (excluding leading zeros for sign-aware padding)
+    m = base == 10 ? ndigits_decimal(x) : ndigits(x; base)
+
+    # content width (including leading zeros for sign-aware padding)
+    width = l + m
+    if f.width == WIDTH_UNSPECIFIED || !f.zero
+        if f.grouping != GROUPING_UNSPECIFIED
+            width += div(m - 1, k)
         end
+    elseif f.grouping != GROUPING_UNSPECIFIED
+        if f.width - l ≤ m + div(m - 1, k)
+            # no leading zeros
+            width += div(m - 1, k)
+        else
+            # leading zeros
+            width = f.width + (rem(f.width, k + 1) == 0)
+            m = (width - l) - div(width - l, k + 1)
+        end
+    else
+        m = max(f.width - l, m)
+        width = l + m
     end
-    f.width == WIDTH_UNSPECIFIED && return width, (m, width)
-    return paddingsize(f, width) + width, (m, width)
+
+    # add padding size and return
+    return width + paddingsize(f, width), (m, width)
 end
 
 @inline function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Integer, (m, width)::Tuple{Int, Int})
@@ -221,9 +243,6 @@ end
         data[p] = Z
         data[p+1] = UInt8(f.type)
         p += 2
-    end
-    if f.zero
-        p = pad(data, p, '0', pw)
     end
     if f.type == 'c'
         p = pad(data, p, Char(x), 1)

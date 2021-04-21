@@ -518,6 +518,18 @@ struct Foo end
     @test format(f"{:1000f}", 1.0) == lpad("1.000000", 1000)
     @test format(f"{:.1000f}", 1.0) == rpad("1.", 1002, '0')
 
+    @test format(f"{:00,d}",  1234) == "1,234"
+    @test format(f"{:01,d}",  1234) == "1,234"
+    @test format(f"{:02,d}",  1234) == "1,234"
+    @test format(f"{:03,d}",  1234) == "1,234"
+    @test format(f"{:04,d}",  1234) == "1,234"
+    @test format(f"{:05,d}",  1234) == "1,234"
+    @test format(f"{:06,d}",  1234) == "01,234"
+    @test format(f"{:07,d}",  1234) == "001,234"
+    @test format(f"{:08,d}",  1234) == "0,001,234"
+    @test format(f"{:09,d}",  1234) == "0,001,234"
+    @test format(f"{:010,d}", 1234) == "00,001,234"
+
     if Sys.WORD_SIZE == 64
         ptr = reinterpret(Ptr{Cvoid}, 0x000012340000abcd)
         @test format(f"{}",      ptr) == "0x000012340000abcd"
