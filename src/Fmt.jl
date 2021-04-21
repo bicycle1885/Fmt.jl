@@ -534,6 +534,44 @@ end
         p = Ryu.writeshortest(data, p, x, plus, space, hash, precision, expchar, padexp)
     end
 
+    if f.grouping != GROUPING_UNSPECIFIED
+        if f.zero
+            # TODO
+        end
+        i = start + signed
+        while i < p
+            data[i] == UInt8('.') && break
+            i += 1
+        end
+        if i < p
+            # number of digits before decimal point
+            m = i - (start + signed)
+            # number of grouping separators to insert
+            n = div(m - 1, 3)
+            sep = f.grouping == GROUPING_COMMA ? UInt8(',') : UInt8('_')
+            # insert separators from right to left:
+            #   1234567.89  ->  1234 ,567.89  ->  1,234,567.89
+            #       ^  ^  ^      ^  ^
+            #       s  i  p      s  s+3
+            if n > 0
+                s = i - 3
+                copyto!(data, s + n, data, s, p - s)
+                data[s+n-1] = sep
+                p += n
+                s -= 3
+                n -= 1
+                while n > 0
+                    copyto!(data, s + n, data, s, 3)
+                    data[s+n-1] = sep
+                    s -= 3
+                    n -= 1
+                end
+            end
+        end
+    elseif f.zero
+        # TODO
+    end
+
     if f.width != WIDTH_UNSPECIFIED
         width = p - start
         pw = paddingwidth(f, width)
