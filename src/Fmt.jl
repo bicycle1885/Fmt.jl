@@ -535,55 +535,17 @@ end
     end
 
     if f.grouping != GROUPING_UNSPECIFIED
-        if f.zero
-            # TODO
-        end
-        i = start + signed
-        while i < p
-            data[i] == UInt8('.') && break
-            i += 1
-        end
-        if i < p
-            # number of digits before decimal point
-            m = i - (start + signed)
-            # number of grouping separators to insert
-            n = div(m - 1, 3)
-            sep = f.grouping == GROUPING_COMMA ? UInt8(',') : UInt8('_')
-            # insert separators from right to left:
-            #   1234567.89  ->  1234 ,567.89  ->  1,234,567.89
-            #       ^  ^  ^      ^  ^
-            #       s  i  p      s  s+3
-            if n > 0
-                s = i - 3
-                copyto!(data, s + n, data, s, p - s)
-                data[s+n-1] = sep
-                p += n
-                s -= 3
-                n -= 1
-                while n > 0
-                    copyto!(data, s + n, data, s, 3)
-                    data[s+n-1] = sep
-                    s -= 3
-                    n -= 1
-                end
-            end
-        end
-    elseif f.zero
-        # TODO
+        minwidth = f.width == WIDTH_UNSPECIFIED ? 0 : f.width - signed
+        sep = f.grouping == GROUPING_COMMA ? UInt8(',') : UInt8('_')
+        p = groupfloat(data, start + signed, p, f.zero, minwidth, sep)
+    elseif f.zero && f.width != WIDTH_UNSPECIFIED
+        p = insert_zeros(data, start + signed, p, f.width - (p - start))
     end
 
     if f.width != WIDTH_UNSPECIFIED
         width = p - start
         pw = paddingwidth(f, width)
-        if f.zero
-            if signed
-                start += 1
-                width -= 1
-            end
-            copyto!(data, start + pw, data, start, width)
-            pad(data, start, '0', pw)
-            p += pw
-        elseif f.align == ALIGN_RIGHT || f.align == ALIGN_UNSPECIFIED
+        if f.align == ALIGN_RIGHT || f.align == ALIGN_UNSPECIFIED
             ps = paddingsize(f, width)
             copyto!(data, start + ps, data, start, width)
             pad(data, start, f.fill, pw)
@@ -669,6 +631,66 @@ function hexadecimal_fraction(data::Vector{UInt8}, p::Int, fr::Float64, precisio
         end
         return hexadecimal(data, p, u1, precision, uppercase), carry
     end
+end
+
+# group digits in integral part by inserting separators (and leading zeros)
+function groupfloat(data::Vector{UInt8}, start::Int, p::Int, zero::Bool, minwidth::Int, sep::UInt8)
+    # determine integral part
+    @assert Z ≤ data[start] ≤ Z + 0x9
+    i = start + 1
+    while i < p && Z ≤ data[i] ≤ Z + 0x9
+        i += 1
+    end
+
+    # insert leading zeros
+    k = 3           # number of digits between separators
+    m = i - start   # number of digits in integral part
+    width = p - start  # current content width
+    if zero
+        z = number_of_leading_zeros(m, k, m + minwidth - width)
+        if z > 0
+            insert_zeros(data, start, p, z)
+            p += z; m += z; i += z
+        end
+    end
+
+    # insert separators
+    n = div(m - 1, k)
+    if n > 0
+        s = i - k
+        copyto!(data, s + n, data, s, p - s)
+        data[s+n-1] = sep
+        p += n
+        s -= k
+        n -= 1
+        while n > 0
+            copyto!(data, s + n, data, s, k)
+            data[s+n-1] = sep
+            s -= k
+            n -= 1
+        end
+    end
+
+    # return the next position after the last byte
+    return p
+end
+
+# calculate the number of leading zeros for padding
+function number_of_leading_zeros(m, k, minwidth)
+    n = div(m - 1, k)  # number of separators
+    m + n < minwidth || return 0
+    width = minwidth + (rem(minwidth, k + 1) == 0)
+    ndigits = width - div(width - 1, k + 1)
+    return ndigits - m
+end
+
+function insert_zeros(data, start, p, n)
+    n > 0 || return p
+    copyto!(data, start + n, data, start, p - start)
+    for i in 1:n
+        data[start+i-1] = Z
+    end
+    return p + n
 end
 
 @inline function paddingwidth(f::Field, width::Int)
