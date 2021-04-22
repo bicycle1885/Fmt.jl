@@ -1140,6 +1140,16 @@ format(fmt::String, positionals...; keywords...) = fmt
 format(out::IO, fmt::String, positionals...; keywords...) = write(out, fmt)
 
 """
+    printf([out::IO,] fmt::Fmt.Format, positional...; keywords...)
+
+Output a formatted string to `out` (default: `stdout`).
+"""
+printf(out::IO, fmt::Format, positionals...; keywords...) = print(out, fmt.fun(positionals...; keywords...))
+printf(fmt::Format, positionals...; keywords...) = printf(stdout, fmt, positionals...; keywords...)
+printf(out::IO, fmt::String, positionals...; keywords...) = print(out, fmt)
+printf(fmt::String, positionals...; keywords...) = printf(stdout, fmt, positionals...; keywords...)
+
+"""
     @f_str fmt
 
 Create a formatted string or a formatter object from string `fmt`.

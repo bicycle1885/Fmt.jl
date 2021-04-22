@@ -576,6 +576,15 @@ end
     n = format(buf, f"foobar")
     @test n == 6
     @test String(take!(buf)) == "foobar"
+
+    buf = IOBuffer()
+    @test Fmt.printf(buf, f"foobar") === nothing
+    @test String(take!(buf)) == "foobar"
+
+    buf = IOBuffer()
+    s = "(x = 123, y = -999)\n"
+    @test Fmt.printf(buf, f"(x = {}, y = {})\n", 123, -999) === nothing
+    @test String(take!(buf)) == s
 end
 
 @testset "format (string)" begin
