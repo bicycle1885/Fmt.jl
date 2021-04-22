@@ -1125,19 +1125,11 @@ Base.show(out::IO, fmt::Format) = print(out, "f\"", fmt.str, '"')
 
 """
     format(fmt::Fmt.Format, positionals...; keywords...)
-    format(out::IO, fmt::Fmt.Format, positionals...; keywords...)
 
-Create or output a formatted string.
-
-The first method creates a new string. The second method outputs the data of
-the formatted string to `out` and returns the number of the written bytes. In
-both methods, positional and keyword arguments can be supplied to replace
-fields in `fmt`.
+Create a formatted string.
 """
 format(fmt::Format, positionals...; keywords...) = fmt.fun(positionals...; keywords...)
-format(out::IO, fmt::Format, positionals...; keywords...) = write(out, fmt.fun(positionals...; keywords...))
 format(fmt::String, positionals...; keywords...) = fmt
-format(out::IO, fmt::String, positionals...; keywords...) = write(out, fmt)
 
 """
     printf([out::IO,] fmt::Fmt.Format, positional...; keywords...)

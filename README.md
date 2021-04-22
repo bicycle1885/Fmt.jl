@@ -27,7 +27,7 @@ This macro can interpolate variables into a string with format specification.
 Interpolation happens inside replacement fields surrounded by a pair of curly braces `{}`; other parts of a format string are treated as usual strings.
 A replacement field usually has an argument `ARG` and a specification `SPEC` separated by a colon: `{ARG:SPEC}`, although both of them can be omitted.
 
-Let's see several examples.
+Let's see some examples.
 ```julia
 # load @f_str
 using Fmt
@@ -62,9 +62,10 @@ f"{$x:^{$n}}" == "  42  "
 f"{$x:>{$n}}" == "    42"
 ```
 
-Fmt.jl also provides a formatting function.
-The `Fmt.format` function takes a format template as its first argument and other arguments are interpolated into the replacement fields in the template.
-If an I/O stream is passed before the format template, it outputs the formatted string into the stream directly.
+Fmt.jl provides two formatting functions:
+- The `Fmt.format` function takes a format template as its first argument and other arguments are interpolated into the replacement fields in the template.
+- The `Fmt.printf` function is the same as `Fmt.format` except that the formatted string is written to an output stream. The default output is `stdout` like the `print` function.
+
 ```julia
 using Fmt
 
@@ -80,7 +81,7 @@ Fmt.format(f"{A} and {B}", A = "Alice", B = "Bob") == "Alice and Bob"
 Fmt.format(f"{B} and {A}", A = "Alice", B = "Bob") == "Bob and Alice"
 
 # box drawing
-Fmt.format(stdout, f"""
+Fmt.printf(f"""
 ┌{1:─^{2}}┐             ┌{1:─^{2}}┐
 │{A: ^{2}}│ ──────────> │{B: ^{2}}│
 └{1:─^{2}}┘             └{1:─^{2}}┘

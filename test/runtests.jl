@@ -565,18 +565,7 @@ struct Foo end
     end
 end
 
-@testset "format (writer)" begin
-    buf = IOBuffer()
-    n = format(buf, f"(x = {}, y = {})\n", 123, -999)
-    s = "(x = 123, y = -999)\n"
-    @test n == sizeof(s)
-    @test String(take!(buf)) == s
-
-    buf = IOBuffer()
-    n = format(buf, f"foobar")
-    @test n == 6
-    @test String(take!(buf)) == "foobar"
-
+@testset "printf" begin
     buf = IOBuffer()
     @test Fmt.printf(buf, f"foobar") === nothing
     @test String(take!(buf)) == "foobar"
@@ -587,7 +576,7 @@ end
     @test String(take!(buf)) == s
 end
 
-@testset "format (string)" begin
+@testset "interpolation" begin
     @test f"$" == "\$"
     @test f"$x" == "\$x"
 
