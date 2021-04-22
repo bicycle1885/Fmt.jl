@@ -4,7 +4,8 @@
 
 Fmt.jl provides a Python-style format language.
 It is an alternative of Printf.jl and string utility functions in Base.
-Parts of a string surrounded curly braces `{` `}` are replaced with a string formatted according to a format specification as follows:
+Formats are constructed by a [non-standard string literal](https://docs.julialang.org/en/v1/manual/strings/#non-standard-string-literals) prefixed by `f`, called f-strings.
+In the following example, a part of an f-string surrounded curly braces `{` `}` is replaced with a formatted floating-point number:
 ```
 julia> using Fmt
 
@@ -15,16 +16,16 @@ julia> f"π ≈ {$pi:.4f}"
 "π ≈ 3.1416"
 ```
 
-The Fmt.jl package is
+The goals of Fmt.jl are:
 - **Full-fledged**: It supports almost complete features of Python's format strings.
 - **Performant**: The formatter is much faster than `string` and other functions.
 - **Lightweight**: It has no dependencies except the Base library.
 
 ## Overview
 
-The `@f_str` macro is the only exported binding from the `Fmt` module.
+The `@f_str` macro (or f-string) is the only exported binding from the `Fmt` module.
 This macro can interpolate variables into a string with format specification.
-Interpolation happens inside replacement fields surrounded by a pair of curly braces `{}`; other parts of a format string are treated as usual strings.
+Interpolation happens inside replacement fields surrounded by a pair of curly braces `{}`; other parts of an f-string are treated as ordinal strings.
 A replacement field usually has an argument `ARG` and a specification `SPEC` separated by a colon: `{ARG:SPEC}`, although both of them can be omitted.
 
 Let's see some examples.
@@ -60,12 +61,17 @@ n = 6
 f"{$x:<{$n}}" == "42    "
 f"{$x:^{$n}}" == "  42  "
 f"{$x:>{$n}}" == "    42"
+
+# grouping digits with thousand separator
+x = 1234567
+f"{$x:,}" == "1,234,567"
 ```
 
-Fmt.jl provides two formatting functions:
-- The `Fmt.format` function takes a format template as its first argument and other arguments are interpolated into the replacement fields in the template.
-- The `Fmt.printf` function is the same as `Fmt.format` except that the formatted string is written to an output stream. The default output is `stdout` like the `print` function.
+In addition to f-strings, Fmt.jl provides two formatting functions:
+- `Fmt.format(fstr, args...; kwargs...)` creates a formatted string by applying `args` and `kwargs` to `fstr`.
+- `Fmt.printf([out,] fstr, args...; kwargs...)` prints a formatted string to `out` (default: `stdout`) by applying `args` and `kwargs` to `fstr`.
 
+When using these functions, you cannot interpolate replacement fields with `$`. All replacement values are given as function arguments:
 ```julia
 using Fmt
 
@@ -80,7 +86,7 @@ Fmt.format(f"{2} and {1}", "Alice", "Bob") == "Bob and Alice"
 Fmt.format(f"{A} and {B}", A = "Alice", B = "Bob") == "Alice and Bob"
 Fmt.format(f"{B} and {A}", A = "Alice", B = "Bob") == "Bob and Alice"
 
-# box drawing
+# box drawing example
 Fmt.printf(f"""
 ┌{1:─^{2}}┐             ┌{1:─^{2}}┐
 │{A: ^{2}}│ ──────────> │{B: ^{2}}│
@@ -91,8 +97,8 @@ Fmt.printf(f"""
 # └───────────────┘             └───────────────┘
 ```
 
-This formatting syntax is borrowed from [Python's Format String Syntax](https://docs.python.org/3/library/string.html#format-string-syntax), which is ported to C++ as [C++20 std::format](https://en.cppreference.com/w/cpp/utility/format) and Rust as [std::fmt](https://doc.rust-lang.org/std/fmt/).
-See the next sections for details of the syntax and its semantic supported by Fmt.jl.
+The syntax of f-strings is borrowed from [Python's Format String Syntax](https://docs.python.org/3/library/string.html#format-string-syntax), which is ported to C++ as [C++20 std::format](https://en.cppreference.com/w/cpp/utility/format) and Rust as [std::fmt](https://doc.rust-lang.org/std/fmt/).
+See the next sections for details of the syntax and semantic supported by Fmt.jl.
 
 ## Syntax
 
