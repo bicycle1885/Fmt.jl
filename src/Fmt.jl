@@ -508,10 +508,10 @@ end
         end
     elseif f.type == 'F' || f.type == 'f'
         precision = f.precision == PRECISION_UNSPECIFIED ? 6 : f.precision
-        p = Ryu.writefixed(data, p, x, precision, plus, space, hash)
+        p = writefixed(data, p, x, precision, plus, space, hash)
     elseif f.type == 'E' || f.type == 'e'
         precision = f.precision == PRECISION_UNSPECIFIED ? 6 : f.precision
-        p = Ryu.writeexp(data, p, x, precision, plus, space, hash, expchar)
+        p = writeexp(data, p, x, precision, plus, space, hash, expchar)
     elseif f.type == 'A' || f.type == 'a'
         if uppercase
             p = @copy data p "0X"
@@ -522,20 +522,18 @@ end
         p = hexadecimal(data, p, x, precision, uppercase)
     elseif f.type == '%'
         precision = f.precision == PRECISION_UNSPECIFIED ? 6 : f.precision
-        p = Ryu.writefixed(data, p, 100x, precision, plus, space, hash)
+        p = writefixed(data, p, 100x, precision, plus, space, hash)
         data[p] = UInt8('%')
         p += 1
     else
         @assert f.type == 'G' || f.type == 'g' || f.type === nothing
         hash = f.type === nothing
-        padexp = false
         precision = -1
         if f.precision != PRECISION_UNSPECIFIED
-            padexp = true
             precision = max(f.precision, 1)
             x = round(x, sigdigits = precision)
         end
-        p = Ryu.writeshortest(data, p, x, plus, space, hash, precision, expchar, padexp)
+        p = writeshortest(data, p, x, plus, space, hash, precision, expchar)
     end
 
     if f.grouping != GROUPING_UNSPECIFIED
@@ -566,6 +564,14 @@ end
     end
     return p
 end
+
+# This is to avoid excessive inlining.
+@noinline writefixed(data, p, x, precision, plus, space, hash) =
+    Ryu.writefixed(data, p, x, precision, plus, space, hash)
+@noinline writeexp(data, p, x, precision, plus, space, hash, expchar) =
+    Ryu.writeexp(data, p, x, precision, plus, space, hash, expchar)
+@noinline writeshortest(data, p, x, plus, space, hash, precision, expchar) =
+    Ryu.writeshortest(data, p, x, plus, space, hash, precision, expchar)
 
 # NOTE: the sign of `x` is ignored
 function hexadecimal(data::Vector{UInt8}, p::Int, x::IEEEFloat, precision::Int, uppercase::Bool)
