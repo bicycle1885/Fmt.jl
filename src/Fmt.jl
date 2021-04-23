@@ -1014,21 +1014,16 @@ function compile(fmt::String)
     end
 
     n_positionals = 0
-    keywords = Symbol[]
-    interpolated = Symbol[]
-
+    keywords = Keyword[]
+    getname(pos::Int) = Symbol(:_, pos)
+    getname(arg::Keyword) = arg.name
     function check_argument(arg)
         if arg isa Positional
-            pos = arg.position
-            n_positionals = max(pos, n_positionals)
-            return Symbol(:_, pos)
+            n_positionals = max(arg.position, n_positionals)
+            return getname(arg.position)
         elseif arg isa Keyword
-            name = arg.name
-            if name ∉ keywords
-                push!(keywords, name)
-                isinterpolated(arg) && push!(interpolated, name)
-            end
-            return name
+            arg ∈ keywords || push!(keywords, arg)
+            return getname(arg)
         else
             # some static value
             return arg
@@ -1072,7 +1067,7 @@ function compile(fmt::String)
         push!(code_info.args, info)
         push!(code_data.args, data)
     end
-    arguments = Expr(:tuple, Expr(:parameters, esc.(keywords)...), [esc(Symbol(:_, i)) for i in 1:n_positionals]...)
+    arguments = Expr(:tuple, Expr(:parameters, esc.(getname.(keywords))...), esc.(getname.(1:n_positionals))...)
     body = quote
         size = 0
         $(code_info)
@@ -1082,7 +1077,7 @@ function compile(fmt::String)
         p - 1 < size && resize!(data, p - 1)
         return String(data)
     end
-    return Expr(:function, arguments, body), interpolated
+    return Expr(:function, arguments, body), [getname(x) for x in keywords if isinterpolated(x)]
 end
 
 function genstrcopy(s::String)
