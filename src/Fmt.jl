@@ -1006,11 +1006,10 @@ end
 function compile(fmt::String)
     format = parse(fmt)
 
-    # no fields; return static string
-    if isempty(format)
-        return "", nothing
-    elseif length(format) == 1 && format[1] isa String
-        return format[1], nothing
+    if isempty(format) || length(format) == 1 && format[1] isa String
+        # no replacement fields
+        str = isempty(format) ? "" : format[1]
+        return Expr(:function, Expr(:tuple), Expr(:block, str)), Symbol[]
     end
 
     n_positionals = 0
@@ -1067,7 +1066,8 @@ function compile(fmt::String)
         push!(code_info.args, info)
         push!(code_data.args, data)
     end
-    arguments = Expr(:tuple, Expr(:parameters, esc.(getname.(keywords))...), esc.(getname.(1:n_positionals))...)
+
+    args = Expr(:tuple, Expr(:parameters, esc.(getname.(keywords))...), esc.(getname.(1:n_positionals))...)
     body = quote
         size = 0
         $(code_info)
@@ -1077,7 +1077,7 @@ function compile(fmt::String)
         p - 1 < size && resize!(data, p - 1)
         return String(data)
     end
-    return Expr(:function, arguments, body), [getname(x) for x in keywords if isinterpolated(x)]
+    return Expr(:function, args, body), any(isinterpolated, keywords) ? getname.(keywords) : nothing
 end
 
 function genstrcopy(s::String)
@@ -1150,13 +1150,11 @@ julia> Fmt.format(fmt; x, y)  # substitute variables
 ```
 """
 macro f_str(s)
-    code, interped = compile(unescape_string(s))
-    if code isa String
-        code
-    elseif isempty(interped)
+    code, vars = compile(unescape_string(s))
+    if isnothing(vars)
         :(Format($s, $code))
     else
-        :($(code)(; $(esc.(interped)...)))
+        :($(code)(; $(esc.(vars)...)))
     end
 end
 
