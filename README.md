@@ -245,8 +245,8 @@ For floating-point numbers, it indicates ... (TBD).
 
 ### Zero
 
-`zero` (`0`) indicates that sign-aware zero paddings should be added to fill the width specified by `width`.
-That is, zeros for padding are added after the sign, not before the sign.
+`zero` (`0`) indicates that sign-aware zero padding should be added to fill the width specified by `width`.
+That is, zeros for padding are added after the sign, not before the sign like `fill`.
 The following example illustrates the difference between sign-aware padding and sign-ignorant padding:
 ```julia
 # Sign-aware zero padding
@@ -267,7 +267,7 @@ Fmt.format(f"{:4}", 12345) == "12345"
 ```
 
 The default alignment depends on the type of a value.
-For example, numbers are left-aligned while strings are right-aligned.
+For example, numbers are left-aligned while strings are right-aligned unless `align` is specified.
 ```julia
 Fmt.format(f"{:4}", 1)   == "   1"
 Fmt.format(f"{:4}", "a") == "a   "
@@ -278,11 +278,16 @@ Fmt.format(f"{:4}", "a") == "a   "
 `grouping` spcifies the way of grouping digits.
 For integers with the decimal format, `,` and `_` indicates thousand separator (e.g., `1,234,567`).
 For integers with the binary, octal or hexadecimal format, `_` indicates four-digit separator (e.g., `0x1234_5678`).
-
+For floating-point numbers, integral parts are grouped.
 ```julia
+# integers
 Fmt.format(f"{:,}",   123456789)  == "123,456,789"
 Fmt.format(f"{:_}",   123456789)  == "123_456_789"
 Fmt.format(f"{:#_x}", 0xdeadbeef) == "0xdead_beef"
+
+# floats
+Fmt.format(f"{:,f}", 2.99792458e8) == "299,792,458.000000"
+Fmt.format(f"{:_f}", 2.99792458e8) == "299_792_458.000000"
 ```
 
 ### Precision
