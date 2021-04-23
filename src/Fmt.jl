@@ -1016,6 +1016,25 @@ function compile(fmt::String)
     n_positionals = 0
     keywords = Symbol[]
     interpolated = Symbol[]
+
+    function check_argument(arg)
+        if arg isa Positional
+            pos = arg.position
+            n_positionals = max(pos, n_positionals)
+            return Symbol(:_, pos)
+        elseif arg isa Keyword
+            name = arg.name
+            if name ∉ keywords
+                push!(keywords, name)
+                isinterpolated(arg) && push!(interpolated, name)
+            end
+            return name
+        else
+            # some static value
+            return arg
+        end
+    end
+
     code_info = Expr(:block)
     code_data = Expr(:block)
     for (i, f) in enumerate(format)
@@ -1034,76 +1053,21 @@ function compile(fmt::String)
                 end
             end
         else
-            arg = f.argument
-            if arg isa Positional
-                n_positionals = max(arg.position, n_positionals)
-                x = esc(Symbol(:_, arg.position))
-            else
-                if arg.name ∉ keywords
-                    push!(keywords, arg.name)
-                    arg.interp && push!(interpolated, arg.name)
-                end
-                x = esc(arg.name)
-            end
-
-            # dynamic fill
-            fill = if f.fill isa Positional
-                position = f.fill.position
-                n_positionals = max(position, n_positionals)
-                Symbol(:_, position)
-            elseif f.fill isa Keyword
-                keyword = f.fill.name
-                if keyword ∉ keywords
-                    push!(keywords, keyword)
-                    f.fill.interp && push!(interpolated, keyword)
-                end
-                keyword
-            else
-                f.fill
-            end
-
-            # dynamic width
-            width = if f.width isa Positional
-                position = f.width.position
-                n_positionals = max(position, n_positionals)
-                Symbol(:_, position)
-            elseif f.width isa Keyword
-                keyword = f.width.name
-                if keyword ∉ keywords
-                    push!(keywords, keyword)
-                    f.width.interp && push!(interpolated, keyword)
-                end
-                keyword
-            else
-                f.width
-            end
-
-            # dynamic precision
-            precision = if f.precision isa Positional
-                position = f.precision.position
-                n_positionals = max(position, n_positionals)
-                Symbol(:_, position)
-            elseif f.precision isa Keyword
-                keyword = f.precision.name
-                if keyword ∉ keywords
-                    push!(keywords, keyword)
-                    f.precision.interp && push!(interpolated, keyword)
-                end
-                keyword
-            else
-                f.precision
-            end
-
-            conv = f.conv == CONV_REPR ? repr : f.conv == CONV_STRING ? string : identity
-            f = :(Field($f, fill = $(esc(fill)), width = $(esc(width)), precision = $(esc(precision))))
+            value = check_argument(f.argument)
+            fill = check_argument(f.fill)
+            width = check_argument(f.width)
+            precision = check_argument(f.precision)
+            fld = Symbol(:fld, i)
             arg = Symbol(:arg, i)
             meta = Symbol(:meta, i)
+            conv = f.conv == CONV_REPR ? repr : f.conv == CONV_STRING ? string : identity
             info = quote
-                $arg = $(conv)($x)
-                s, $meta = formatinfo($f, $arg)
+                $fld = Field($f, fill = $(esc(fill)), width = $(esc(width)), precision = $(esc(precision)))
+                $arg = $(conv)($(esc(value)))
+                s, $meta = formatinfo($fld, $arg)
                 size += s
             end
-            data = :(p = formatfield(data, p, $f, $arg, $meta))
+            data = :(p = formatfield(data, p, $fld, $arg, $meta))
         end
         push!(code_info.args, info)
         push!(code_data.args, data)
