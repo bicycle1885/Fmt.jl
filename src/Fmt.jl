@@ -19,6 +19,8 @@ end
 
 const Argument = Union{Positional, Keyword}
 
+isinterpolated(::Positional) = false
+isinterpolated(x::Keyword) = x.interp
 
 # Fields
 # ------
@@ -76,6 +78,8 @@ function Field(
         type = f.type)
     return Field(f.argument, conv, fill, align, sign, altform, zero, width, grouping, precision, type)
 end
+
+isinterpolated(f::Field) = isinterpolated(f.argument)
 
 
 # Writer functions
@@ -795,6 +799,18 @@ function parse(fmt::String)
         end
     end
     str.size > 0 && push!(list, String(take!(str)))
+
+    # check fields
+    interpolated = missing
+    for f in list
+        f isa Field || continue
+        if ismissing(interpolated)
+            interpolated = isinterpolated(f)
+        elseif interpolated != isinterpolated(f)
+            throw(FormatError("mixing interpolated and non-interpolated fields is not allowed"))
+        end
+    end
+
     return list
 end
 

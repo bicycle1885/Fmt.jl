@@ -643,4 +643,5 @@ end
     @test_throws FormatError("incomplete field") parse("{:3")
     @test_throws FormatError("incomplete field") parse("{:,")
     @test_throws FormatError("incomplete field") parse("{:d")
+    @test_throws FormatError("mixing interpolated and non-interpolated fields is not allowed") parse("{\$x} {}")
 end

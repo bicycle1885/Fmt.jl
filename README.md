@@ -138,6 +138,18 @@ For example, `{:,s}` is syntactically valid but semantically invalid, because th
 
 The semantic of the format specification is basically the same as that of Python.
 
+Fields that have an argument prefixed by `$` are interpolated like ordinal strings.
+Currently, mixing interpolated and non-interpolated replacement fields in an f-string is not allowed.
+The f-string returns a string if all of the fields are interpolated (including the case of no fields).
+Otherwise, it returns an `Fmt.Format` object, which can be passed to `Fmt.format` and `Fmt.printf` as the formatting template.
+
+```julia
+f"x is x."    isa String      #> true
+f"x is {$x}." isa String      #> true
+f"x is {x}."  isa Fmt.Format  #> true
+f"x is {}."   isa Fmt.Format  #> true
+```
+
 ### Argument
 
 The `argument` is either positional or keyword.
