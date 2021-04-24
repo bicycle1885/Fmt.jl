@@ -5,7 +5,7 @@
 Fmt.jl provides a Python-style format language.
 It is an alternative of Printf.jl and string utility functions in Base.
 Formats are constructed by a [non-standard string literal](https://docs.julialang.org/en/v1/manual/strings/#non-standard-string-literals) prefixed by `f`, called f-strings.
-In the following example, a part of an f-string surrounded curly braces `{` `}` is replaced with a formatted floating-point number:
+In the following example, a part of an f-string surrounded by curly braces `{` `}` is replaced with a formatted floating-point number:
 ```
 julia> using Fmt
 
