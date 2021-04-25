@@ -554,6 +554,13 @@ struct Foo end
     @test format(f"{:016,f}", 1234.0) == "0,001,234.000000"
     @test format(f"{:017,f}", 1234.0) == "00,001,234.000000"
 
+    @test format(f"{}",   big"42") == "42"
+    @test format(f"{:b}", big"42") == "101010"
+    @test format(f"{:o}", big"42") == "52"
+    @test format(f"{:d}", big"42") == "42"
+    @test format(f"{:x}", big"42") == "2a"
+    @test format(f"{:X}", big"42") == "2A"
+
     if Sys.WORD_SIZE == 64
         ptr = reinterpret(Ptr{Cvoid}, 0x000012340000abcd)
         @test format(f"{}",      ptr) == "0x000012340000abcd"

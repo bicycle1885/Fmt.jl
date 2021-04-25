@@ -251,7 +251,7 @@ end
     if f.type == 'c'
         p = pad(data, p, Char(x), 1)
     else
-        u = unsigned(abs(x))
+        u = magnitude(x)
         if f.grouping == GROUPING_UNSPECIFIED
             p = base ==  2 ? binary(data, p, u, m) :
                 base ==  8 ? octal(data, p, u, m) :
@@ -270,7 +270,12 @@ end
     return p
 end
 
-function binary(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int)
+magnitude(x::Unsigned) = x
+magnitude(x::Union{Int8, Int16, Int32, Int64, Int128}) = unsigned(abs(x))
+magnitude(x::Bool) = UInt(x)
+magnitude(x::BigInt) = abs(x)
+
+function binary(data::Vector{UInt8}, p::Int, x::Integer, m::Int)
     n = m
     while n > 0
         r = (x & 0x1) % UInt8
@@ -281,7 +286,7 @@ function binary(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int)
     return p + m
 end
 
-function binary_grouping(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int)
+function binary_grouping(data::Vector{UInt8}, p::Int, x::Integer, m::Int)
     k = div(m - 1, 4)
     n = m + k
     while n ≥ 5
@@ -300,7 +305,7 @@ function binary_grouping(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int)
     return p + m + k
 end
 
-function octal(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int)
+function octal(data::Vector{UInt8}, p::Int, x::Integer, m::Int)
     n = m
     while n > 0
         r = (x & 0x7) % UInt8
@@ -311,7 +316,7 @@ function octal(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int)
     return p + m
 end
 
-function octal_grouping(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int)
+function octal_grouping(data::Vector{UInt8}, p::Int, x::Integer, m::Int)
     k = div(m - 1, 4)
     n = m + k
     while n ≥ 5
@@ -332,7 +337,7 @@ end
 
 const DECIMAL_DIGITS = [let (d, r) = divrem(x, 10); ((d + Z) << 8) % UInt16 + (r + Z) % UInt8; end for x in 0:99]
 
-function decimal(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int)
+function decimal(data::Vector{UInt8}, p::Int, x::Integer, m::Int)
     n = m
     @inbounds while n ≥ 2
         x, r = divrem(x, 0x64)  # 0x64 = 100
@@ -347,7 +352,7 @@ function decimal(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int)
     return p + m
 end
 
-function decimal_grouping(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int, sep::UInt8)
+function decimal_grouping(data::Vector{UInt8}, p::Int, x::Integer, m::Int, sep::UInt8)
     k = div(m - 1, 3)
     n = m + k
     while n ≥ 4
@@ -374,7 +379,7 @@ for x in 0:255
     HEXADECIMAL_DIGITS_LOWERCASE[x+1] = ((d < 10 ? d + Z : d - 10 + A) << 8) % UInt16 + (r < 10 ? r + Z : r - 10 + A) % UInt8
 end
 
-function hexadecimal(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int, uppercase::Bool)
+function hexadecimal(data::Vector{UInt8}, p::Int, x::Integer, m::Int, uppercase::Bool)
     n = m
     hexdigits = uppercase ? HEXADECIMAL_DIGITS_UPPERCASE : HEXADECIMAL_DIGITS_LOWERCASE
     while n ≥ 2
@@ -392,7 +397,7 @@ function hexadecimal(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int, uppercase
     return p + m
 end
 
-function hexadecimal_grouping(data::Vector{UInt8}, p::Int, x::Unsigned, m::Int, uppercase::Bool)
+function hexadecimal_grouping(data::Vector{UInt8}, p::Int, x::Integer, m::Int, uppercase::Bool)
     k = div(m - 1, 4)
     n = m + k
     hexdigits = uppercase ? HEXADECIMAL_DIGITS_UPPERCASE : HEXADECIMAL_DIGITS_LOWERCASE
@@ -435,6 +440,8 @@ function ndigits_decimal(x::Unsigned)
     end
     return n
 end
+
+ndigits_decimal(x::BigInt) = ndigits(x, base = 10)
 
 function formatinfo(f::Field, x::Ptr)
     width = 2sizeof(x) + 2
