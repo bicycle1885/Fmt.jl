@@ -468,12 +468,23 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Rational, ::Nothi
     n = numerator(x)
     d = denominator(x)
     if f.type == 'f'
+        first = p
         q, r = divrem(n, d)
         p = decimal(data, p, q, ndigits_decimal(q))
+        last = p - 1
         data[p] = UInt8('.')
         p += 1
         precision = f.precision == PRECISION_UNSPECIFIED ? 6 : f.precision
-        p = fraction(data, p, r, d, precision)
+        p, carry = fraction(data, p, r, d, precision)
+        if carry
+            carry = rounddigits(data, first, last)
+            if carry
+                # insert digit '1'
+                copyto!(data, first + 1, data, first, p - first)
+                data[first] = UInt8('1')
+                p += 1
+            end
+        end
     else
         p = decimal(data, p, n, ndigits_decimal(n))
         data[p] = UInt8('/')
@@ -495,17 +506,27 @@ function fraction(data::Vector{UInt8}, p::Int, n::Int, d::Int, precision::Int)
         prec -= 1
     end
     q, = divrem10(n, d)
+    carry = false
     if q ≥ 5
         # FIXME: tie breaking
-        i = p - 1
-        data[i] += 0x1
-        while i > start && data[i] == Z + 0xa
-            data[i] = Z
-            i -= 1
-            data[i] += 0x1
-        end
+        carry = rounddigits(data, start, p - 1)
     end
-    return p
+    return p, carry
+end
+
+function rounddigits(data, first, last)
+    i = last
+    data[i] += 0x1
+    while i > first && data[i] == Z + 0xa
+        data[i] = Z
+        i -= 1
+        data[i] += 0x1
+    end
+    if i == first && data[i] == Z + 0xa
+        data[i] = Z
+        return true
+    end
+    return false
 end
 
 # FIXME: 10n may overflow

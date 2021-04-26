@@ -576,6 +576,8 @@ struct Foo end
     @test format(f"{:.3f}", 8999//10000) == "0.900"
     @test format(f"{:.4f}", 8999//10000) == "0.8999"
     @test format(f"{:.5f}", 8999//10000) == "0.89990"
+    @test format(f"{:.2f}", 9999//10000) == "1.00"
+    @test format(f"{:.2f}", 99999//10000) == "10.00"
 
     if Sys.WORD_SIZE == 64
         ptr = reinterpret(Ptr{Cvoid}, 0x000012340000abcd)
