@@ -486,21 +486,30 @@ end
 function fraction(data::Vector{UInt8}, p::Int, n::Int, d::Int, precision::Int)
     @assert 0 ≤ n < d
     @assert precision ≥ 1
-    while precision > 1
-        q, n = divrem(10n, d)
+    start = p
+    prec = precision
+    while prec > 0
+        q, n = divrem10(n, d)
         data[p] = UInt8(q + Z)
         p += 1
-        precision -= 1
+        prec -= 1
     end
-    q, n = divrem(10n, d)
-    q′ = div(10n, d)
-    if q′ ≥ 5
-        q += 1
+    q, = divrem10(n, d)
+    if q ≥ 5
+        # FIXME: tie breaking
+        i = p - 1
+        data[i] += 0x1
+        while i > start && data[i] == Z + 0xa
+            data[i] = Z
+            i -= 1
+            data[i] += 0x1
+        end
     end
-    data[p] = UInt8(q + Z)
-    p += 1
     return p
 end
+
+# FIXME: 10n may overflow
+divrem10(n, d) = divrem(10n, d)
 
 function formatinfo(f::Field, x::IEEEFloat)
     # The cost of computing the exact size is high, so we estimate an upper bound.
