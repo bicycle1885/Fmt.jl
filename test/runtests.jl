@@ -561,6 +561,17 @@ struct Foo end
     @test format(f"{:x}", big"42") == "2a"
     @test format(f"{:X}", big"42") == "2A"
 
+    @test format(f"{}", 0//1) == "0/1"
+    @test format(f"{}", 1//100) == "1/100"
+    @test format(f"{}", 2//100) == "1/50"
+    @test format(f"{}", 355//113) == "355/113"
+    @test format(f"{:f}", 1//2) == "0.500000"
+    @test format(f"{:f}", 355//113) == "3.141593"
+    @test format(f"{:.1f}", 355//113) == "3.1"
+    @test format(f"{:.2f}", 355//113) == "3.14"
+    @test format(f"{:.3f}", 355//113) == "3.142"
+    @test format(f"{:.100f}", 355//113) == "3.1415929203539823008849557522123893805309734513274336283185840707964601769911504424778761061946902655"
+
     if Sys.WORD_SIZE == 64
         ptr = reinterpret(Ptr{Cvoid}, 0x000012340000abcd)
         @test format(f"{}",      ptr) == "0x000012340000abcd"

@@ -459,6 +459,49 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Ptr, ::Nothing)
     return p
 end
 
+function formatinfo(f::Field, x::Rational)
+    # FIXME
+    return 512, nothing
+end
+
+function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Rational, ::Nothing)
+    n = numerator(x)
+    d = denominator(x)
+    if f.type == 'f'
+        q, r = divrem(n, d)
+        p = decimal(data, p, q, ndigits_decimal(q))
+        data[p] = UInt8('.')
+        p += 1
+        precision = f.precision == PRECISION_UNSPECIFIED ? 6 : f.precision
+        p = fraction(data, p, r, d, precision)
+    else
+        p = decimal(data, p, n, ndigits_decimal(n))
+        data[p] = UInt8('/')
+        p += 1
+        p = decimal(data, p, d, ndigits_decimal(d))
+    end
+    return p
+end
+
+function fraction(data::Vector{UInt8}, p::Int, n::Int, d::Int, precision::Int)
+    @assert 0 ≤ n < d
+    @assert precision ≥ 1
+    while precision > 1
+        q, n = divrem(10n, d)
+        data[p] = UInt8(q + Z)
+        p += 1
+        precision -= 1
+    end
+    q, n = divrem(10n, d)
+    q′ = div(10n, d)
+    if q′ ≥ 5
+        q += 1
+    end
+    data[p] = UInt8(q + Z)
+    p += 1
+    return p
+end
+
 function formatinfo(f::Field, x::IEEEFloat)
     # The cost of computing the exact size is high, so we estimate an upper bound.
     if f.type == 'f' || f.type == 'F' || f.type == '%'
