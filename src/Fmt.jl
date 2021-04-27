@@ -465,8 +465,18 @@ function formatinfo(f::Field, x::Rational)
 end
 
 function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Rational, ::Nothing)
-    n = numerator(x)
-    d = denominator(x)
+    if x < 0
+        data[p] = UInt8('-')
+        p += 1
+    elseif f.sign == SIGN_PLUS
+        data[p] = UInt8('+')
+        p += 1
+    elseif f.sign == SIGN_SPACE
+        data[p] = UInt8(' ')
+        p += 1
+    end
+    n = magnitude(numerator(x))
+    d = magnitude(denominator(x))
     if f.type == 'f'
         first = p
         q, r = divrem(n, d)
@@ -494,7 +504,7 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Rational, ::Nothi
     return p
 end
 
-function fraction(data::Vector{UInt8}, p::Int, n::Int, d::Int, precision::Int)
+function fraction(data::Vector{UInt8}, p::Int, n::Integer, d::Integer, precision::Int)
     @assert 0 ≤ n < d
     @assert precision ≥ 1
     start = p
@@ -532,12 +542,12 @@ end
 # compute divrem(10x, y) (0 ≤ x < y) without overflows.
 function divrem10(x::T, y::T) where T <: Integer
     @assert 0 ≤ x < y
-    var"10x", overflow = Base.mul_with_overflow(10, x)
+    var"10x", overflow = Base.mul_with_overflow(oftype(x, 10), x)
     overflow || divrem(var"10x", y)
-    q, r = 0, x
+    q, r = zero(x), x
     for _ in 1:9
         if r + x ≥ y || r + x < r
-            q += 1
+            q += 0x1
             r += x - y
         else
             r += x
