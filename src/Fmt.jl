@@ -529,8 +529,22 @@ function rounddigits(data, first, last)
     return false
 end
 
-# FIXME: 10n may overflow
-divrem10(n, d) = divrem(10n, d)
+# compute divrem(10x, y) (0 ≤ x < y) without overflows.
+function divrem10(x::T, y::T) where T <: Integer
+    @assert 0 ≤ x < y
+    var"10x", overflow = Base.mul_with_overflow(10, x)
+    overflow || divrem(var"10x", y)
+    q, r = 0, x
+    for _ in 1:9
+        if r + x ≥ y || r + x < r
+            q += 1
+            r += x - y
+        else
+            r += x
+        end
+    end
+    return q, r
+end
 
 function formatinfo(f::Field, x::IEEEFloat)
     # The cost of computing the exact size is high, so we estimate an upper bound.
