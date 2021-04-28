@@ -490,19 +490,19 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Rational, ::Nothi
 end
 
 function fixedpoint(data::Vector{UInt8}, p::Int, x::Rational, precision::Int)
-    # integral part
+    # write integral part
     n = magnitude(numerator(x))
     d = magnitude(denominator(x))
     q, r = divrem(n, d)
     first_int = p
     p = decimal(data, p, q, ndigits_decimal(q))
     last_int = p - 1
-    #precision > 0 || return p
 
-    # fraction part
-    data[p] = UInt8('.')
-    p += 1
-    @assert 0 ≤ r < d
+    # write fraction part
+    if precision > 0
+        data[p] = UInt8('.')
+        p += 1
+    end
     first_frac = p
     prec = precision
     while prec > 0
@@ -511,14 +511,16 @@ function fixedpoint(data::Vector{UInt8}, p::Int, x::Rational, precision::Int)
         p += 1
         prec -= 1
     end
+
+    # fix fraction part
     q′, r = divrem10(r, d)
     carry = false
     if q′ ≥ 5 && (r > 0 || r == 0 && isodd(q))  # half-to-even tie breaking
         carry = rounddigits(data, first_frac, p - 1)
     end
 
+    # fix integral part
     if carry
-        # fix integral part
         carry = rounddigits(data, first_int, last_int)
         if carry
             # insert '1'
