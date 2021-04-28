@@ -475,53 +475,60 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Rational, ::Nothi
         data[p] = UInt8(' ')
         p += 1
     end
-    n = magnitude(numerator(x))
-    d = magnitude(denominator(x))
     if f.type == 'f'
-        first = p
-        q, r = divrem(n, d)
-        p = decimal(data, p, q, ndigits_decimal(q))
-        last = p - 1
-        data[p] = UInt8('.')
-        p += 1
         precision = f.precision == PRECISION_UNSPECIFIED ? 6 : f.precision
-        p, carry = fraction(data, p, r, d, precision)
-        if carry
-            carry = rounddigits(data, first, last)
-            if carry
-                # insert digit '1'
-                copyto!(data, first + 1, data, first, p - first)
-                data[first] = UInt8('1')
-                p += 1
-            end
-        end
+        p = fixedpoint(data, p, x, precision)
     else
+        n = magnitude(numerator(x))
         p = decimal(data, p, n, ndigits_decimal(n))
         data[p] = UInt8('/')
         p += 1
+        d = magnitude(denominator(x))
         p = decimal(data, p, d, ndigits_decimal(d))
     end
     return p
 end
 
-function fraction(data::Vector{UInt8}, p::Int, n::Integer, d::Integer, precision::Int)
-    @assert 0 ≤ n < d
-    @assert precision ≥ 1
-    start = p
+function fixedpoint(data::Vector{UInt8}, p::Int, x::Rational, precision::Int)
+    # integral part
+    n = magnitude(numerator(x))
+    d = magnitude(denominator(x))
+    q, r = divrem(n, d)
+    first_int = p
+    p = decimal(data, p, q, ndigits_decimal(q))
+    last_int = p - 1
+    #precision > 0 || return p
+
+    # fraction part
+    data[p] = UInt8('.')
+    p += 1
+    @assert 0 ≤ r < d
+    first_frac = p
     prec = precision
     while prec > 0
-        q, n = divrem10(n, d)
+        q, r = divrem10(r, d)
         data[p] = UInt8(q + Z)
         p += 1
         prec -= 1
     end
-    q, = divrem10(n, d)
+    q′, r = divrem10(r, d)
     carry = false
-    if q ≥ 5
-        # FIXME: tie breaking
-        carry = rounddigits(data, start, p - 1)
+    if q′ ≥ 5 && (r > 0 || r == 0 && isodd(q))  # half-to-even tie breaking
+        carry = rounddigits(data, first_frac, p - 1)
     end
-    return p, carry
+
+    if carry
+        # fix integral part
+        carry = rounddigits(data, first_int, last_int)
+        if carry
+            # insert '1'
+            copyto!(data, first_int + 1, data, first_int, p - first_int)
+            data[first_int] = UInt8('1')
+            p += 1
+        end
+    end
+
+    return p
 end
 
 function rounddigits(data, first, last)
