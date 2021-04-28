@@ -494,46 +494,46 @@ function fixedpoint(data::Vector{UInt8}, p::Int, x::Rational, precision::Int)
     n = magnitude(numerator(x))
     d = magnitude(denominator(x))
     q, r = divrem(n, d)
-    first_int = p
+    int = p
     p = decimal(data, p, q, ndigits_decimal(q))
-    last_int = p - 1
 
-    # write fraction part
+    # write fractional part
     if precision > 0
+        frac = p
         data[p] = UInt8('.')
         p += 1
-    end
-    first_frac = p
-    prec = precision
-    while prec > 0
-        q, r = divrem10(r, d)
-        data[p] = UInt8(q + Z)
-        p += 1
-        prec -= 1
-    end
-
-    # fix fraction part
-    q′, r = divrem10(r, d)
-    carry = false
-    if q′ ≥ 5 && (r > 0 || r == 0 && isodd(q))  # half-to-even tie breaking
-        carry = rounddigits(data, first_frac, p - 1)
-    end
-
-    # fix integral part
-    if carry
-        carry = rounddigits(data, first_int, last_int)
-        if carry
-            # insert '1'
-            copyto!(data, first_int + 1, data, first_int, p - first_int)
-            data[first_int] = UInt8('1')
+        prec = precision
+        while prec > 0
+            q, r = divrem10(r, d)
+            data[p] = UInt8(q + Z)
             p += 1
+            prec -= 1
         end
     end
 
+    q′, r = divrem10(r, d)
+    if q′ ≥ 5 && (r > 0 || r == 0 && isodd(q))  # half-to-even tie breaking
+        carry = true
+        if precision > 0
+            # fix fractional part
+            carry = moveupdigits(data, frac + 1, p - 1)
+        end
+        if carry
+            # fix integral part
+            carry = moveupdigits(data, int, precision > 0 ? frac - 1 : p - 1)
+            if carry
+                # insert '1'
+                copyto!(data, int + 1, data, int, p - int)
+                data[int] = UInt8('1')
+                p += 1
+            end
+        end
+    end
     return p
 end
 
-function rounddigits(data, first, last)
+function moveupdigits(data, first, last)
+    @assert first ≤ last
     i = last
     data[i] += 0x1
     while i > first && data[i] == Z + 0xa
