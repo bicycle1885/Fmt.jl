@@ -460,8 +460,14 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Ptr, ::Nothing)
 end
 
 function formatinfo(f::Field, x::Rational)
-    # FIXME
-    return 512, nothing
+    n = numerator(x)
+    d = denominator(x)
+    if f.type == 'f'
+        width = 1 + ndigits_decimal(n) + 1 + (f.precision == PRECISION_UNSPECIFIED ? 6 : f.precision)
+    else
+        width = 1 + ndigits_decimal(n) + 1 + ndigits_decimal(d)
+    end
+    return paddingsize(f, width) + width, nothing
 end
 
 function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Rational, ::Nothing)
