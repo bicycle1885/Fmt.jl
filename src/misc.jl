@@ -71,6 +71,27 @@ function insert_zeros(data, start, p, n)
     return p + n
 end
 
+# post-hoc alignment
+function aligncontent(data, p, start, width::Int, fill::Char, align::Alignment, minwidth::Int)
+    pw = max(minwidth - width, 0)  # padding width
+    ps = pw * ncodeunits(fill)     # padding size
+    size = p - start
+    if align == ALIGN_RIGHT
+        copyto!(data, start + ps, data, start, size)
+        pad(data, start, fill, pw)
+        p += ps
+    elseif align == ALIGN_CENTER
+        offset = ncodeunits(fill) * (pw ÷ 2)
+        copyto!(data, start + offset, data, start, size)
+        pad(data, start, fill, pw ÷ 2)
+        pad(data, start + offset + size, fill, pw - pw ÷ 2)
+        p += ps
+    else
+        p = pad(data, p, fill, pw)
+    end
+    return p
+end
+
 @inline function paddingwidth(f::Field, width::Int)
     @assert f.width isa Int || f.width isa Nothing
     return f.width isa Int ? max(f.width - width, 0) : 0
