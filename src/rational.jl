@@ -11,16 +11,7 @@ end
 
 function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Rational, ::Nothing)
     start = p
-    if x < 0
-        data[p] = UInt8('-')
-        p += 1
-    elseif f.sign == SIGN_PLUS
-        data[p] = UInt8('+')
-        p += 1
-    elseif f.sign == SIGN_SPACE
-        data[p] = UInt8(' ')
-        p += 1
-    end
+    p, _ = sign(data, p, x, f.sign)
     if f.type == 'f'
         precision = f.precision == PRECISION_UNSPECIFIED ? 6 : f.precision
         p = fixedpoint(data, p, x, precision)

@@ -22,20 +22,10 @@ function formatinfo(f::Field, x::IEEEFloat)
     return size, nothing
 end
 
-@inline function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::IEEEFloat, info)
+@inline function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::IEEEFloat, ::Nothing)
     start = p
-    if x < 0 || x === -zero(x)
-        data[p] = UInt8('-')
-        p += 1
-    elseif f.sign == SIGN_PLUS
-        data[p] = UInt8('+')
-        p += 1
-    elseif f.sign == SIGN_SPACE
-        data[p] = UInt8(' ')
-        p += 1
-    end
+    p, signed = sign(data, p, x, f.sign)
     x = abs(x)
-    signed = p > start
 
     uppercase = f.type == 'F' || f.type == 'E' || f.type == 'A' || f.type == 'G'
     plus = false

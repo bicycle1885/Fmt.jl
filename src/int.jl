@@ -75,13 +75,7 @@ end
     if !f.zero
         p = padleft(data, p, f.fill, align, pw)
     end
-    if x < 0
-        data[p] = UInt8('-')
-        p += 1
-    elseif f.sign == SIGN_SPACE || f.sign == SIGN_PLUS
-        data[p] = f.sign == SIGN_SPACE ? UInt8(' ') : UInt8('+')
-        p += 1
-    end
+    p, _ = sign(data, p, x, f.sign)
     if f.altform && base ≠ 10
         data[p] = Z
         data[p+1] = UInt8(f.type)

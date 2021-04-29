@@ -37,6 +37,22 @@ macro copy(dst, p, src::String)
     return esc(block)
 end
 
+# write sign mark
+function sign(data, p, x, sgn)
+    signed = false
+    if signbit(x)
+        data[p] = UInt8('-')
+        signed = true
+    elseif sgn == SIGN_PLUS
+        data[p] = UInt8('+')
+        signed = true
+    elseif sgn == SIGN_SPACE
+        data[p] = UInt8(' ')
+        signed = true
+    end
+    return p + signed, signed
+end
+
 # calculate the number of leading zeros for padding
 function number_of_leading_zeros(m, k, minwidth)
     n = div(m - 1, k)  # number of separators
