@@ -54,11 +54,4 @@ julia> Fmt.format(fmt; x, y)  # substitute variables
 "(42, -8)"
 ```
 """
-macro f_str(s)
-    code, vars = compile(unescape_string(s))
-    if isnothing(vars)
-        :(Format($s, $code))
-    else
-        :($(code)(; $(esc.(vars)...)))
-    end
-end
+macro f_str(fstr) compile(unescape_string(fstr)) end

@@ -1,27 +1,19 @@
 function compile(fstr::String)
     format = parse(fstr)
-
     if isempty(format) || length(format) == 1 && format[1] isa String
         # no replacement fields
-        str = isempty(format) ? "" : format[1]
-        return Expr(:function, Expr(:tuple), Expr(:block, str)), Symbol[]
+        return isempty(format) ? "" : format[1]
     end
 
-    n_positionals = 0
-    keywords = Keyword[]
-    getname(pos::Int) = Symbol(:_, pos)
-    getname(arg::Keyword) = arg.name
-    function check_argument(arg)
-        if arg isa Positional
-            n_positionals = max(arg.position, n_positionals)
-            return getname(arg.position)
-        elseif arg isa Keyword
-            arg ∈ keywords || push!(keywords, arg)
-            return getname(arg)
-        else
-            # some static value
-            return arg
-        end
+    nposargs = 0
+    argparams = Dict{Argument, Symbol}()
+    function arg2param(arg)
+        arg isa Argument || return arg  # static argument
+        haskey(argparams, arg) && return esc(argparams[arg])
+        arg isa Positional && (nposargs = max(arg.position, nposargs))
+        param = arg isa Keyword ? arg.name : gensym()
+        argparams[arg] = param
+        return esc(param)
     end
 
     code_info = Expr(:block)
@@ -42,17 +34,18 @@ function compile(fstr::String)
                 end
             end
         else
-            value = check_argument(f.argument)
-            fill = check_argument(f.fill)
-            width = check_argument(f.width)
-            precision = check_argument(f.precision)
+            value = arg2param(f.argument)
+            fill = arg2param(f.fill)
+            width = arg2param(f.width)
+            precision = arg2param(f.precision)
             fld = Symbol(:fld, i)
             arg = Symbol(:arg, i)
             meta = Symbol(:meta, i)
-            conv = f.conv == CONV_REPR ? repr : f.conv == CONV_STRING ? string : identity
+            conv = f.conv == CONV_REPR   ? repr   :
+                   f.conv == CONV_STRING ? string : identity
             info = quote
-                $fld = Field($f, fill = $(esc(fill)), width = $(esc(width)), precision = $(esc(precision)))
-                $arg = $(conv)($(esc(value)))
+                $fld = Field($f, fill = $fill, width = $width, precision = $precision)
+                $arg = $(conv)($value)
                 s, $meta = formatinfo($fld, $arg)
                 size += s
             end
@@ -62,7 +55,10 @@ function compile(fstr::String)
         push!(code_data.args, data)
     end
 
-    args = Expr(:tuple, Expr(:parameters, esc.(getname.(keywords))...), esc.(getname.(1:n_positionals))...)
+    # function parameters and body
+    poparams = [get(argparams, Positional(n), :_) for n in 1:nposargs]
+    kwparams = [param for (arg, param) in argparams if arg isa Union{Keyword, Expr}]
+    params = Expr(:tuple, Expr(:parameters, esc.(kwparams)...), esc.(poparams)...)
     body = quote
         size = 0
         $(code_info)
@@ -72,7 +68,15 @@ function compile(fstr::String)
         p - 1 < size && resize!(data, p - 1)
         return String(data)
     end
-    return Expr(:function, args, body), any(isinterpolated, keywords) ? getname.(keywords) : nothing
+    func = Expr(:function, params, body)
+
+    makekw((arg, param)) = Expr(:kw, param, esc(arg isa Keyword ? arg.name : arg))
+    if any(isinterpolated, keys(argparams))
+        @assert nposargs == 0
+        return Expr(:call, func, makekw.(collect(argparams))...)
+    else
+        return Expr(:call, :Format, fstr, func)
+    end
 end
 
 function genstrcopy(s::String)

@@ -82,10 +82,14 @@ function parse_argument(s::String, i::Int, serial::Int)
         n == 0 && throw(FormatError("argument 0 is not allowed; use 1 or above"))
         arg = Positional(n)
     elseif c == '$'
-        i < lastindex(s) && Base.is_id_start_char(s[i+1]) ||
-            throw(FormatError("identifier is expected after '\$'"))
-        name, i = Meta.parse(s, i + 1, greedy = false)
-        arg = Keyword(name, true)
+        i < lastindex(s) && (Base.is_id_start_char(s[i+1]) || s[i+1] == '(') ||
+            throw(FormatError("identifier or '(' is expected after '\$'"))
+        expr, i = Meta.parse(s, i + 1, greedy = false)
+        if expr isa Symbol
+            arg = Keyword(expr, true)
+        else
+            arg = expr isa Expr ? expr : Expr(:block, expr)
+        end
     elseif Base.is_id_start_char(c)
         name, i = Meta.parse(s, i, greedy = false)
         arg = Keyword(name, false)

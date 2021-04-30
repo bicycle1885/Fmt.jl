@@ -7,10 +7,11 @@ struct Keyword
     interp::Bool
 end
 
-const Argument = Union{Positional, Keyword}
+const Argument = Union{Positional, Keyword, Expr}
 
 isinterpolated(::Positional) = false
 isinterpolated(x::Keyword) = x.interp
+isinterpolated(::Expr) = true
 
 const FILL_DEFAULT = ' '
 @enum Alignment::UInt8 ALIGN_UNSPECIFIED ALIGN_LEFT ALIGN_RIGHT ALIGN_CENTER

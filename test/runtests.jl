@@ -654,6 +654,14 @@ end
     n = 4
     @test f"{$x:{$n}}" == "  42"
 
+    x = 0
+    @test f"{$(x+1)}" == "1"
+    @test f"{$(x+1)} {$(x+2)}" == "1 2"
+    @test f"{$(x+1)} {$(x+2)} {$(x+3)}" == "1 2 3"
+
+    @test f"{$(42)}" == "42"
+    @test f"{$('a')}" == "a"
+
     x = 42
     @test f"{{" == "{"
     @test f"}}" == "}"
@@ -680,7 +688,7 @@ end
     @test_throws FormatError("invalid character '>'") parse("{>:}")
     @test_throws FormatError("invalid character 'Z'") parse("{:Z}")
     @test_throws FormatError("argument 0 is not allowed; use 1 or above") parse("{0}")
-    @test_throws FormatError("identifier is expected after '\$'") parse("{\$:}")
+    @test_throws FormatError("identifier or '(' is expected after '\$'") parse("{\$:}")
     @test_throws FormatError("invalid conversion character 'K'") parse("{/K}")
     @test_throws FormatError("number overflows") parse("{9999999999999999999}")
     @test_throws FormatError("incomplete field") parse("{/s")

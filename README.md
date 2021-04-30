@@ -111,9 +111,10 @@ The syntax of a replacement field is formally defined as follows:
 ```
 # replacement field
 field      = '{'[argument]['/'conv][':'spec]'}'
-argument   = number | ['$']identifier
+argument   = number | ['$']identifier | '$('expression')'
 number     = digit+
-identifier = any valid variable name
+identifier = any valid identifier
+expression = any valid expression
 digit      = '0' | '1' | '2' | … | '9'
 conv       = 's' | 'r'
 
