@@ -40,7 +40,9 @@ end
 # write sign mark
 function sign(data, p, x, sgn)
     signed = false
-    if signbit(x)
+    if sgn == SIGN_NONE
+        # pass
+    elseif signbit(x)
         data[p] = UInt8('-')
         signed = true
     elseif sgn == SIGN_PLUS

@@ -599,6 +599,10 @@ struct Foo end
     @test format(f"{}", π) == "π"
     @test format(f"{:f}", π) == "3.141593"
 
+    @test format(f"{}", 1 + 2im)  == "1 + 2im"
+    @test format(f"{}", 1 - 2im)  == "1 - 2im"
+    @test format(f"{}", -1 - 2im) == "-1 - 2im"
+
     if Sys.WORD_SIZE == 64
         ptr = reinterpret(Ptr{Cvoid}, 0x000012340000abcd)
         @test format(f"{}",      ptr) == "0x000012340000abcd"
