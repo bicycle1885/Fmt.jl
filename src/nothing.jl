@@ -1,5 +1,5 @@
 function formatinfo(s::Spec, ::Nothing)
-    size = ncodeunits("nothing")  # 7 bytes
+    size = 7  # ncodeunits("nothing")
     return size + paddingsize(s, size), nothing
 end
 
