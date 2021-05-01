@@ -27,15 +27,6 @@ function formatfield(data::Vector{UInt8}, p::Int, s::Spec, x::BigFloat, str::Str
     if s.type === nothing && isinteger(x)
         p = @copy data p ".0"
     end
-    #let x = abs(s.type == '%' ? 100x : x)
-    #    fmt = makefmt(s)
-    #    n = mpfr_snprintf(@view(data[p:end]), fmt, x)
-    #    @assert n ≥ 0
-    #    p += n
-    #    if s.type === nothing && isinteger(x)
-    #        p = @copy data p ".0"
-    #    end
-    #end
 
     if s.grouping != GROUPING_UNSPECIFIED
         minwidth = s.width == WIDTH_UNSPECIFIED ? 0 : s.width - signed
