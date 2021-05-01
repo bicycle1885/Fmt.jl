@@ -701,4 +701,6 @@ end
     @test_throws FormatError("incomplete field") parse("{:,")
     @test_throws FormatError("incomplete field") parse("{:d")
     @test_throws FormatError("mixing interpolated and non-interpolated fields is not allowed") parse("{\$x} {}")
+    @test_throws FormatError("inconsistent interpolation of arguments") parse("{\$x:{width}}")
+    @test_throws FormatError("inconsistent interpolation of arguments") parse("{x:{\$width}}")
 end

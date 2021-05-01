@@ -45,8 +45,8 @@ function parse(fmt::String)
     for f in list
         f isa Field || continue
         if ismissing(interpolated)
-            interpolated = isinterpolated(f)
-        elseif interpolated != isinterpolated(f)
+            interpolated = f.argument isa Expr
+        elseif interpolated != (f.argument isa Expr)
             throw(FormatError("mixing interpolated and non-interpolated fields is not allowed"))
         end
     end
@@ -72,27 +72,37 @@ function parse_field(fmt::String, i::Int, serial::Int)
         i ≤ last || incomplete_field()
     end
     fmt[i] == '}' || throw(FormatError("invalid character $(repr(fmt[i]))"))
+    if !isempty(spec)
+        # check consistency of arguments
+        if arg isa Expr
+            spec.fill      isa Union{Char,         Expr} &&
+            spec.width     isa Union{Int, Nothing, Expr} &&
+            spec.precision isa Union{Int, Nothing, Expr} ||
+            throw(FormatError("inconsistent interpolation of arguments"))
+        else
+            spec.fill      isa Union{Char,         Positional, Keyword} &&
+            spec.width     isa Union{Int, Nothing, Positional, Keyword} &&
+            spec.precision isa Union{Int, Nothing, Positional, Keyword} ||
+            throw(FormatError("inconsistent interpolation of arguments"))
+        end
+    end
     return Field(arg; conv, spec...), i + 1, serial
 end
 
 function parse_argument(s::String, i::Int, serial::Int)
     c = s[i]  # the first character after '{'
-    if isdigit(c)
-        n, i = parse_digits(s, i)
-        n == 0 && throw(FormatError("argument 0 is not allowed; use 1 or above"))
-        arg = Positional(n)
-    elseif c == '$'
+    if c == '$'
         i < lastindex(s) && (Base.is_id_start_char(s[i+1]) || s[i+1] == '(') ||
             throw(FormatError("identifier or '(' is expected after '\$'"))
-        expr, i = Meta.parse(s, i + 1, greedy = false)
-        if expr isa Symbol
-            arg = Keyword(expr, true)
-        else
-            arg = expr isa Expr ? expr : Expr(:block, expr)
-        end
+        ast, i = Meta.parse(s, i + 1, greedy = false)
+        arg = ast isa Expr ? ast : Expr(:block, ast)
+    elseif isdigit(c)
+        num, i = parse_digits(s, i)
+        num == 0 && throw(FormatError("argument 0 is not allowed; use 1 or above"))
+        arg = Positional(num)
     elseif Base.is_id_start_char(c)
         name, i = Meta.parse(s, i, greedy = false)
-        arg = Keyword(name, false)
+        arg = Keyword(name)
     else
         serial += 1
         arg = Positional(serial)

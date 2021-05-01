@@ -71,7 +71,7 @@ function compile(fstr::String)
     func = Expr(:function, params, body)
 
     makekw((arg, param)) = Expr(:kw, param, esc(arg isa Keyword ? arg.name : arg))
-    if any(isinterpolated, keys(argparams))
+    if any(x -> x isa Expr, keys(argparams))
         @assert nposargs == 0
         return Expr(:call, func, makekw.(collect(argparams))...)
     else

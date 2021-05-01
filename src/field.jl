@@ -4,14 +4,9 @@ end
 
 struct Keyword
     name::Symbol
-    interp::Bool
 end
 
 const Argument = Union{Positional, Keyword, Expr}
-
-isinterpolated(::Positional) = false
-isinterpolated(x::Keyword) = x.interp
-isinterpolated(::Expr) = true
 
 const FILL_DEFAULT = ' '
 @enum Alignment::UInt8 ALIGN_UNSPECIFIED ALIGN_LEFT ALIGN_RIGHT ALIGN_CENTER
@@ -67,5 +62,3 @@ function Field(
         type = f.type)
     return Field(f.argument, conv, fill, align, sign, altform, zero, width, grouping, precision, type)
 end
-
-isinterpolated(f::Field) = isinterpolated(f.argument)
