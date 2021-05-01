@@ -423,7 +423,7 @@ end
     @test format(f"{:.2f}", N)  == "602214075999999987023872.00"
 
     @test format(f"{:.2F}", 1.) == "1.00"
-    @test format(f"{:.2F}", pi) == "3.14"
+    @test format(f"{:.2F}", x)  == "3.14"
     @test format(f"{:.2F}", h)  == "0.00"
     @test format(f"{:.2F}", N)  == "602214075999999987023872.00"
 
@@ -616,6 +616,10 @@ end
     @test format(f"{}",   x) == "3.14159"
     @test format(f"{:g}", x) == "3.14159"
     @test format(f"{:G}", x) == "3.14159"
+
+    N = big"6.02214076e+23"  # Avogadro constant
+    @test format(f"{:,f}",  N) == "602,214,076,000,000,000,000,000.000000"
+    @test format(f"{: ,f}", N) == " 602,214,076,000,000,000,000,000.000000"
 end
 
 @testset "irrational" begin

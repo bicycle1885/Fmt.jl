@@ -6,6 +6,6 @@ function formatinfo(s::Spec, x::Any)
     return size + paddingsize(s, width), (str, width)
 end
 
-function formatfield(data::Vector{UInt8}, p::Int, s::Spec, ::Any, (str, width)::Tuple{String, Int})
+function formatfield(data::Vector{UInt8}, p::Int, s::Spec, ::Any, (str, width))
     return formatfield(data, p, s, str, width)
 end

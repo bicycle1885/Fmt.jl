@@ -1,20 +1,41 @@
 function formatinfo(s::Spec, x::BigFloat)
-    # FIXME
-    return 512, nothing
+    str = Base.MPFR.string_mpfr(abs(s.type == '%' ? 100x : x), makefmt(s))
+    n = ncodeunits(str)
+    m = 0  # the number of integral digits
+    while m + 1 ≤ n && codeunit(str, m + 1) != UInt8('.')
+        m += 1
+    end
+    width = n
+    if s.sign == SIGN_PLUS || s.sign == SIGN_SPACE || s.sign != SIGN_NONE && signbit(x)
+        width += 1
+    end
+    if s.grouping == GROUPING_COMMA || s.grouping == GROUPING_UNDERSCORE
+        width += div(m - 1, 3)  # separators
+    end
+    if s.type === nothing && isinteger(x)
+        width += 2
+    end
+    return width + paddingsize(s, width), str
 end
 
-function formatfield(data::Vector{UInt8}, p::Int, s::Spec, x::BigFloat, ::Nothing)
+function formatfield(data::Vector{UInt8}, p::Int, s::Spec, x::BigFloat, str::String)
     start = p
     p, signed = sign(data, p, x, s.sign)
-    let x = abs(s.type == '%' ? 100x : x)
-        fmt = makefmt(s)
-        n = mpfr_snprintf(@view(data[p:end]), fmt, x)
-        @assert n ≥ 0
-        p += n
-        if s.type === nothing && isinteger(x)
-            p = @copy data p ".0"
-        end
+    n = ncodeunits(str)
+    copyto!(data, p, codeunits(str), 1, n)
+    p += n
+    if s.type === nothing && isinteger(x)
+        p = @copy data p ".0"
     end
+    #let x = abs(s.type == '%' ? 100x : x)
+    #    fmt = makefmt(s)
+    #    n = mpfr_snprintf(@view(data[p:end]), fmt, x)
+    #    @assert n ≥ 0
+    #    p += n
+    #    if s.type === nothing && isinteger(x)
+    #        p = @copy data p ".0"
+    #    end
+    #end
 
     if s.grouping != GROUPING_UNSPECIFIED
         minwidth = s.width == WIDTH_UNSPECIFIED ? 0 : s.width - signed
