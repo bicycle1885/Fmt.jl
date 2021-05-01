@@ -1,23 +1,29 @@
 # values of specification fields
-const FILL_DEFAULT = ' '
-@enum Alignment::UInt8 ALIGN_UNSPECIFIED ALIGN_LEFT ALIGN_RIGHT ALIGN_CENTER
-# SIGN_NONE has a special use case for complex numbers
+@enum Alignment::UInt8 ALIGN_LEFT ALIGN_RIGHT ALIGN_CENTER
 @enum Sign::UInt8 SIGN_PLUS SIGN_MINUS SIGN_SPACE SIGN_NONE
+@enum Grouping::UInt8 GROUPING_COMMA GROUPING_UNDERSCORE
+
+const FILL_DEFAULT = ' '
 const SIGN_DEFAULT = SIGN_MINUS
+
+const ALIGN_UNSPECIFIED = nothing
 const WIDTH_UNSPECIFIED = nothing
-@enum Grouping::UInt8 GROUPING_UNSPECIFIED GROUPING_COMMA GROUPING_UNDERSCORE
+const GROUPING_UNSPECIFIED = nothing
 const PRECISION_UNSPECIFIED = nothing
 const TYPE_UNSPECIFIED = nothing
+
+isspecified(val) = val !== nothing
+default(val, defval) = isspecified(val) ? val : defval
 
 # format specification
 struct Spec
     fill::Union{Char, Argument}
-    align::Alignment
+    align::Union{Alignment, Nothing}
     sign::Sign
     altform::Bool
     zero::Bool
     width::Union{Int, Nothing, Argument}
-    grouping::Grouping
+    grouping::Union{Grouping, Nothing}
     precision::Union{Int, Nothing, Argument}
     type::Union{Char, Nothing}
 end
