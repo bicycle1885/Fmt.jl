@@ -623,8 +623,12 @@ end
 end
 
 @testset "irrational" begin
-    @test format(f"{}", π) == "π"
+    @test format(f"{}",   π) == "π"
+    @test format(f"{:s}", π) == "π"
     @test format(f"{:f}", π) == "3.141593"
+    @test format(f"{:4}", π) == "   π"
+    @test format(f"{:<4}", π) == "π   "
+    @test format(f"{:>4}", π) == "   π"
 end
 
 @testset "complex" begin

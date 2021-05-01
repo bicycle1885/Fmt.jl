@@ -1,8 +1,8 @@
 function formatinfo(s::Spec, x::Irrational)
-    if s.type == TYPE_UNSPECIFIED
+    if s.type == TYPE_UNSPECIFIED || s.type == 's'
         # string representation using String
         val = string(x)
-        size, meta = formatinfo(Spec(s, type = 's'), val)
+        size, meta = formatinfo(Spec(s, align = s.align == ALIGN_UNSPECIFIED ? ALIGN_RIGHT : s.align, type = 's'), val)
     else
         # numeric representation using BigFloat
         precision = s.precision == PRECISION_UNSPECIFIED ? 6 : s.precision
@@ -13,8 +13,8 @@ function formatinfo(s::Spec, x::Irrational)
 end
 
 function formatfield(data::Vector{UInt8}, p::Int, s::Spec, ::Irrational, meta)
-    if s.type == TYPE_UNSPECIFIED
-        s = Spec(s, type = 's')
+    if s.type == TYPE_UNSPECIFIED || s.type == 's'
+        s = Spec(s, align = s.align == ALIGN_UNSPECIFIED ? ALIGN_RIGHT : s.align, type = 's')
     end
     return formatfield(data, p, s, meta[1], meta[2])
 end
