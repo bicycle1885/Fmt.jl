@@ -51,6 +51,9 @@ function parse(fmt::String)
         end
     end
 
+    if isempty(list)
+        push!(list, "")
+    end
     return list
 end
 

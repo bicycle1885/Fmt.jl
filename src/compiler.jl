@@ -1,8 +1,9 @@
 function compile(fstr::String)
     format = parse(fstr)
-    if isempty(format) || length(format) == 1 && format[1] isa String
+    @assert !isempty(format)
+    if length(format) == 1 && format[1] isa String
         # no replacement fields
-        return isempty(format) ? "" : format[1]
+        return format[1]
     end
 
     nposargs = 0
@@ -34,6 +35,7 @@ function compile(fstr::String)
                 end
             end
         else
+            @assert f isa Field
             value = arg2param(f.argument)
             fill = arg2param(f.spec.fill)
             width = arg2param(f.spec.width)
