@@ -64,8 +64,8 @@ end
         data[p] = UInt8('%')
         p += 1
     else
-        @assert s.type == 'G' || s.type == 'g' || s.type === nothing
-        hash = s.type === nothing
+        @assert s.type == 'G' || s.type == 'g' || !isspecified(s.type)
+        hash = !isspecified(s.type)
         precision = -1
         if isspecified(s.precision)
             precision = max(s.precision, 1)
