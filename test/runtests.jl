@@ -80,6 +80,12 @@ struct Foo end
     @test format(f"{:^10}", nothing) == " nothing  "
     @test format(f"{:>10}", nothing) == "   nothing"
 
+    @test format(f"{:}",    missing) == "missing"
+    @test format(f"{:10}",  missing) == "   missing"
+    @test format(f"{:<10}", missing) == "missing   "
+    @test format(f"{:^10}", missing) == " missing  "
+    @test format(f"{:>10}", missing) == "   missing"
+
     @test format(f"{:0}", 123) == "123"
     @test format(f"{:1}", 123) == "123"
     @test format(f"{:2}", 123) == "123"
