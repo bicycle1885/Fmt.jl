@@ -675,6 +675,10 @@ end
     @test format(f"{x} {x} {x}", x = 1) == "1 1 1"
 
     # mixed arguments
+    @test format(f"{1} {} {2} {}", 1, 2) == "1 1 2 2"
+    @test format(f"{2} {} {1} {}", 1, 2) == "2 1 1 2"
+    @test format(f"{3} {} {4} {}", 1, 2, 3, 4) == "3 1 4 2"
+    @test format(f"{x} {} {y} {}", 1, 2, x = "x", y = "y") == "x 1 y 2"
     @test format(f"{x} {1} {y} {2}", 1, 2, x = "x", y = "y") == "x 1 y 2"
 
     # many positional arguments

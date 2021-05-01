@@ -159,7 +159,7 @@ f"x is x."    isa Fmt.Format  #> true
 
 The `argument` is either positional or keyword.
 Positional arguments are numbered from one, and their values are supplied from arguments passed to the `Fmt.format` function.
-If numbers are omitted, they are automatically numbered incrementally from left to right.
+If numbers are omitted, they are automatically numbered incrementally from left to right, which is independent from other kinds of arguments.
 Keyword arguments are named by a variable and may be interpolated.
 If a keyword argument is interpolated (indicated by `$`), its value is supplied from the context where the replacement field is placed; otherwise, its value is supplied from a keyword argument with the same name passed to the `Fmt.format` function.
 Currently, you cannot mix interpolated keyword arguments with other kinds of arguments in a single format.

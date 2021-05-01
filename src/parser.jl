@@ -8,7 +8,7 @@ end
 
 function parse(fmt::String)
     list = Union{String, Field}[]
-    serial = 0
+    auto = 0  # automatic numbering
     str = IOBuffer()
     last = lastindex(fmt)
     i = firstindex(fmt)
@@ -22,7 +22,7 @@ function parse(fmt::String)
             if i ≤ last && fmt[i] == '{'
                 i == last && throw(FormatError("single '{' is not allowed; use '{{' instead"))
                 str.size > 0 && push!(list, String(take!(str)))
-                field, i, serial = parse_field(fmt, i + 1, serial)
+                field, i, auto = parse_field(fmt, i + 1, auto)
                 push!(list, field)
             end
         elseif c == '}'
@@ -57,10 +57,10 @@ function parse(fmt::String)
     return list
 end
 
-function parse_field(fmt::String, i::Int, serial::Int)
+function parse_field(fmt::String, i::Int, auto::Int)
     incomplete_field() = throw(FormatError("incomplete field"))
     last = lastindex(fmt)
-    arg, i, serial = parse_argument(fmt, i, serial)
+    arg, i, auto = parse_argument(fmt, i, auto)
     i ≤ last || incomplete_field()
     conv = CONV_UNSPECIFIED
     if fmt[i] == '/'
@@ -71,7 +71,7 @@ function parse_field(fmt::String, i::Int, serial::Int)
     spec = SPEC_DEFAULT
     if fmt[i] == ':'
         i + 1 ≤ last || incomplete_field()
-        spec, i, serial = parse_spec(fmt, i + 1, serial)
+        spec, i, auto = parse_spec(fmt, i + 1, auto)
         i ≤ last || incomplete_field()
     end
     fmt[i] == '}' || throw(FormatError("invalid character $(repr(fmt[i]))"))
@@ -87,10 +87,10 @@ function parse_field(fmt::String, i::Int, serial::Int)
         spec.precision isa Union{Int, Nothing, Positional, Keyword} ||
         throw(FormatError("inconsistent interpolation of arguments"))
     end
-    return Field(arg, conv, spec), i + 1, serial
+    return Field(arg, conv, spec), i + 1, auto
 end
 
-function parse_argument(s::String, i::Int, serial::Int)
+function parse_argument(s::String, i::Int, auto::Int)
     c = s[i]  # the first character after '{'
     if c == '$'
         i < lastindex(s) && (Base.is_id_start_char(s[i+1]) || s[i+1] == '(') ||
@@ -105,10 +105,10 @@ function parse_argument(s::String, i::Int, serial::Int)
         name, i = Meta.parse(s, i, greedy = false)
         arg = Keyword(name)
     else
-        serial += 1
-        arg = Positional(serial)
+        auto += 1
+        arg = Positional(auto)
     end
-    return arg, i, serial
+    return arg, i, auto
 end
 
 function parse_conv(fmt::String, i::Int)
@@ -122,7 +122,7 @@ function parse_conv(fmt::String, i::Int)
     end
 end
 
-function parse_spec(fmt::String, i::Int, serial::Int)
+function parse_spec(fmt::String, i::Int, auto::Int)
     # default
     fill = FILL_DEFAULT
     align = ALIGN_UNSPECIFIED
@@ -143,13 +143,13 @@ function parse_spec(fmt::String, i::Int, serial::Int)
     last = lastindex(fmt)
     if fmt[i] == '{'
         # dynamic fill or dynamic width?
-        _arg, _i, _serial = parse_argument(fmt, i + 1, serial)
+        _arg, _i, _auto = parse_argument(fmt, i + 1, auto)
         _i ≤ last && fmt[_i] == '}' || incomplete_argument()
         if _i + 1 ≤ last && fmt[_i+1] ∈ "<^>"
             # it was a dynamic fill
             fill = _arg
             align = char2align(fmt[_i+1])
-            serial = _serial
+            auto = _auto
             i = _i + 2
             i ≤ last || @goto END
         end
@@ -183,7 +183,7 @@ function parse_spec(fmt::String, i::Int, serial::Int)
 
     # width
     if fmt[i] == '{'
-        width, i, serial = parse_argument(fmt, i + 1, serial)
+        width, i, auto = parse_argument(fmt, i + 1, auto)
         i ≤ last && fmt[i] == '}' || incomplete_argument()
         i += 1
         i ≤ last || @goto END
@@ -213,7 +213,7 @@ function parse_spec(fmt::String, i::Int, serial::Int)
         i += 1
         i ≤ last || @goto END
         if fmt[i] == '{'
-            precision, i, serial = parse_argument(fmt, i + 1, serial)
+            precision, i, auto = parse_argument(fmt, i + 1, auto)
             i ≤ last && fmt[i] == '}' || incomplete_argument()
             i += 1
             i ≤ last || @goto END
@@ -233,7 +233,7 @@ function parse_spec(fmt::String, i::Int, serial::Int)
     end
 
     @label END
-    return Spec(fill, align, sign, altform, zero, width, grouping, precision, type), i, serial
+    return Spec(fill, align, sign, altform, zero, width, grouping, precision, type), i, auto
 end
 
 function parse_digits(s::String, i::Int)
