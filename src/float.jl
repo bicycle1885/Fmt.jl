@@ -75,13 +75,32 @@ end
         p += 1
     else
         @assert !isspecified(s.type)
-        hash = !isspecified(s.type)
-        precision = -1
+        hash = true
         if isspecified(s.precision)
-            precision = max(s.precision, 1)
-            x = round(x, sigdigits = precision)
+            p′ = writeexp(data, p, x, -1, plus, space, hash, expchar)
+            exp = parse_exponent(data, p:p′-1)
+            prec = max(s.precision, 1)
+            if -4 ≤ exp < prec
+                p = writefixed(data, p, x, prec - (exp + 1), plus, space, hash; trimtrailingzeros = true)
+                if data[p-1] == UInt8('.')
+                    # append '0' after the decimal point (e.g., "1." -> "1.0")
+                    data[p] = Z
+                    p += 1
+                end
+            else
+                p′ = writeexp(data, p, x, prec - 1, plus, space, hash, expchar; trimtrailingzeros = true)
+                if data[p+2] == expchar
+                    # insert '0' after the decimal point (e.g., "1.e+08" -> "1.0e+08")
+                    copyto!(data, p + 3, data, p + 2, p′ - (p + 2))
+                    data[p+2] = Z
+                    p = p′ + 1
+                else
+                    p = p′
+                end
+            end
+        else
+            p = writeshortest(data, p, x, plus, space, hash, -1, expchar)
         end
-        p = writeshortest(data, p, x, plus, space, hash, precision, expchar)
     end
 
     if isspecified(s.grouping)

@@ -355,6 +355,19 @@ end
 end
 
 @testset "float" begin
+    @test format(f"{}",  1.0) == "1.0"
+    @test format(f"{}",  0.1) == "0.1"
+    @test format(f"{}", 10.0) == "10.0"
+    @test format(f"{}", 1e-8) == "1.0e-8"
+    @test format(f"{}", 1e+8) == "1.0e8"
+    @test format(f"{}", 1e-18) == "1.0e-18"
+    @test format(f"{}", 1e+18) == "1.0e18"
+
+    @test format(f"{:.1}", 1.0) == "1.0"
+    @test format(f"{:g}",  1e8) == "1e+08"
+    @test format(f"{:.1}", 1e8) == "1.0e+08"
+    @test format(f"{:.2}", 1e8) == "1.0e+08"
+
     x = Float64(π)
     @test format(f"{:.2}", x) == "3.1"
     @test format(f"{:.3}", x) == "3.14"
