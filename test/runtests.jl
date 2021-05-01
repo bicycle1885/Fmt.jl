@@ -601,6 +601,16 @@ struct Foo end
 
     @test format(f"{}", big"1.0") == "1.0"
     @test format(f"{:f}", big"1.0") == "1.000000"
+    @test format(f"{:.2f}", big"1.0") == "1.00"
+    @test format(f"{}", big"nan") == "nan"
+    @test format(f"{}", big"inf") == "inf"
+    @test format(f"{}", big"-inf") == "-inf"
+    @test format(f"{:f}", big"inf") == "inf"
+    @test format(f"{:F}", big"inf") == "INF"
+    @test format(f"{:e}", big"inf") == "inf"
+    @test format(f"{:E}", big"inf") == "INF"
+    @test format(f"{:g}", big"inf") == "inf"
+    @test format(f"{:G}", big"inf") == "INF"
 
     @test format(f"{}", π) == "π"
     @test format(f"{:f}", π) == "3.141593"
