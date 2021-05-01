@@ -1,7 +1,5 @@
-using Fmt
+using Fmt: Fmt, @f_str, format
 using Test
-
-const format = Fmt.format
 
 struct Foo end
 
