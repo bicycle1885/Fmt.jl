@@ -612,6 +612,18 @@ struct Foo end
         @test format(f"{:^20p}", ptr) == " 0x000012340000abcd "
         @test format(f"{:>20p}", ptr) == "  0x000012340000abcd"
     end
+
+    @test format(f"{{") == "{"
+    @test format(f"}}") == "}"
+    @test format(f"{{{{") == "{{"
+    @test format(f"}}}}") == "}}"
+    @test format(f"{{}}") == "{}"
+    @test format(f"}}{{") == "}{"
+    @test format(f"{{$x}}") == "{\$x}"
+    @test format(f"{{{{$x}}}}") == "{{\$x}}"
+
+    @test format(f"{{αβ") == "{αβ"
+    @test format(f"}}αβ") == "}αβ"
 end
 
 @testset "printf" begin
@@ -626,13 +638,8 @@ end
 end
 
 @testset "interpolation" begin
-    @test f"$" == "\$"
-    @test f"$x" == "\$x"
-
     x = 42
     y = "hi!"
-    @test f"" == ""
-    @test f"foobar" == "foobar"
     @test f"{$x}" == "42"
     @test f"{$y}" == "hi!"
     @test f"{$y} {$x}" == "hi! 42"
@@ -661,21 +668,6 @@ end
 
     @test f"{$(42)}" == "42"
     @test f"{$('a')}" == "a"
-
-    x = 42
-    @test f"{{" == "{"
-    @test f"}}" == "}"
-    @test f"{{{{" == "{{"
-    @test f"}}}}" == "}}"
-    @test f"{{}}" == "{}"
-    @test f"}}{{" == "}{"
-    @test f"{{$x}}" == "{\$x}"
-    @test f"{{{$x}}}" == "{42}"
-    @test f"{{{{$x}}}}" == "{{\$x}}"
-    @test f"{{{{{$x}}}}}" == "{{42}}"
-
-    @test f"{{αβ" == "{αβ"
-    @test f"}}αβ" == "}αβ"
 end
 
 @testset "syntax error" begin

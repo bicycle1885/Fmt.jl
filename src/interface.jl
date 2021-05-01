@@ -15,7 +15,6 @@ Base.show(out::IO, fmt::Format) = print(out, "f\"", fmt.str, '"')
 Create a formatted string.
 """
 format(fmt::Format, positionals...; keywords...) = fmt.fun(positionals...; keywords...)
-format(fmt::String, positionals...; keywords...) = fmt
 
 """
     printf([out::IO,] fmt::Fmt.Format, positional...; keywords...)
@@ -24,19 +23,16 @@ Output a formatted string to `out` (default: `stdout`).
 """
 printf(out::IO, fmt::Format, positionals...; keywords...) = print(out, fmt.fun(positionals...; keywords...))
 printf(fmt::Format, positionals...; keywords...) = printf(stdout, fmt, positionals...; keywords...)
-printf(out::IO, fmt::String, positionals...; keywords...) = print(out, fmt)
-printf(fmt::String, positionals...; keywords...) = printf(stdout, fmt, positionals...; keywords...)
 
 """
     @f_str fmt
 
 Create a formatted string or a formatter object from string `fmt`.
 
-If all argument names of replacement fields are preceded by `\$`, it creates
-a new formatted string with all fields being interpolated. If there are no
-replacement fields, it returns the string as it is. Otherwise, it creates a
-formatting object of the [`Fmt.Format`](@ref) type, which can be passed to
-the [`Fmt.format`](@ref) function to create or output formatted strings.
+If there is a field whose arguments are interpolated by `\$`, it creates a new
+string.  Otherwise, it creates a formatting object of the [`Fmt.Format`](@ref)
+type, which can be passed to the [`Fmt.format`](@ref) function or the
+[`Fmt.printf`](@ref) function to create or output formatted strings.
 
 # Examples
 ```jldoctest

@@ -1,11 +1,4 @@
 function compile(fstr::String)
-    format = parse(fstr)
-    @assert !isempty(format)
-    if length(format) == 1 && format[1] isa String
-        # no replacement fields
-        return format[1]
-    end
-
     nposargs = 0
     argparams = Dict{Argument, Symbol}()
     function arg2param(arg)
@@ -19,7 +12,7 @@ function compile(fstr::String)
 
     code_info = Expr(:block)
     code_data = Expr(:block)
-    for (i, f) in enumerate(format)
+    for (i, f) in enumerate(parse(fstr))
         if f isa String
             n = ncodeunits(f)
             info = :(size += $n)
