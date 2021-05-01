@@ -16,17 +16,9 @@ function compile(fstr::String)
         if f isa String
             n = ncodeunits(f)
             info = :(size += $n)
-            data = if n < 8
-                quote
-                    @inbounds $(genstrcopy(f))
-                    p += $n
-                end
-            else
-                quote
-                    copyto!(data, p, $(codeunits(f)), 1, $n)
-                    p += $n
-                end
-            end
+            data = n < 8 ?
+                :(@inbounds $(genstrcopy(f)); p += $n) :
+                :(copyto!(data, p, $(codeunits(f)), 1, $n); p += $n)
         else
             @assert f isa Field
             value = arg2param(f.argument)
@@ -36,8 +28,7 @@ function compile(fstr::String)
             spec = Symbol(:spec, i)
             arg = Symbol(:arg, i)
             meta = Symbol(:meta, i)
-            conv = f.conv == CONV_REPR   ? repr   :
-                   f.conv == CONV_STRING ? string : identity
+            conv = conv2func(f.conv)
             info = quote
                 $spec = Spec($(f.spec), fill = $fill, width = $width, precision = $precision)
                 $arg = $(conv)($value)
@@ -82,3 +73,7 @@ function genstrcopy(s::String)
     end
     return code
 end
+
+conv2func(conv::Conversion) =
+    conv == CONV_REPR   ? repr   :
+    conv == CONV_STRING ? string : identity
