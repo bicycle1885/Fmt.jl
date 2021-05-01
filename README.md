@@ -135,6 +135,10 @@ type       = 'd' | 'X' | 'x' | 'o' | 'B' | 'b' | 'c' | 'p' | 's'
 Note that *syntactic* validity does not imply *semantic* validity.
 For example, `{:,s}` is syntactically valid but semantically invalid, because the string type `s` does not support the thousands separator `,`.
 
+A sequence of `zero` and `width` may be ambiguous because `width` may start with `0`.
+To resolve the ambiguity, if `0` is followed by a digit, the leading zero is interpreted as `zero` and the following digits are interpreted as `width`.
+Otherwise, the zero is interpreted as `width`.
+
 ## Semantic
 
 The semantic of the format specification is basically the same as that of Python.
