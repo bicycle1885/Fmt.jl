@@ -572,6 +572,22 @@ end
     @test format(f"{:016,f}", 1234.0) == "0,001,234.000000"
     @test format(f"{:017,f}", 1234.0) == "00,001,234.000000"
 
+    x = 12.345
+    @test format(f"{:.0g}", x) == "1e+01"
+    @test format(f"{:.1g}", x) == "1e+01"
+    @test format(f"{:.2g}", x) == "12"
+    @test format(f"{:.3g}", x) == "12.3"
+    @test format(f"{:.4g}", x) == "12.35"
+    @test format(f"{:.5g}", x) == "12.345"
+
+    x = 1.7976931348623157e308
+    @test format(f"{:g}",   x) == "1.79769e+308"
+    @test format(f"{:.0g}", x) == "2e+308"
+    @test format(f"{:.1g}", x) == "2e+308"
+    @test format(f"{:.2g}", x) == "1.8e+308"
+    @test format(f"{:.3g}", x) == "1.8e+308"
+    @test format(f"{:.4g}", x) == "1.798e+308"
+
     @test format(f"{:1000f}", 1.0) == lpad("1.000000", 1000)
     @test format(f"{:.1000f}", 1.0) == rpad("1.", 1002, '0')
 end

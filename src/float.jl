@@ -50,6 +50,16 @@ end
     elseif s.type == 'E' || s.type == 'e'
         precision = default(s.precision, 6)
         p = writeexp(data, p, x, precision, plus, space, hash, expchar)
+    elseif s.type == 'G' || s.type == 'g'
+        # FIXME: calling writeexp just to get exponent seems inefficient
+        p′ = writeexp(data, p, x, -1, plus, space, hash, expchar)
+        exp = parse_exponent(data, p:p′-1)
+        prec = max(default(s.precision, 6), 1)
+        if -4 ≤ exp < prec
+            p = writefixed(data, p, x, prec - (exp + 1), plus, space, hash; trimtrailingzeros = true)
+        else
+            p = writeexp(data, p, x, prec - 1, plus, space, hash, expchar; trimtrailingzeros = true)
+        end
     elseif s.type == 'A' || s.type == 'a'
         if uppercase
             p = @copy data p "0X"
@@ -64,7 +74,7 @@ end
         data[p] = UInt8('%')
         p += 1
     else
-        @assert s.type == 'G' || s.type == 'g' || !isspecified(s.type)
+        @assert !isspecified(s.type)
         hash = !isspecified(s.type)
         precision = -1
         if isspecified(s.precision)
@@ -89,12 +99,43 @@ end
 end
 
 # This is to avoid excessive inlining.
-@noinline writefixed(data, p, x, precision, plus, space, hash) =
-    Ryu.writefixed(data, p, x, precision, plus, space, hash)
-@noinline writeexp(data, p, x, precision, plus, space, hash, expchar) =
-    Ryu.writeexp(data, p, x, precision, plus, space, hash, expchar)
+@noinline writefixed(data, p, x, precision, plus, space, hash; trimtrailingzeros = false) =
+    Ryu.writefixed(data, p, x, precision, plus, space, hash, UInt8('.'), trimtrailingzeros)
+@noinline writeexp(data, p, x, precision, plus, space, hash, expchar; trimtrailingzeros = false) =
+    Ryu.writeexp(data, p, x, precision, plus, space, hash, expchar, UInt8('.'), trimtrailingzeros)
 @noinline writeshortest(data, p, x, plus, space, hash, precision, expchar) =
     Ryu.writeshortest(data, p, x, plus, space, hash, precision, expchar)
+
+function parse_exponent(data::Vector{UInt8}, range::UnitRange{Int})
+    for i in range
+        if data[i] == UInt8('e') || data[i] == UInt8('E')
+            i += 1
+            # sign
+            neg = false
+            if data[i] == UInt8('+')
+                i += 1
+            elseif data[i] == UInt8('-')
+                neg = true
+                i += 1
+            end
+            # NOTE: exponent is at most three digits
+            exp = data[i] - Z
+            i += 1
+            if i ≤ last(range)
+                exp = 10exp + (data[i] - Z)
+                i += 1
+                if i ≤ last(range)
+                    exp = 10exp + (data[i] - Z)
+                end
+            end
+            if neg
+                exp = -exp
+            end
+            return exp
+        end
+    end
+    @assert false
+end
 
 # NOTE: the sign of `x` is ignored
 function hexadecimal(data::Vector{UInt8}, p::Int, x::IEEEFloat, precision::Int, uppercase::Bool)
