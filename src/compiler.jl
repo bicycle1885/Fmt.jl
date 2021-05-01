@@ -3,11 +3,11 @@ function compile(fstr::String)
     argparams = Dict{Argument, Symbol}()
     function arg2param(arg)
         arg isa Argument || return arg  # static argument
-        haskey(argparams, arg) && return esc(argparams[arg])
+        haskey(argparams, arg) && return argparams[arg]
         arg isa Positional && (nposargs = max(arg.position, nposargs))
         param = arg isa Keyword ? arg.name : gensym()
         argparams[arg] = param
-        return esc(param)
+        return param
     end
 
     code_info = Expr(:block)
@@ -21,17 +21,17 @@ function compile(fstr::String)
                 :(copyto!(data, p, $(codeunits(f)), 1, $n); p += $n)
         else
             @assert f isa Field
-            value = arg2param(f.argument)
-            fill = arg2param(f.spec.fill)
-            width = arg2param(f.spec.width)
-            precision = arg2param(f.spec.precision)
+            value = esc(arg2param(f.argument))
+            fill = esc(arg2param(f.spec.fill))
+            width = esc(arg2param(f.spec.width))
+            precision = esc(arg2param(f.spec.precision))
             spec = Symbol(:spec, i)
             arg = Symbol(:arg, i)
             meta = Symbol(:meta, i)
-            conv = conv2func(f.conv)
+            convfun = conv2func(f.conv)
             info = quote
                 $spec = Spec($(f.spec), fill = $fill, width = $width, precision = $precision)
-                $arg = $(conv)($value)
+                $arg = $(convfun)($value)
                 s, $meta = formatinfo($spec, $arg)
                 size += s
             end
@@ -66,9 +66,8 @@ function compile(fstr::String)
 end
 
 function genstrcopy(s::String)
-    n = ncodeunits(s)
     code = Expr(:block)
-    for i in 1:n
+    for i in 1:ncodeunits(s)
         push!(code.args, :(data[p+$i-1] = $(codeunit(s, i))))
     end
     return code
