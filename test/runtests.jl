@@ -5,47 +5,7 @@ const format = Fmt.format
 
 struct Foo end
 
-@testset "format" begin
-    @test format(f"") == ""
-    @test format(f"foobar") == "foobar"
-    @test format(f"\r\n") == "\r\n"
-
-    @test format(f"Hello, {}!", "world") == "Hello, world!"
-    @test format(f"Hello, {}!", "世界") == "Hello, 世界!"
-
-    @test format(f"x = {}", -3) == "x = -3"
-    @test format(f"x = {}", 42) == "x = 42"
-    @test format(f"x = {}, y = {}", 2, 3) == "x = 2, y = 3"
-
-    @test format(f"pi = {}", 3.1) == "pi = 3.1"
-    @test format(f"pi = {}", 3.14) == "pi = 3.14"
-    @test format(f"pi = {}", 3.141) == "pi = 3.141"
-
-    @test format(f"flag = {}", false) == "flag = false"
-    @test format(f"flag = {}", true) == "flag = true"
-
-    @test format(f"char = {}", 'a') == "char = a"
-    @test format(f"char = {}", 'α') == "char = α"
-    @test format(f"char = {}", 'あ') == "char = あ"
-
-    @test format(f"x = {1}", 2) == "x = 2"
-    @test format(f"x = {1}, y = {2}", 2, 3) == "x = 2, y = 3"
-    @test format(f"x = {2}, y = {1}", 2, 3) == "x = 3, y = 2"
-    @test format(f"x = {1}, y = {2}, z = {1}", 2, 3) == "x = 2, y = 3, z = 2"
-
-    @test format(f"{3}", 1, 2, 3) == "3"
-    @test format(f"{3} {1}", 1, 2, 3) == "3 1"
-    @test format(f"{3} {2}", 1, 2, 3) == "3 2"
-    @test format(f"{3} {3}", 1, 2, 3) == "3 3"
-    @test format(f"{3} {3} {3}", 1, 2, 3) == "3 3 3"
-
-    @test format(f"x = {x}", x = 2) == "x = 2"
-    @test format(f"x = {x}, y = {y}", x = 2, y = 3) == "x = 2, y = 3"
-    @test format(f"x = {x}, y = {y}", y = 3, x = 2) == "x = 2, y = 3"
-    @test format(f"x = {x}, y = {y}, z = {x}", x = 2, y = 3) == "x = 2, y = 3, z = 2"
-
-    @test format(f"{1}{2}{3}{4}{5}{6}{7}{8}{9}{10}{11}{12}", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12) == "123456789101112"
-
+@testset "generic" begin
     @test format(f"{}",     Foo()) == "Foo()"
     @test format(f"{:9}",   Foo()) == "Foo()    "
     @test format(f"{:<9}",  Foo()) == "Foo()    "
@@ -53,55 +13,41 @@ struct Foo end
     @test format(f"{:*>9}", Foo()) == "****Foo()"
     @test format(f"{:*^9}", Foo()) == "**Foo()**"
     @test format(f"{:*<9}", Foo()) == "Foo()****"
-    @test format(f"{}", (x = 1, y = 2)) == "(x = 1, y = 2)"
+end
 
-    @test format(f"{:5}",  'a') == "a    "
-    @test format(f"{:>5}", 'a') == "    a"
-    @test format(f"{:<5}", 'a') == "a    "
-    @test format(f"{:^5}", 'a') == "  a  "
-
-    @test format(f"{}", 0x12) == "18"
-    @test format(f"{}", 0xff) == "255"
-
-    @test format(f"{}", typemin(Int)) == "-9223372036854775808"
-    @test format(f"{}", typemax(Int)) == "9223372036854775807"
-
-    @test format(f"{:}", 123) == "123"
-    @test format(f"{:}", "abc") == "abc"
-
-    @test format(f"{/s}", 'a') == "a"
-    @test format(f"{/r}", 'a') == "'a'"
-    @test format(f"{/s}", 123) == "123"
-    @test format(f"{/r}", 123) == "123"
-
-    @test format(f"{:}",    nothing) == "nothing"
+@testset "nothing and missing" begin
+    @test format(f"{}",     nothing) == "nothing"
     @test format(f"{:10}",  nothing) == "nothing   "
     @test format(f"{:<10}", nothing) == "nothing   "
     @test format(f"{:^10}", nothing) == " nothing  "
     @test format(f"{:>10}", nothing) == "   nothing"
 
-    @test format(f"{:}",    missing) == "missing"
+    @test format(f"{}",     missing) == "missing"
     @test format(f"{:10}",  missing) == "   missing"
     @test format(f"{:<10}", missing) == "missing   "
     @test format(f"{:^10}", missing) == " missing  "
     @test format(f"{:>10}", missing) == "   missing"
+end
 
-    @test format(f"{:0}", 123) == "123"
-    @test format(f"{:1}", 123) == "123"
-    @test format(f"{:2}", 123) == "123"
-    @test format(f"{:3}", 123) == "123"
-    @test format(f"{:4}", 123) == " 123"
-    @test format(f"{:5}", 123) == "  123"
+@testset "char" begin
+    @test format(f"{}", 'a') == "a"
+    @test format(f"{}", 'α') == "α"
+    @test format(f"{}", 'あ') == "あ"
 
-    @test format(f"{:<5}", 123) == "123  "
-    @test format(f"{:^5}", 123) == " 123 "
-    @test format(f"{:>5}", 123) == "  123"
-    @test format(f"{:_<5}", 123) == "123__"
-    @test format(f"{:_^5}", 123) == "_123_"
-    @test format(f"{:_>5}", 123) == "__123"
-    @test format(f"{:<<5}", 123) == "123<<"
-    @test format(f"{:^^5}", 123) == "^123^"
-    @test format(f"{:>>5}", 123) == ">>123"
+    @test format(f"{:5}",  'a') == "a    "
+    @test format(f"{:>5}", 'a') == "    a"
+    @test format(f"{:<5}", 'a') == "a    "
+    @test format(f"{:^5}", 'a') == "  a  "
+end
+
+@testset "string" begin
+    @test format(f"{}", "") == ""
+    @test format(f"{}", "a") == "a"
+    @test format(f"{}", "ab") == "ab"
+    @test format(f"{}", "abc") == "abc"
+
+    @test format(f"{}", "αβγδϵ") == "αβγδϵ"
+    @test format(f"{}", "いろはにほへと") == "いろはにほへと"
 
     @test format(f"{:0}", "abc") == "abc"
     @test format(f"{:1}", "abc") == "abc"
@@ -126,13 +72,6 @@ struct Foo end
     @test format(f"{:3}", "αβ") == "αβ "
     @test format(f"{:4}", "αβ") == "αβ  "
 
-    @test format(f"{:┉<0}", 123) == "123"
-    @test format(f"{:┉<1}", 123) == "123"
-    @test format(f"{:┉<2}", 123) == "123"
-    @test format(f"{:┉<3}", 123) == "123"
-    @test format(f"{:┉<4}", 123) == "123┉"
-    @test format(f"{:┉<5}", 123) == "123┉┉"
-
     @test format(f"{:┉<0}", "abc") == "abc"
     @test format(f"{:┉<1}", "abc") == "abc"
     @test format(f"{:┉<2}", "abc") == "abc"
@@ -140,27 +79,28 @@ struct Foo end
     @test format(f"{:┉<4}", "abc") == "abc┉"
     @test format(f"{:┉<5}", "abc") == "abc┉┉"
 
-    @test format(f"{:-}",  0) ==  "0"
-    @test format(f"{:+}",  0) == "+0"
-    @test format(f"{: }",  0) == " 0"
-    @test format(f"{:-}",  3) ==  "3"
-    @test format(f"{:-}", -3) == "-3"
-    @test format(f"{:+}",  3) == "+3"
-    @test format(f"{:+}", -3) == "-3"
-    @test format(f"{: }",  3) == " 3"
-    @test format(f"{: }", -3) == "-3"
+    @test format(f"{:s}",   "abc") == "abc"
+    @test format(f"{:5s}",  "abc") == "abc  "
+    @test format(f"{:<5s}", "abc") == "abc  "
+    @test format(f"{:>5s}", "abc") == "  abc"
 
-    @test format(f"{:b}", 42) == "101010"
-    @test format(f"{:o}", 42) == "52"
-    @test format(f"{:d}", 42) == "42"
-    @test format(f"{:X}", 42) == "2A"
-    @test format(f"{:x}", 42) == "2a"
-    @test format(f"{:c}", 42) == "*"
-    @test format(f"{:b}", 99999) == "11000011010011111"
-    @test format(f"{:o}", 99999) == "303237"
-    @test format(f"{:d}", 99999) == "99999"
-    @test format(f"{:X}", 99999) == "1869F"
-    @test format(f"{:x}", 99999) == "1869f"
+    @test format(f"{:.0}", "abc") == ""
+    @test format(f"{:.1}", "abc") == "a"
+    @test format(f"{:.2}", "abc") == "ab"
+    @test format(f"{:.3}", "abc") == "abc"
+    @test format(f"{:.4}", "abc") == "abc"
+    @test format(f"{:.5}", "abc") == "abc"
+    @test format(f"{:.0}", "αβγ") == ""
+    @test format(f"{:.1}", "αβγ") == "α"
+    @test format(f"{:.2}", "αβγ") == "αβ"
+    @test format(f"{:.3}", "αβγ") == "αβγ"
+    @test format(f"{:.4}", "αβγ") == "αβγ"
+    @test format(f"{:.5}", "αβγ") == "αβγ"
+end
+
+@testset "bool" begin
+    @test format(f"{}", false) == "false"
+    @test format(f"{}", true)  == "true"
 
     @test format(f"{:b}", false) == "0"
     @test format(f"{:b}", true)  == "1"
@@ -191,6 +131,54 @@ struct Foo end
 
     @test format(f"{:05b}", true)  == "00001"
     @test format(f"{:#05b}", true) == "0b001"
+end
+
+@testset "integer" begin
+    @test format(f"{:0}", 123) == "123"
+    @test format(f"{:1}", 123) == "123"
+    @test format(f"{:2}", 123) == "123"
+    @test format(f"{:3}", 123) == "123"
+    @test format(f"{:4}", 123) == " 123"
+    @test format(f"{:5}", 123) == "  123"
+
+    @test format(f"{:<5}", 123) == "123  "
+    @test format(f"{:^5}", 123) == " 123 "
+    @test format(f"{:>5}", 123) == "  123"
+    @test format(f"{:_<5}", 123) == "123__"
+    @test format(f"{:_^5}", 123) == "_123_"
+    @test format(f"{:_>5}", 123) == "__123"
+    @test format(f"{:<<5}", 123) == "123<<"
+    @test format(f"{:^^5}", 123) == "^123^"
+    @test format(f"{:>>5}", 123) == ">>123"
+
+    @test format(f"{:┉<0}", 123) == "123"
+    @test format(f"{:┉<1}", 123) == "123"
+    @test format(f"{:┉<2}", 123) == "123"
+    @test format(f"{:┉<3}", 123) == "123"
+    @test format(f"{:┉<4}", 123) == "123┉"
+    @test format(f"{:┉<5}", 123) == "123┉┉"
+
+    @test format(f"{:-}",  0) ==  "0"
+    @test format(f"{:+}",  0) == "+0"
+    @test format(f"{: }",  0) == " 0"
+    @test format(f"{:-}",  3) ==  "3"
+    @test format(f"{:-}", -3) == "-3"
+    @test format(f"{:+}",  3) == "+3"
+    @test format(f"{:+}", -3) == "-3"
+    @test format(f"{: }",  3) == " 3"
+    @test format(f"{: }", -3) == "-3"
+
+    @test format(f"{:b}", 42) == "101010"
+    @test format(f"{:o}", 42) == "52"
+    @test format(f"{:d}", 42) == "42"
+    @test format(f"{:X}", 42) == "2A"
+    @test format(f"{:x}", 42) == "2a"
+    @test format(f"{:c}", 42) == "*"
+    @test format(f"{:b}", 99999) == "11000011010011111"
+    @test format(f"{:o}", 99999) == "303237"
+    @test format(f"{:d}", 99999) == "99999"
+    @test format(f"{:X}", 99999) == "1869F"
+    @test format(f"{:x}", 99999) == "1869f"
 
     # 'α': Unicode U+03B1 (category Ll: Letter, lowercase)
     @test format(f"{:c}",  0x03b1) == "α"
@@ -221,11 +209,6 @@ struct Foo end
     @test format(f"{:<5d}", 42) == "42   "
     @test format(f"{:>5d}", 42) == "   42"
 
-    @test format(f"{:s}",   "abc") == "abc"
-    @test format(f"{:5s}",  "abc") == "abc  "
-    @test format(f"{:<5s}", "abc") == "abc  "
-    @test format(f"{:>5s}", "abc") == "  abc"
-
     @test format(f"{:02}",  42) == "42"
     @test format(f"{:02}", -42) == "-42"
     @test format(f"{:03}",  42) == "042"
@@ -244,12 +227,6 @@ struct Foo end
     @test format(f"{:+03}", -42) == "-42"
     @test format(f"{:+04}",  42) == "+042"
     @test format(f"{:+04}", -42) == "-042"
-
-    @test format(f"{1:{2}}", "foo", 5) == "foo  "
-    @test format(f"{2:{1}}", 5, "foo") == "foo  "
-
-    @test format(f"{x:{y}}", x = "foo", y = 5) == "foo  "
-    @test format(f"{y:{x}}", x = 5, y = "foo") == "foo  "
 
     @test format(f"{:,}", 1) == "1"
     @test format(f"{:,}", 12) == "12"
@@ -301,26 +278,11 @@ struct Foo end
     @test format(f"{:15,}",  123456789) == "    123,456,789"
     @test format(f"{:15,}", -123456789) == "   -123,456,789"
 
-    @test format(f"{:{}>6}", "foo", '*') == "***foo"
-    @test format(f"{:{}<6}", "foo", '*') == "foo***"
-    @test format(f"{:{}>{}}", "foo", '*', 6) == "***foo"
-    @test format(f"{:{}<{}}", "foo", '*', 6) == "foo***"
+    @test format(f"{}", 0x12) == "18"
+    @test format(f"{}", 0xff) == "255"
 
-    @test format(f"{:.0}", "abc") == ""
-    @test format(f"{:.1}", "abc") == "a"
-    @test format(f"{:.2}", "abc") == "ab"
-    @test format(f"{:.3}", "abc") == "abc"
-    @test format(f"{:.4}", "abc") == "abc"
-    @test format(f"{:.5}", "abc") == "abc"
-    @test format(f"{:.0}", "αβγ") == ""
-    @test format(f"{:.1}", "αβγ") == "α"
-    @test format(f"{:.2}", "αβγ") == "αβ"
-    @test format(f"{:.3}", "αβγ") == "αβγ"
-    @test format(f"{:.4}", "αβγ") == "αβγ"
-    @test format(f"{:.5}", "αβγ") == "αβγ"
-
-    @test format(f"{:1000f}", 1.0) == lpad("1.000000", 1000)
-    @test format(f"{:.1000f}", 1.0) == rpad("1.", 1002, '0')
+    @test format(f"{}", typemin(Int)) == "-9223372036854775808"
+    @test format(f"{}", typemax(Int)) == "9223372036854775807"
 
     @test format(f"{:00,d}",  1234) == "1,234"
     @test format(f"{:01,d}",  1234) == "1,234"
@@ -344,7 +306,21 @@ struct Foo end
     @test format(f"{:d}", big"42") == "42"
     @test format(f"{:x}", big"42") == "2a"
     @test format(f"{:X}", big"42") == "2A"
+end
 
+@testset "pointer" begin
+    if Sys.WORD_SIZE == 64
+        ptr = reinterpret(Ptr{Cvoid}, 0x000012340000abcd)
+        @test format(f"{}",      ptr) == "0x000012340000abcd"
+        @test format(f"{:p}",    ptr) == "0x000012340000abcd"
+        @test format(f"{:20p}",  ptr) == "  0x000012340000abcd"
+        @test format(f"{:<20p}", ptr) == "0x000012340000abcd  "
+        @test format(f"{:^20p}", ptr) == " 0x000012340000abcd "
+        @test format(f"{:>20p}", ptr) == "  0x000012340000abcd"
+    end
+end
+
+@testset "rational" begin
     @test format(f"{}", 0//1) == "0/1"
     @test format(f"{}", 1//100) == "1/100"
     @test format(f"{}", 2//100) == "1/50"
@@ -376,35 +352,9 @@ struct Foo end
     @test format(f"{:.1f}", 7//20) == "0.4"  # 7/20 = 0.35
     @test format(f"{:.0f}", 1//2)  == "0"    # 1/2  = 0.5
     @test format(f"{:.0f}", 3//2)  == "2"    # 3/2  = 1.5
-
-    @test format(f"{}", 1 + 2im)  == "1 + 2im"
-    @test format(f"{}", 1 - 2im)  == "1 - 2im"
-    @test format(f"{}", -1 - 2im) == "-1 - 2im"
-
-    if Sys.WORD_SIZE == 64
-        ptr = reinterpret(Ptr{Cvoid}, 0x000012340000abcd)
-        @test format(f"{}",      ptr) == "0x000012340000abcd"
-        @test format(f"{:p}",    ptr) == "0x000012340000abcd"
-        @test format(f"{:20p}",  ptr) == "  0x000012340000abcd"
-        @test format(f"{:<20p}", ptr) == "0x000012340000abcd  "
-        @test format(f"{:^20p}", ptr) == " 0x000012340000abcd "
-        @test format(f"{:>20p}", ptr) == "  0x000012340000abcd"
-    end
-
-    @test format(f"{{") == "{"
-    @test format(f"}}") == "}"
-    @test format(f"{{{{") == "{{"
-    @test format(f"}}}}") == "}}"
-    @test format(f"{{}}") == "{}"
-    @test format(f"}}{{") == "}{"
-    @test format(f"{{$x}}") == "{\$x}"
-    @test format(f"{{{{$x}}}}") == "{{\$x}}"
-
-    @test format(f"{{αβ") == "{αβ"
-    @test format(f"}}αβ") == "}αβ"
 end
 
-@testset "Float" begin
+@testset "float" begin
     x = Float64(π)
     @test format(f"{:.2}", x) == "3.1"
     @test format(f"{:.3}", x) == "3.14"
@@ -622,14 +572,11 @@ end
     @test format(f"{:016,f}", 1234.0) == "0,001,234.000000"
     @test format(f"{:017,f}", 1234.0) == "00,001,234.000000"
 
-    x = Float64(π)
-    @test format(f"{x:.{n}}", x = x, n = 2) == format(f"{:.2}", x)
-    @test format(f"{x:.{n}}", x = x, n = 3) == format(f"{:.3}", x)
-    @test format(f"{x:.{n}}", x = x, n = 4) == format(f"{:.4}", x)
-    @test format(f"{x:.{n}}", x = x, n = 5) == format(f"{:.5}", x)
+    @test format(f"{:1000f}", 1.0) == lpad("1.000000", 1000)
+    @test format(f"{:.1000f}", 1.0) == rpad("1.", 1002, '0')
 end
 
-@testset "BigFloat" begin
+@testset "bigfloat" begin
     @test format(f"{}",   big"nan")  == "nan"
     @test format(f"{}",   big"inf")  == "inf"
     @test format(f"{}",   big"-inf") == "-inf"
@@ -673,9 +620,99 @@ end
     @test format(f"{:G}", x) == "3.14159"
 end
 
-@testset "Irrational" begin
+@testset "irrational" begin
     @test format(f"{}", π) == "π"
     @test format(f"{:f}", π) == "3.141593"
+end
+
+@testset "complex" begin
+    @test format(f"{}", 1 + 2im)  == "1 + 2im"
+    @test format(f"{}", 1 - 2im)  == "1 - 2im"
+    @test format(f"{}", -1 - 2im) == "-1 - 2im"
+end
+
+@testset "format" begin
+    # no arguments
+    @test format(f"") == ""
+    @test format(f"foobar") == "foobar"
+    @test format(f"\r\n") == "\r\n"
+
+    # string formatting
+    @test format(f"Hello, {}!", "world") == "Hello, world!"
+    @test format(f"Hello, {}!", "世界") == "Hello, 世界!"
+    @test format(f"こんにちは、{}！", "世界") == "こんにちは、世界！"
+    @test format(f"こんにちは、{}！", "world") == "こんにちは、world！"
+
+    # positional arguments (implicit numbering)
+    @test format(f"{}", 1) == "1"
+    @test format(f"{} {}", 1, 2) == "1 2"
+    @test format(f"{} {} {}", 1, 2, 3) == "1 2 3"
+
+    # positional arguments (explicit numbering)
+    @test format(f"{1}", 1) == "1"
+    @test format(f"{1} {2}", 1, 2) == "1 2"
+    @test format(f"{2} {1}", 1, 2) == "2 1"
+    @test format(f"{1} {2} {3}", 1, 2, 3) == "1 2 3"
+    @test format(f"{2}", 1, 2) == "2"
+    @test format(f"{3}", 1, 2, 3) == "3"
+    @test format(f"{1} {3}", 1, 2, 3) == "1 3"
+    @test format(f"{3} {1}", 1, 2, 3) == "3 1"
+    @test format(f"{3} {2}", 1, 2, 3) == "3 2"
+    @test format(f"{3} {3}", 1, 2, 3) == "3 3"
+    @test format(f"{3} {3} {3}", 1, 2, 3) == "3 3 3"
+
+    # keyword arguments
+    @test format(f"{x}", x = 1) == "1"
+    @test format(f"{x} {y}", x = 1, y = 2) == "1 2"
+    @test format(f"{y} {x}", x = 1, y = 2) == "2 1"
+    @test format(f"{x} {y} {z}", x = 1, y = 2, z = 3) == "1 2 3"
+    @test format(f"{x} {x} {x}", x = 1) == "1 1 1"
+
+    # many positional arguments
+    @test format(f"{}{}{}{}{}{}{}{}{}{}{}{}", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12) == "123456789101112"
+    @test format(f"{1}{2}{3}{4}{5}{6}{7}{8}{9}{10}{11}{12}", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12) == "123456789101112"
+
+    # empty spec after colon
+    @test format(f"{:}", 123) == "123"
+    @test format(f"{:}", "abc") == "abc"
+
+    # conversion
+    @test format(f"{/s}", 'a') == "a"
+    @test format(f"{/r}", 'a') == "'a'"
+    @test format(f"{/s}", 123) == "123"
+    @test format(f"{/r}", 123) == "123"
+
+    # dynamic fill
+    @test format(f"{:{}>6}", "foo", '*') == "***foo"
+    @test format(f"{:{}<6}", "foo", '*') == "foo***"
+    @test format(f"{:{}>{}}", "foo", '*', 6) == "***foo"
+    @test format(f"{:{}<{}}", "foo", '*', 6) == "foo***"
+
+    # dynamic width
+    @test format(f"{1:{2}}", "foo", 5) == "foo  "
+    @test format(f"{2:{1}}", 5, "foo") == "foo  "
+    @test format(f"{x:{y}}", x = "foo", y = 5) == "foo  "
+    @test format(f"{y:{x}}", x = 5, y = "foo") == "foo  "
+
+    # dynamic precision
+    x = Float64(π)
+    @test format(f"{x:.{n}}"; x, n = 1) == format(f"{:.1}", x)
+    @test format(f"{x:.{n}}"; x, n = 2) == format(f"{:.2}", x)
+    @test format(f"{x:.{n}}"; x, n = 3) == format(f"{:.3}", x)
+    @test format(f"{x:.{n}}"; x, n = 4) == format(f"{:.4}", x)
+    @test format(f"{x:.{n}}"; x, n = 5) == format(f"{:.5}", x)
+
+    # escaping curly braces
+    @test format(f"{{") == "{"
+    @test format(f"}}") == "}"
+    @test format(f"{{{{") == "{{"
+    @test format(f"}}}}") == "}}"
+    @test format(f"{{}}") == "{}"
+    @test format(f"}}{{") == "}{"
+    @test format(f"{{$x}}") == "{\$x}"
+    @test format(f"{{{{$x}}}}") == "{{\$x}}"
+    @test format(f"{{αβ") == "{αβ"
+    @test format(f"}}αβ") == "}αβ"
 end
 
 @testset "printf" begin
