@@ -599,9 +599,6 @@ struct Foo end
     @test format(f"{:.0f}", 1//2)  == "0"    # 1/2  = 0.5
     @test format(f"{:.0f}", 3//2)  == "2"    # 3/2  = 1.5
 
-    @test format(f"{}", π) == "π"
-    @test format(f"{:f}", π) == "3.141593"
-
     @test format(f"{}", 1 + 2im)  == "1 + 2im"
     @test format(f"{}", 1 - 2im)  == "1 - 2im"
     @test format(f"{}", -1 - 2im) == "-1 - 2im"
@@ -671,6 +668,11 @@ end
     @test format(f"{}",   x) == "3.14159"
     @test format(f"{:g}", x) == "3.14159"
     @test format(f"{:G}", x) == "3.14159"
+end
+
+@testset "Irrational" begin
+    @test format(f"{}", π) == "π"
+    @test format(f"{:f}", π) == "3.141593"
 end
 
 @testset "printf" begin
