@@ -245,213 +245,11 @@ struct Foo end
     @test format(f"{:+04}",  42) == "+042"
     @test format(f"{:+04}", -42) == "-042"
 
-    pi = Float64(π)
-    @test format(f"{:.2}", pi) == "3.1"
-    @test format(f"{:.3}", pi) == "3.14"
-    @test format(f"{:.4}", pi) == "3.142"
-    @test format(f"{:.5}", pi) == "3.1416"
-    @test format(f"{:.6}", pi) == "3.14159"
-    @test format(f"{:.7}", pi) == "3.141593"
-    @test format(f"{:.8}", pi) == "3.1415927"
-
-    #@test format(f"{:.3}", 1e-1) == "0.1"
-    #@test format(f"{:.3}", 1e-2) == "0.01"
-    #@test format(f"{:.3}", 1e-3) == "0.001"
-    #@test format(f"{:.3}", 1e-4) == "0.0001"
-    #@test format(f"{:.3}", 1e-5) == "1e-05"
-    #@test format(f"{:.3}", 1e-6) == "1e-06"
-
-    @test format(f"{:-}",  0.5) == "0.5"
-    @test format(f"{:+}",  0.5) == "+0.5"
-    @test format(f"{: }",  0.5) == " 0.5"
-    @test format(f"{:-}", -0.5) == "-0.5"
-    @test format(f"{:+}", -0.5) == "-0.5"
-    @test format(f"{: }", -0.5) == "-0.5"
-
-    @test format(f"{:}",  1.0) == "1.0"
-    @test format(f"{:#}", 1.0) == "1.0"
-    @test format(f"{:g}", 1.0) == "1"
-    @test format(f"{:G}", 1.0) == "1"
-
-    @test format(f"{:%}",   1.0) == "100.000000%"
-    @test format(f"{:.0%}", 1.0) == "100%"
-    @test format(f"{:.1%}", 1.0) == "100.0%"
-    @test format(f"{:.2%}", 1.0) == "100.00%"
-    @test format(f"{:.1%}", 0.5) == "50.0%"
-
-    h = 6.62607015e-34  # Planck constant
-    N = 6.02214076e+23  # Avogadro constant
-    @test format(f"{:f}", 1.) == "1.000000"
-    @test format(f"{:f}", pi) == "3.141593"
-    @test format(f"{:f}", h)  == "0.000000"
-    @test format(f"{:f}", N)  == "602214075999999987023872.000000"
-
-    @test format(f"{:-f}",  0.5) == "0.500000"
-    @test format(f"{:+f}",  0.5) == "+0.500000"
-    @test format(f"{: f}",  0.5) == " 0.500000"
-    @test format(f"{:-f}", -0.5) == "-0.500000"
-    @test format(f"{:+f}", -0.5) == "-0.500000"
-    @test format(f"{: f}", -0.5) == "-0.500000"
-
-    @test format(f"{:f}",  Inf) == "inf"
-    @test format(f"{:f}", -Inf) == "-inf"
-    @test format(f"{:f}",  NaN) == "nan"
-
-    @test format(f"{:-f}",  Inf) == "inf"
-    @test format(f"{:+f}",  Inf) == "+inf"
-    @test format(f"{: f}",  Inf) == " inf"
-    @test format(f"{:-f}", -Inf) == "-inf"
-    @test format(f"{:+f}", -Inf) == "-inf"
-    @test format(f"{: f}", -Inf) == "-inf"
-
-    @test format(f"{:F}",  Inf) == "INF"
-    @test format(f"{:F}", -Inf) == "-INF"
-    @test format(f"{:F}",  NaN) == "NAN"
-
-    @test format(f"{:.2f}", 1.) == "1.00"
-    @test format(f"{:.2f}", pi) == "3.14"
-    @test format(f"{:.2f}", h)  == "0.00"
-    @test format(f"{:.2f}", N)  == "602214075999999987023872.00"
-
-    @test format(f"{:.2F}", 1.) == "1.00"
-    @test format(f"{:.2F}", pi) == "3.14"
-    @test format(f"{:.2F}", h)  == "0.00"
-    @test format(f"{:.2F}", N)  == "602214075999999987023872.00"
-
-    @test format(f"{:.12f}", 1.) == "1.000000000000"
-    @test format(f"{:.12f}", pi) == "3.141592653590"
-    @test format(f"{:.12f}", h)  == "0.000000000000"
-    @test format(f"{:.12f}", N)  == "602214075999999987023872.000000000000"
-
-    @test format(f"{:.0f}", 1.0) == "1"
-    @test format(f"{:#.0f}", 1.0) == "1."
-
-    @test format(f"{:e}", 1.) == "1.000000e+00"
-    @test format(f"{:e}", pi) == "3.141593e+00"
-    @test format(f"{:e}", h)  == "6.626070e-34"
-    @test format(f"{:e}", N)  == "6.022141e+23"
-
-    @test format(f"{:-e}",  0.5) == "5.000000e-01"
-    @test format(f"{:+e}",  0.5) == "+5.000000e-01"
-    @test format(f"{: e}",  0.5) == " 5.000000e-01"
-    @test format(f"{:-e}", -0.5) == "-5.000000e-01"
-    @test format(f"{:+e}", -0.5) == "-5.000000e-01"
-    @test format(f"{: e}", -0.5) == "-5.000000e-01"
-
-    @test format(f"{:e}",  Inf) == "inf"
-    @test format(f"{:e}", -Inf) == "-inf"
-    @test format(f"{:e}",  NaN) == "nan"
-
-    @test format(f"{:.2e}", 1.) == "1.00e+00"
-    @test format(f"{:.2e}", pi) == "3.14e+00"
-    @test format(f"{:.2e}", h)  == "6.63e-34"
-    @test format(f"{:.2e}", N)  == "6.02e+23"
-
-    @test format(f"{:.12e}", 1.) == "1.000000000000e+00"
-    @test format(f"{:.12e}", pi) == "3.141592653590e+00"
-    @test format(f"{:.12e}", h)  == "6.626070150000e-34"
-    @test format(f"{:.12e}", N)  == "6.022140760000e+23"
-
-    @test format(f"{:.2E}", 1.) == "1.00E+00"
-    @test format(f"{:.2E}", pi) == "3.14E+00"
-    @test format(f"{:.2E}", h)  == "6.63E-34"
-    @test format(f"{:.2E}", N)  == "6.02E+23"
-
-    @test format(f"{:.0e}", 1.0) == "1e+00"
-    @test format(f"{:#.0e}", 1.0) == "1.e+00"
-
-    @test format(f"{:5}",   1.2) == "  1.2"
-    @test format(f"{:>5}",  1.2) == "  1.2"
-    @test format(f"{:^5}",  1.2) == " 1.2 "
-    @test format(f"{:<5}",  1.2) == "1.2  "
-    @test format(f"{:*>5}", 1.2) == "**1.2"
-    @test format(f"{:*^5}", 1.2) == "*1.2*"
-    @test format(f"{:*<5}", 1.2) == "1.2**"
-    @test format(f"{:ζ>5}", 1.2) == "ζζ1.2"
-    @test format(f"{:ζ^5}", 1.2) == "ζ1.2ζ"
-    @test format(f"{:ζ<5}", 1.2) == "1.2ζζ"
-
-    @test format(f"{:10f}",  3.14) == "  3.140000"
-    @test format(f"{:>10f}", 3.14) == "  3.140000"
-    @test format(f"{:<10f}", 3.14) == "3.140000  "
-
-    @test format(f"{:06}",  1.2) == "0001.2"
-    @test format(f"{:06}", -1.2) == "-001.2"
-    @test format(f"{:+06}", 1.2) == "+001.2"
-    @test format(f"{:-06}", 1.2) == "0001.2"
-    @test format(f"{: 06}", 1.2) == " 001.2"
-
-    @test format(f"{:06}", -0.0) == "-000.0"
-
-    @test format(f"({:10.3f})", 3.14) == "(     3.140)"
-
-    @test format(f"{:.0g}", 1.0) == "1"
-    @test format(f"{:.1g}", 1.0) == "1"
-    @test format(f"{:.2g}", 1.0) == "1"
-
-    @test format(f"{:a}",  0.0) == "0x0p+0"
-    @test format(f"{:a}", -0.0) == "-0x0p+0"
-    @test format(f"{:a}",  1.0) == "0x1p+0"
-    @test format(f"{:a}", -1.0) == "-0x1p+0"
-    @test format(f"{:a}", 3.14) == "0x1.91eb851eb851fp+1"
-    @test format(f"{:a}", 10.0) == "0x1.4p+3"
-    @test format(f"{:a}", 1234.56789) == "0x1.34a4584f4c6e7p+10"
-    @test format(f"{:A}", 1234.56789) == "0X1.34A4584F4C6E7P+10"
-    @test format(f"{:a}",  Inf) == "inf"
-    @test format(f"{:a}", -Inf) == "-inf"
-    @test format(f"{:A}",  Inf) == "INF"
-    @test format(f"{:a}",  NaN) == "nan"
-    @test format(f"{:A}",  NaN) == "NAN"
-
-    @test format(f"{:.0a}", 0.0) == "0x0p+0"
-    @test format(f"{:.1a}", 0.0) == "0x0.0p+0"
-    @test format(f"{:.2a}", 0.0) == "0x0.00p+0"
-    @test format(f"{:.3a}", 0.0) == "0x0.000p+0"
-    @test format(f"{:.0a}", 1.0) == "0x1p+0"
-    @test format(f"{:.1a}", 1.0) == "0x1.0p+0"
-    @test format(f"{:.2a}", 1.0) == "0x1.00p+0"
-    @test format(f"{:.3a}", 1.0) == "0x1.000p+0"
-
-    x = 0x1.123456789abp+0
-    @test format(f"{:.0a}", x) == "0x1p+0"
-    @test format(f"{:.1a}", x) == "0x1.1p+0"
-    @test format(f"{:.2a}", x) == "0x1.12p+0"
-    @test format(f"{:.3a}", x) == "0x1.123p+0"
-    @test format(f"{:.4a}", x) == "0x1.1234p+0"
-    @test format(f"{:.5a}", x) == "0x1.12345p+0"
-    @test format(f"{:.6a}", x) == "0x1.123456p+0"
-    @test format(f"{:.7a}", x) == "0x1.1234568p+0"
-    @test format(f"{:.8a}", x) == "0x1.12345679p+0"
-    @test format(f"{:.9a}", x) == "0x1.12345678ap+0"
-
-    @test format(f"{:.0a}", 0x1.fffp+1) == "0x1p+2"
-    @test format(f"{:.1a}", 0x1.fffp+1) == "0x1.0p+2"
-    @test format(f"{:.2a}", 0x1.fffp+1) == "0x1.00p+2"
-    @test format(f"{:.3a}", 0x1.fffp+1) == "0x1.fffp+1"
-    @test format(f"{:.4a}", 0x1.fffp+1) == "0x1.fff0p+1"
-    @test format(f"{:.5a}", 0x1.fffp+1) == "0x1.fff00p+1"
-
-    @test format(f"{:a}", 0x1.01p+0) == "0x1.01p+0"
-    @test format(f"{:a}", 0x1.001p+0) == "0x1.001p+0"
-    @test format(f"{:a}", 0x1.0001p+0) == "0x1.0001p+0"
-    @test format(f"{:a}", 0x1.03f7305d6e95cp-2) == "0x1.03f7305d6e95cp-2"
-
-    @test format(f"{:.1a}", 0x1.08p+0) == "0x1.0p+0"
-    @test format(f"{:.1a}", 0x1.18p+0) == "0x1.2p+0"
-    @test format(f"{:.1a}", 0x1.28p+0) == "0x1.2p+0"
-    @test format(f"{:.1a}", 0x1.38p+0) == "0x1.4p+0"
-
     @test format(f"{1:{2}}", "foo", 5) == "foo  "
     @test format(f"{2:{1}}", 5, "foo") == "foo  "
 
     @test format(f"{x:{y}}", x = "foo", y = 5) == "foo  "
     @test format(f"{y:{x}}", x = 5, y = "foo") == "foo  "
-
-    pi = Float64(pi)
-    @test format(f"{x:.{n}}", x = pi, n = 2) == format(f"{:.2}", pi)
-    @test format(f"{x:.{n}}", x = pi, n = 3) == format(f"{:.3}", pi)
-    @test format(f"{x:.{n}}", x = pi, n = 4) == format(f"{:.4}", pi)
-    @test format(f"{x:.{n}}", x = pi, n = 5) == format(f"{:.5}", pi)
 
     @test format(f"{:,}", 1) == "1"
     @test format(f"{:,}", 12) == "12"
@@ -540,26 +338,6 @@ struct Foo end
     @test format(f"{:+#013_b}", 42) == "+0b0_0010_1010"
     @test format(f"{:+#014_b}", 42) == "+0b0_0010_1010"
 
-    @test format(f"{:,f}", 123.4) == "123.400000"
-    @test format(f"{:,f}", 1234.5) == "1,234.500000"
-    @test format(f"{:,f}", 1234567.89) == "1,234,567.890000"
-    @test format(f"{:,f}",  6.0221409e+23) == "602,214,090,000,000,006,225,920.000000"
-    @test format(f"{:+,f}", 6.0221409e+23) == "+602,214,090,000,000,006,225,920.000000"
-
-    @test format(f"{:12,f}", 1234.0) == "1,234.000000"
-    @test format(f"{:13,f}", 1234.0) == " 1,234.000000"
-    @test format(f"{:14,f}", 1234.0) == "  1,234.000000"
-    @test format(f"{:15,f}", 1234.0) == "   1,234.000000"
-    @test format(f"{:16,f}", 1234.0) == "    1,234.000000"
-    @test format(f"{:17,f}", 1234.0) == "     1,234.000000"
-
-    @test format(f"{:012,f}", 1234.0) == "1,234.000000"
-    @test format(f"{:013,f}", 1234.0) == "01,234.000000"
-    @test format(f"{:014,f}", 1234.0) == "001,234.000000"
-    @test format(f"{:015,f}", 1234.0) == "0,001,234.000000"
-    @test format(f"{:016,f}", 1234.0) == "0,001,234.000000"
-    @test format(f"{:017,f}", 1234.0) == "00,001,234.000000"
-
     @test format(f"{}",   big"42") == "42"
     @test format(f"{:b}", big"42") == "101010"
     @test format(f"{:o}", big"42") == "52"
@@ -624,6 +402,231 @@ struct Foo end
 
     @test format(f"{{αβ") == "{αβ"
     @test format(f"}}αβ") == "}αβ"
+end
+
+@testset "Float" begin
+    x = Float64(π)
+    @test format(f"{:.2}", x) == "3.1"
+    @test format(f"{:.3}", x) == "3.14"
+    @test format(f"{:.4}", x) == "3.142"
+    @test format(f"{:.5}", x) == "3.1416"
+    @test format(f"{:.6}", x) == "3.14159"
+    @test format(f"{:.7}", x) == "3.141593"
+    @test format(f"{:.8}", x) == "3.1415927"
+
+    #@test format(f"{:.3}", 1e-1) == "0.1"
+    #@test format(f"{:.3}", 1e-2) == "0.01"
+    #@test format(f"{:.3}", 1e-3) == "0.001"
+    #@test format(f"{:.3}", 1e-4) == "0.0001"
+    #@test format(f"{:.3}", 1e-5) == "1e-05"
+    #@test format(f"{:.3}", 1e-6) == "1e-06"
+
+    @test format(f"{:-}",  0.5) == "0.5"
+    @test format(f"{:+}",  0.5) == "+0.5"
+    @test format(f"{: }",  0.5) == " 0.5"
+    @test format(f"{:-}", -0.5) == "-0.5"
+    @test format(f"{:+}", -0.5) == "-0.5"
+    @test format(f"{: }", -0.5) == "-0.5"
+
+    @test format(f"{:}",  1.0) == "1.0"
+    @test format(f"{:#}", 1.0) == "1.0"
+    @test format(f"{:g}", 1.0) == "1"
+    @test format(f"{:G}", 1.0) == "1"
+
+    @test format(f"{:%}",   1.0) == "100.000000%"
+    @test format(f"{:.0%}", 1.0) == "100%"
+    @test format(f"{:.1%}", 1.0) == "100.0%"
+    @test format(f"{:.2%}", 1.0) == "100.00%"
+    @test format(f"{:.1%}", 0.5) == "50.0%"
+
+    x = Float64(π)
+    h = 6.62607015e-34  # Planck constant
+    N = 6.02214076e+23  # Avogadro constant
+    @test format(f"{:f}", 1.) == "1.000000"
+    @test format(f"{:f}", x)  == "3.141593"
+    @test format(f"{:f}", h)  == "0.000000"
+    @test format(f"{:f}", N)  == "602214075999999987023872.000000"
+
+    @test format(f"{:-f}",  0.5) == "0.500000"
+    @test format(f"{:+f}",  0.5) == "+0.500000"
+    @test format(f"{: f}",  0.5) == " 0.500000"
+    @test format(f"{:-f}", -0.5) == "-0.500000"
+    @test format(f"{:+f}", -0.5) == "-0.500000"
+    @test format(f"{: f}", -0.5) == "-0.500000"
+
+    @test format(f"{:f}",  Inf) == "inf"
+    @test format(f"{:f}", -Inf) == "-inf"
+    @test format(f"{:f}",  NaN) == "nan"
+
+    @test format(f"{:-f}",  Inf) == "inf"
+    @test format(f"{:+f}",  Inf) == "+inf"
+    @test format(f"{: f}",  Inf) == " inf"
+    @test format(f"{:-f}", -Inf) == "-inf"
+    @test format(f"{:+f}", -Inf) == "-inf"
+    @test format(f"{: f}", -Inf) == "-inf"
+
+    @test format(f"{:F}",  Inf) == "INF"
+    @test format(f"{:F}", -Inf) == "-INF"
+    @test format(f"{:F}",  NaN) == "NAN"
+
+    @test format(f"{:.2f}", 1.) == "1.00"
+    @test format(f"{:.2f}", x)  == "3.14"
+    @test format(f"{:.2f}", h)  == "0.00"
+    @test format(f"{:.2f}", N)  == "602214075999999987023872.00"
+
+    @test format(f"{:.2F}", 1.) == "1.00"
+    @test format(f"{:.2F}", pi) == "3.14"
+    @test format(f"{:.2F}", h)  == "0.00"
+    @test format(f"{:.2F}", N)  == "602214075999999987023872.00"
+
+    @test format(f"{:.12f}", 1.) == "1.000000000000"
+    @test format(f"{:.12f}", x)  == "3.141592653590"
+    @test format(f"{:.12f}", h)  == "0.000000000000"
+    @test format(f"{:.12f}", N)  == "602214075999999987023872.000000000000"
+
+    @test format(f"{:.0f}", 1.0) == "1"
+    @test format(f"{:#.0f}", 1.0) == "1."
+
+    @test format(f"{:e}", 1.) == "1.000000e+00"
+    @test format(f"{:e}", x)  == "3.141593e+00"
+    @test format(f"{:e}", h)  == "6.626070e-34"
+    @test format(f"{:e}", N)  == "6.022141e+23"
+
+    @test format(f"{:-e}",  0.5) == "5.000000e-01"
+    @test format(f"{:+e}",  0.5) == "+5.000000e-01"
+    @test format(f"{: e}",  0.5) == " 5.000000e-01"
+    @test format(f"{:-e}", -0.5) == "-5.000000e-01"
+    @test format(f"{:+e}", -0.5) == "-5.000000e-01"
+    @test format(f"{: e}", -0.5) == "-5.000000e-01"
+
+    @test format(f"{:e}",  Inf) == "inf"
+    @test format(f"{:e}", -Inf) == "-inf"
+    @test format(f"{:e}",  NaN) == "nan"
+
+    @test format(f"{:.2e}", 1.) == "1.00e+00"
+    @test format(f"{:.2e}", x)  == "3.14e+00"
+    @test format(f"{:.2e}", h)  == "6.63e-34"
+    @test format(f"{:.2e}", N)  == "6.02e+23"
+
+    @test format(f"{:.12e}", 1.) == "1.000000000000e+00"
+    @test format(f"{:.12e}", x)  == "3.141592653590e+00"
+    @test format(f"{:.12e}", h)  == "6.626070150000e-34"
+    @test format(f"{:.12e}", N)  == "6.022140760000e+23"
+
+    @test format(f"{:.2E}", 1.) == "1.00E+00"
+    @test format(f"{:.2E}", x)  == "3.14E+00"
+    @test format(f"{:.2E}", h)  == "6.63E-34"
+    @test format(f"{:.2E}", N)  == "6.02E+23"
+
+    @test format(f"{:.0e}", 1.0) == "1e+00"
+    @test format(f"{:#.0e}", 1.0) == "1.e+00"
+
+    @test format(f"{:5}",   1.2) == "  1.2"
+    @test format(f"{:>5}",  1.2) == "  1.2"
+    @test format(f"{:^5}",  1.2) == " 1.2 "
+    @test format(f"{:<5}",  1.2) == "1.2  "
+    @test format(f"{:*>5}", 1.2) == "**1.2"
+    @test format(f"{:*^5}", 1.2) == "*1.2*"
+    @test format(f"{:*<5}", 1.2) == "1.2**"
+    @test format(f"{:ζ>5}", 1.2) == "ζζ1.2"
+    @test format(f"{:ζ^5}", 1.2) == "ζ1.2ζ"
+    @test format(f"{:ζ<5}", 1.2) == "1.2ζζ"
+
+    @test format(f"{:10f}",  3.14) == "  3.140000"
+    @test format(f"{:>10f}", 3.14) == "  3.140000"
+    @test format(f"{:<10f}", 3.14) == "3.140000  "
+
+    @test format(f"{:06}",  1.2) == "0001.2"
+    @test format(f"{:06}", -1.2) == "-001.2"
+    @test format(f"{:+06}", 1.2) == "+001.2"
+    @test format(f"{:-06}", 1.2) == "0001.2"
+    @test format(f"{: 06}", 1.2) == " 001.2"
+
+    @test format(f"{:06}", -0.0) == "-000.0"
+
+    @test format(f"({:10.3f})", 3.14) == "(     3.140)"
+
+    @test format(f"{:.0g}", 1.0) == "1"
+    @test format(f"{:.1g}", 1.0) == "1"
+    @test format(f"{:.2g}", 1.0) == "1"
+
+    @test format(f"{:a}",  0.0) == "0x0p+0"
+    @test format(f"{:a}", -0.0) == "-0x0p+0"
+    @test format(f"{:a}",  1.0) == "0x1p+0"
+    @test format(f"{:a}", -1.0) == "-0x1p+0"
+    @test format(f"{:a}", 3.14) == "0x1.91eb851eb851fp+1"
+    @test format(f"{:a}", 10.0) == "0x1.4p+3"
+    @test format(f"{:a}", 1234.56789) == "0x1.34a4584f4c6e7p+10"
+    @test format(f"{:A}", 1234.56789) == "0X1.34A4584F4C6E7P+10"
+    @test format(f"{:a}",  Inf) == "inf"
+    @test format(f"{:a}", -Inf) == "-inf"
+    @test format(f"{:A}",  Inf) == "INF"
+    @test format(f"{:a}",  NaN) == "nan"
+    @test format(f"{:A}",  NaN) == "NAN"
+
+    @test format(f"{:.0a}", 0.0) == "0x0p+0"
+    @test format(f"{:.1a}", 0.0) == "0x0.0p+0"
+    @test format(f"{:.2a}", 0.0) == "0x0.00p+0"
+    @test format(f"{:.3a}", 0.0) == "0x0.000p+0"
+    @test format(f"{:.0a}", 1.0) == "0x1p+0"
+    @test format(f"{:.1a}", 1.0) == "0x1.0p+0"
+    @test format(f"{:.2a}", 1.0) == "0x1.00p+0"
+    @test format(f"{:.3a}", 1.0) == "0x1.000p+0"
+
+    x = 0x1.123456789abp+0
+    @test format(f"{:.0a}", x) == "0x1p+0"
+    @test format(f"{:.1a}", x) == "0x1.1p+0"
+    @test format(f"{:.2a}", x) == "0x1.12p+0"
+    @test format(f"{:.3a}", x) == "0x1.123p+0"
+    @test format(f"{:.4a}", x) == "0x1.1234p+0"
+    @test format(f"{:.5a}", x) == "0x1.12345p+0"
+    @test format(f"{:.6a}", x) == "0x1.123456p+0"
+    @test format(f"{:.7a}", x) == "0x1.1234568p+0"
+    @test format(f"{:.8a}", x) == "0x1.12345679p+0"
+    @test format(f"{:.9a}", x) == "0x1.12345678ap+0"
+
+    @test format(f"{:.0a}", 0x1.fffp+1) == "0x1p+2"
+    @test format(f"{:.1a}", 0x1.fffp+1) == "0x1.0p+2"
+    @test format(f"{:.2a}", 0x1.fffp+1) == "0x1.00p+2"
+    @test format(f"{:.3a}", 0x1.fffp+1) == "0x1.fffp+1"
+    @test format(f"{:.4a}", 0x1.fffp+1) == "0x1.fff0p+1"
+    @test format(f"{:.5a}", 0x1.fffp+1) == "0x1.fff00p+1"
+
+    @test format(f"{:a}", 0x1.01p+0) == "0x1.01p+0"
+    @test format(f"{:a}", 0x1.001p+0) == "0x1.001p+0"
+    @test format(f"{:a}", 0x1.0001p+0) == "0x1.0001p+0"
+    @test format(f"{:a}", 0x1.03f7305d6e95cp-2) == "0x1.03f7305d6e95cp-2"
+
+    @test format(f"{:.1a}", 0x1.08p+0) == "0x1.0p+0"
+    @test format(f"{:.1a}", 0x1.18p+0) == "0x1.2p+0"
+    @test format(f"{:.1a}", 0x1.28p+0) == "0x1.2p+0"
+    @test format(f"{:.1a}", 0x1.38p+0) == "0x1.4p+0"
+
+    @test format(f"{:,f}", 123.4) == "123.400000"
+    @test format(f"{:,f}", 1234.5) == "1,234.500000"
+    @test format(f"{:,f}", 1234567.89) == "1,234,567.890000"
+    @test format(f"{:,f}",  6.0221409e+23) == "602,214,090,000,000,006,225,920.000000"
+    @test format(f"{:+,f}", 6.0221409e+23) == "+602,214,090,000,000,006,225,920.000000"
+
+    @test format(f"{:12,f}", 1234.0) == "1,234.000000"
+    @test format(f"{:13,f}", 1234.0) == " 1,234.000000"
+    @test format(f"{:14,f}", 1234.0) == "  1,234.000000"
+    @test format(f"{:15,f}", 1234.0) == "   1,234.000000"
+    @test format(f"{:16,f}", 1234.0) == "    1,234.000000"
+    @test format(f"{:17,f}", 1234.0) == "     1,234.000000"
+
+    @test format(f"{:012,f}", 1234.0) == "1,234.000000"
+    @test format(f"{:013,f}", 1234.0) == "01,234.000000"
+    @test format(f"{:014,f}", 1234.0) == "001,234.000000"
+    @test format(f"{:015,f}", 1234.0) == "0,001,234.000000"
+    @test format(f"{:016,f}", 1234.0) == "0,001,234.000000"
+    @test format(f"{:017,f}", 1234.0) == "00,001,234.000000"
+
+    x = Float64(π)
+    @test format(f"{x:.{n}}", x = x, n = 2) == format(f"{:.2}", x)
+    @test format(f"{x:.{n}}", x = x, n = 3) == format(f"{:.3}", x)
+    @test format(f"{x:.{n}}", x = x, n = 4) == format(f"{:.4}", x)
+    @test format(f"{x:.{n}}", x = x, n = 5) == format(f"{:.5}", x)
 end
 
 @testset "BigFloat" begin
