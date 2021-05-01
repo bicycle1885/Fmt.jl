@@ -1,19 +1,19 @@
-function formatinfo(f::Field, x::Rational)
+function formatinfo(s::Spec, x::Rational)
     n = numerator(x)
     d = denominator(x)
-    if f.type == 'f'
-        width = 1 + ndigits_decimal(n) + 1 + (f.precision == PRECISION_UNSPECIFIED ? 6 : f.precision)
+    if s.type == 'f'
+        width = 1 + ndigits_decimal(n) + 1 + (s.precision == PRECISION_UNSPECIFIED ? 6 : s.precision)
     else
         width = 1 + ndigits_decimal(n) + 1 + ndigits_decimal(d)
     end
-    return paddingsize(f, width) + width, nothing
+    return paddingsize(s, width) + width, nothing
 end
 
-function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Rational, ::Nothing)
+function formatfield(data::Vector{UInt8}, p::Int, s::Spec, x::Rational, ::Nothing)
     start = p
-    p, _ = sign(data, p, x, f.sign)
-    if f.type == 'f'
-        precision = f.precision == PRECISION_UNSPECIFIED ? 6 : f.precision
+    p, _ = sign(data, p, x, s.sign)
+    if s.type == 'f'
+        precision = s.precision == PRECISION_UNSPECIFIED ? 6 : s.precision
         p = fixedpoint(data, p, x, precision)
     else
         n = magnitude(numerator(x))
@@ -23,9 +23,9 @@ function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Rational, ::Nothi
         d = magnitude(denominator(x))
         p = decimal(data, p, d, ndigits_decimal(d))
     end
-    if f.width != WIDTH_UNSPECIFIED
-        align = f.align == ALIGN_UNSPECIFIED ? ALIGN_RIGHT : f.align
-        p = aligncontent(data, p, start, p - start, f.fill, align, f.width)
+    if s.width != WIDTH_UNSPECIFIED
+        align = s.align == ALIGN_UNSPECIFIED ? ALIGN_RIGHT : s.align
+        p = aligncontent(data, p, start, p - start, s.fill, align, s.width)
     end
     return p
 end

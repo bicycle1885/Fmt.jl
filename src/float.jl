@@ -1,10 +1,10 @@
 using Base: Ryu, IEEEFloat
 
-function formatinfo(f::Field, x::IEEEFloat)
+function formatinfo(s::Spec, x::IEEEFloat)
     # The cost of computing the exact size is high, so we estimate an upper bound.
-    if f.type == 'f' || f.type == 'F' || f.type == '%'
+    if s.type == 'f' || s.type == 'F' || s.type == '%'
         width = Ryu.neededdigits(typeof(x))
-        if f.type == '%'
+        if s.type == '%'
             width += 1
         end
     else
@@ -12,25 +12,25 @@ function formatinfo(f::Field, x::IEEEFloat)
         # sign (1) + fraction (17) + point (1) + e/E (1) + sign (1) + exponent (3)
         width = 24
     end
-    if f.precision != PRECISION_UNSPECIFIED
-        width += f.precision
+    if s.precision != PRECISION_UNSPECIFIED
+        width += s.precision
     end
     size = width
-    if f.width != PRECISION_UNSPECIFIED
-        size += paddingsize(f, width)
+    if s.width != PRECISION_UNSPECIFIED
+        size += paddingsize(s, width)
     end
     return size, nothing
 end
 
-@inline function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::IEEEFloat, ::Nothing)
+@inline function formatfield(data::Vector{UInt8}, p::Int, s::Spec, x::IEEEFloat, ::Nothing)
     start = p
-    p, signed = sign(data, p, x, f.sign)
+    p, signed = sign(data, p, x, s.sign)
     x = abs(x)
 
-    uppercase = f.type == 'F' || f.type == 'E' || f.type == 'A' || f.type == 'G'
+    uppercase = s.type == 'F' || s.type == 'E' || s.type == 'A' || s.type == 'G'
     plus = false
     space = false
-    hash = f.altform
+    hash = s.altform
     expchar = uppercase ? UInt8('E') : UInt8('e')
     if isinf(x)
         if uppercase
@@ -44,47 +44,47 @@ end
         else
             p = @copy data p "nan"
         end
-    elseif f.type == 'F' || f.type == 'f'
-        precision = f.precision == PRECISION_UNSPECIFIED ? 6 : f.precision
+    elseif s.type == 'F' || s.type == 'f'
+        precision = s.precision == PRECISION_UNSPECIFIED ? 6 : s.precision
         p = writefixed(data, p, x, precision, plus, space, hash)
-    elseif f.type == 'E' || f.type == 'e'
-        precision = f.precision == PRECISION_UNSPECIFIED ? 6 : f.precision
+    elseif s.type == 'E' || s.type == 'e'
+        precision = s.precision == PRECISION_UNSPECIFIED ? 6 : s.precision
         p = writeexp(data, p, x, precision, plus, space, hash, expchar)
-    elseif f.type == 'A' || f.type == 'a'
+    elseif s.type == 'A' || s.type == 'a'
         if uppercase
             p = @copy data p "0X"
         else
             p = @copy data p "0x"
         end
-        precision = f.precision == PRECISION_UNSPECIFIED ? -1 : f.precision
+        precision = s.precision == PRECISION_UNSPECIFIED ? -1 : s.precision
         p = hexadecimal(data, p, x, precision, uppercase)
-    elseif f.type == '%'
-        precision = f.precision == PRECISION_UNSPECIFIED ? 6 : f.precision
+    elseif s.type == '%'
+        precision = s.precision == PRECISION_UNSPECIFIED ? 6 : s.precision
         p = writefixed(data, p, 100x, precision, plus, space, hash)
         data[p] = UInt8('%')
         p += 1
     else
-        @assert f.type == 'G' || f.type == 'g' || f.type === nothing
-        hash = f.type === nothing
+        @assert s.type == 'G' || s.type == 'g' || s.type === nothing
+        hash = s.type === nothing
         precision = -1
-        if f.precision != PRECISION_UNSPECIFIED
-            precision = max(f.precision, 1)
+        if s.precision != PRECISION_UNSPECIFIED
+            precision = max(s.precision, 1)
             x = round(x, sigdigits = precision)
         end
         p = writeshortest(data, p, x, plus, space, hash, precision, expchar)
     end
 
-    if f.grouping != GROUPING_UNSPECIFIED
-        minwidth = f.width == WIDTH_UNSPECIFIED ? 0 : f.width - signed
-        sep = f.grouping == GROUPING_COMMA ? UInt8(',') : UInt8('_')
-        p = groupfloat(data, start + signed, p, f.zero, minwidth, sep)
-    elseif f.zero && f.width != WIDTH_UNSPECIFIED
-        p = insert_zeros(data, start + signed, p, f.width - (p - start))
+    if s.grouping != GROUPING_UNSPECIFIED
+        minwidth = s.width == WIDTH_UNSPECIFIED ? 0 : s.width - signed
+        sep = s.grouping == GROUPING_COMMA ? UInt8(',') : UInt8('_')
+        p = groupfloat(data, start + signed, p, s.zero, minwidth, sep)
+    elseif s.zero && s.width != WIDTH_UNSPECIFIED
+        p = insert_zeros(data, start + signed, p, s.width - (p - start))
     end
 
-    if f.width != WIDTH_UNSPECIFIED
-        align = f.align == ALIGN_UNSPECIFIED ? ALIGN_RIGHT : f.align
-        p = aligncontent(data, p, start, p - start, f.fill, align, f.width)
+    if s.width != WIDTH_UNSPECIFIED
+        align = s.align == ALIGN_UNSPECIFIED ? ALIGN_RIGHT : s.align
+        p = aligncontent(data, p, start, p - start, s.fill, align, s.width)
     end
     return p
 end

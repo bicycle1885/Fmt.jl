@@ -35,21 +35,21 @@ function compile(fstr::String)
             end
         else
             value = arg2param(f.argument)
-            fill = arg2param(f.fill)
-            width = arg2param(f.width)
-            precision = arg2param(f.precision)
-            fld = Symbol(:fld, i)
+            fill = arg2param(f.spec.fill)
+            width = arg2param(f.spec.width)
+            precision = arg2param(f.spec.precision)
+            spec = Symbol(:spec, i)
             arg = Symbol(:arg, i)
             meta = Symbol(:meta, i)
             conv = f.conv == CONV_REPR   ? repr   :
                    f.conv == CONV_STRING ? string : identity
             info = quote
-                $fld = Field($f, fill = $fill, width = $width, precision = $precision)
+                $spec = Spec($(f.spec), fill = $fill, width = $width, precision = $precision)
                 $arg = $(conv)($value)
-                s, $meta = formatinfo($fld, $arg)
+                s, $meta = formatinfo($spec, $arg)
                 size += s
             end
-            data = :(p = formatfield(data, p, $fld, $arg, $meta))
+            data = :(p = formatfield(data, p, $spec, $arg, $meta))
         end
         push!(code_info.args, info)
         push!(code_data.args, data)

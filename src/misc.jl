@@ -94,13 +94,13 @@ function aligncontent(data, p, start, width::Int, fill::Char, align::Alignment, 
     return p
 end
 
-@inline function paddingwidth(f::Field, width::Int)
-    @assert f.width isa Int || f.width isa Nothing
-    return f.width isa Int ? max(f.width - width, 0) : 0
+@inline function paddingwidth(s::Spec, width::Int)
+    @assert s.width isa Int || s.width isa Nothing
+    return s.width isa Int ? max(s.width - width, 0) : 0
 end
 
-paddingsize(f::Field, width::Int) =
-    f.fill === nothing ? 0 : paddingwidth(f, width) * ncodeunits(f.fill)
+paddingsize(s::Spec, width::Int) =
+    s.fill === nothing ? 0 : paddingwidth(s, width) * ncodeunits(s.fill)
 
 @inline function padleft(data::Vector{UInt8}, p::Int, fill::Char, align::Alignment, pw::Int)
     @assert align != ALIGN_UNSPECIFIED

@@ -1,19 +1,19 @@
-@inline function formatinfo(f::Field, x::Integer)
-    if f.type == 'c'
+@inline function formatinfo(s::Spec, x::Integer)
+    if s.type == 'c'
         char = Char(x)
         size = ncodeunits(char)
-        f.width == WIDTH_UNSPECIFIED && return size, (0, 1)
-        return paddingsize(f, 1) + size, (0, 1)
+        s.width == WIDTH_UNSPECIFIED && return size, (0, 1)
+        return paddingsize(s, 1) + size, (0, 1)
     end
-    base = f.type == 'X' || f.type == 'x' ? 16 : f.type == 'o' ? 8 : f.type == 'B' || f.type == 'b' ? 2 : 10
+    base = s.type == 'X' || s.type == 'x' ? 16 : s.type == 'o' ? 8 : s.type == 'B' || s.type == 'b' ? 2 : 10
     k = base == 10 ? 3 : 4  # number of digits between grouping separators
 
     # sign + prefix width
     l = 0
-    if x < 0 || f.sign != SIGN_MINUS
+    if x < 0 || s.sign != SIGN_MINUS
         l += 1
     end
-    if f.altform && base != 10
+    if s.altform && base != 10
         l += 2
     end
 
@@ -22,59 +22,59 @@
 
     # content width (including leading zeros for sign-aware padding)
     width = l + m
-    if f.width == WIDTH_UNSPECIFIED || !f.zero
-        if f.grouping != GROUPING_UNSPECIFIED
+    if s.width == WIDTH_UNSPECIFIED || !s.zero
+        if s.grouping != GROUPING_UNSPECIFIED
             width += div(m - 1, k)
         end
-    elseif f.grouping != GROUPING_UNSPECIFIED
-        if f.width - l ≤ m + div(m - 1, k)
+    elseif s.grouping != GROUPING_UNSPECIFIED
+        if s.width - l ≤ m + div(m - 1, k)
             # no leading zeros
             width += div(m - 1, k)
         else
             # some leading zeros
-            width = l + (f.width - l) + (rem(f.width - l, k + 1) == 0)
+            width = l + (s.width - l) + (rem(s.width - l, k + 1) == 0)
             m = (width - l) - div(width - l, k + 1)
         end
     else
-        m = max(f.width - l, m)
+        m = max(s.width - l, m)
         width = l + m
     end
 
     # add padding size and return
-    return width + paddingsize(f, width), (m, width)
+    return width + paddingsize(s, width), (m, width)
 end
 
-@inline function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Integer, (m, width)::Tuple{Int, Int})
-    base = f.type == 'X' || f.type == 'x' ? 16 : f.type == 'o' ? 8 : f.type == 'B' || f.type == 'b' ? 2 : 10
-    align = f.align == ALIGN_UNSPECIFIED ? ALIGN_RIGHT : f.align
-    pw = paddingwidth(f, width)
-    if !f.zero
-        p = padleft(data, p, f.fill, align, pw)
+@inline function formatfield(data::Vector{UInt8}, p::Int, s::Spec, x::Integer, (m, width)::Tuple{Int, Int})
+    base = s.type == 'X' || s.type == 'x' ? 16 : s.type == 'o' ? 8 : s.type == 'B' || s.type == 'b' ? 2 : 10
+    align = s.align == ALIGN_UNSPECIFIED ? ALIGN_RIGHT : s.align
+    pw = paddingwidth(s, width)
+    if !s.zero
+        p = padleft(data, p, s.fill, align, pw)
     end
-    p, _ = sign(data, p, x, f.sign)
-    if f.altform && base ≠ 10
+    p, _ = sign(data, p, x, s.sign)
+    if s.altform && base ≠ 10
         data[p] = Z
-        data[p+1] = UInt8(f.type)
+        data[p+1] = UInt8(s.type)
         p += 2
     end
-    if f.type == 'c'
+    if s.type == 'c'
         p = pad(data, p, Char(x), 1)
     else
         u = magnitude(x)
-        if f.grouping == GROUPING_UNSPECIFIED
+        if s.grouping == GROUPING_UNSPECIFIED
             p = base ==  2 ? binary(data, p, u, m) :
                 base ==  8 ? octal(data, p, u, m) :
                 base == 10 ? decimal(data, p, u, m) :
-                hexadecimal(data, p, u, m, f.type == 'X')
+                hexadecimal(data, p, u, m, s.type == 'X')
         else
             p = base ==  2 ? binary_grouping(data, p, u, m) :
                 base ==  8 ? octal_grouping(data, p, u, m) :
-                base == 10 ? decimal_grouping(data, p, u, m, f.grouping == GROUPING_COMMA ? UInt8(',') : UInt8('_')) :
-                hexadecimal_grouping(data, p, u, m, f.type == 'X')
+                base == 10 ? decimal_grouping(data, p, u, m, s.grouping == GROUPING_COMMA ? UInt8(',') : UInt8('_')) :
+                hexadecimal_grouping(data, p, u, m, s.type == 'X')
         end
     end
-    if !f.zero
-        p = padright(data, p, f.fill, align, pw)
+    if !s.zero
+        p = padright(data, p, s.fill, align, pw)
     end
     return p
 end

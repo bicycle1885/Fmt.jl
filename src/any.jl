@@ -1,11 +1,11 @@
 # generic fallback
-function formatinfo(f::Field, x::Any)
-    s = string(x)
-    size = ncodeunits(s)
-    width = length(s)
-    return size + paddingsize(f, width), (s, width)
+function formatinfo(s::Spec, x::Any)
+    str = string(x)
+    size = ncodeunits(str)
+    width = length(str)
+    return size + paddingsize(s, width), (str, width)
 end
 
-function formatfield(data::Vector{UInt8}, p::Int, f::Field, x::Any, (s, width)::Tuple{String, Int})
-    return formatfield(data, p, f, s, width)
+function formatfield(data::Vector{UInt8}, p::Int, s::Spec, ::Any, (str, width)::Tuple{String, Int})
+    return formatfield(data, p, s, str, width)
 end

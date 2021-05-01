@@ -2,6 +2,8 @@ module Fmt
 
 export @f_str
 
+include("argument.jl")
+include("spec.jl")
 include("field.jl")
 include("misc.jl")
 include("any.jl")

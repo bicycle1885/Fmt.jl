@@ -65,28 +65,26 @@ function parse_field(fmt::String, i::Int, serial::Int)
         conv, i = parse_conv(fmt, i + 1)
         i ≤ last || incomplete_field()
     end
-    spec = ()
+    spec = SPEC_DEFAULT
     if fmt[i] == ':'
         i + 1 ≤ last || incomplete_field()
         spec, i, serial = parse_spec(fmt, i + 1, serial)
         i ≤ last || incomplete_field()
     end
     fmt[i] == '}' || throw(FormatError("invalid character $(repr(fmt[i]))"))
-    if !isempty(spec)
-        # check consistency of arguments
-        if arg isa Expr
-            spec.fill      isa Union{Char,         Expr} &&
-            spec.width     isa Union{Int, Nothing, Expr} &&
-            spec.precision isa Union{Int, Nothing, Expr} ||
-            throw(FormatError("inconsistent interpolation of arguments"))
-        else
-            spec.fill      isa Union{Char,         Positional, Keyword} &&
-            spec.width     isa Union{Int, Nothing, Positional, Keyword} &&
-            spec.precision isa Union{Int, Nothing, Positional, Keyword} ||
-            throw(FormatError("inconsistent interpolation of arguments"))
-        end
+    # check consistency of arguments
+    if arg isa Expr
+        spec.fill      isa Union{Char,         Expr} &&
+        spec.width     isa Union{Int, Nothing, Expr} &&
+        spec.precision isa Union{Int, Nothing, Expr} ||
+        throw(FormatError("inconsistent interpolation of arguments"))
+    else
+        spec.fill      isa Union{Char,         Positional, Keyword} &&
+        spec.width     isa Union{Int, Nothing, Positional, Keyword} &&
+        spec.precision isa Union{Int, Nothing, Positional, Keyword} ||
+        throw(FormatError("inconsistent interpolation of arguments"))
     end
-    return Field(arg; conv, spec...), i + 1, serial
+    return Field(arg, conv, spec), i + 1, serial
 end
 
 function parse_argument(s::String, i::Int, serial::Int)
@@ -232,7 +230,7 @@ function parse_spec(fmt::String, i::Int, serial::Int)
     end
 
     @label END
-    return (; fill, align, sign, altform, zero, width, grouping, precision, type), i, serial
+    return Spec(fill, align, sign, altform, zero, width, grouping, precision, type), i, serial
 end
 
 function parse_digits(s::String, i::Int)
