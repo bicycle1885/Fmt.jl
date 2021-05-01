@@ -599,19 +599,6 @@ struct Foo end
     @test format(f"{:.0f}", 1//2)  == "0"    # 1/2  = 0.5
     @test format(f"{:.0f}", 3//2)  == "2"    # 3/2  = 1.5
 
-    @test format(f"{}", big"1.0") == "1.0"
-    @test format(f"{:f}", big"1.0") == "1.000000"
-    @test format(f"{:.2f}", big"1.0") == "1.00"
-    @test format(f"{}", big"nan") == "nan"
-    @test format(f"{}", big"inf") == "inf"
-    @test format(f"{}", big"-inf") == "-inf"
-    @test format(f"{:f}", big"inf") == "inf"
-    @test format(f"{:F}", big"inf") == "INF"
-    @test format(f"{:e}", big"inf") == "inf"
-    @test format(f"{:E}", big"inf") == "INF"
-    @test format(f"{:g}", big"inf") == "inf"
-    @test format(f"{:G}", big"inf") == "INF"
-
     @test format(f"{}", π) == "π"
     @test format(f"{:f}", π) == "3.141593"
 
@@ -640,6 +627,50 @@ struct Foo end
 
     @test format(f"{{αβ") == "{αβ"
     @test format(f"}}αβ") == "}αβ"
+end
+
+@testset "BigFloat" begin
+    @test format(f"{}",   big"nan")  == "nan"
+    @test format(f"{}",   big"inf")  == "inf"
+    @test format(f"{}",   big"-inf") == "-inf"
+    @test format(f"{:f}", big"inf")  == "inf"
+    @test format(f"{:F}", big"inf")  == "INF"
+    @test format(f"{:e}", big"inf")  == "inf"
+    @test format(f"{:E}", big"inf")  == "INF"
+    @test format(f"{:g}", big"inf")  == "inf"
+    @test format(f"{:G}", big"inf")  == "INF"
+
+    x = BigFloat(π)
+    @test format(f"{:f}",   x) == "3.141593"
+    @test format(f"{:.1f}", x) == "3.1"
+    @test format(f"{:.2f}", x) == "3.14"
+    @test format(f"{:.3f}", x) == "3.142"
+    @test format(f"{:.4f}", x) == "3.1416"
+    @test format(f"{:.5f}", x) == "3.14159"
+    @test format(f"{:.6f}", x) == "3.141593"
+
+    @test format(f"{:e}",   x) == "3.141593e+00"
+    @test format(f"{:.1e}", x) == "3.1e+00"
+    @test format(f"{:.2e}", x) == "3.14e+00"
+    @test format(f"{:.3e}", x) == "3.142e+00"
+    @test format(f"{:.4e}", x) == "3.1416e+00"
+    @test format(f"{:.5e}", x) == "3.14159e+00"
+    @test format(f"{:.6e}", x) == "3.141593e+00"
+
+    @test format(f"{:-}", big"1.0")  == "1.0"
+    @test format(f"{:-}", big"-1.0") == "-1.0"
+    @test format(f"{:+}", big"1.0")  == "+1.0"
+    @test format(f"{:+}", big"-1.0") == "-1.0"
+    @test format(f"{: }", big"1.0")  == " 1.0"
+    @test format(f"{: }", big"-1.0") == "-1.0"
+
+    @test format(f"{:%}",   big"0.25") == "25.000000"
+    @test format(f"{:.1%}", big"0.25") == "25.0"
+
+    # TODO: the default precision of `g` and `G` may be too small for BigFloat
+    @test format(f"{}",   x) == "3.14159"
+    @test format(f"{:g}", x) == "3.14159"
+    @test format(f"{:G}", x) == "3.14159"
 end
 
 @testset "printf" begin

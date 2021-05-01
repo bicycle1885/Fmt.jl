@@ -39,6 +39,9 @@ function makefmt(s::Spec)
         else
             return "%.$(s.precision)R$(type)"
         end
+    elseif s.type == '%'
+        precision = s.precision == PRECISION_UNSPECIFIED ? 6 : s.precision
+        return "%.$(precision)Rf"
     else
         precision = s.precision == PRECISION_UNSPECIFIED ? 6 : s.precision
         return "%.$(precision)R$(s.type)"

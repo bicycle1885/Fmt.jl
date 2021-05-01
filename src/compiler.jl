@@ -60,7 +60,7 @@ function compile(fstr::String)
         data = Base.StringVector(size)
         p = 1
         $(code_data)
-        p - 1 < size && resize!(data, p - 1)
+        p - 1 < length(data) && resize!(data, p - 1)
         return String(data)
     end
     func = Expr(:function, params, body)
