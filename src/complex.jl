@@ -18,9 +18,8 @@ function formatfield(data::Vector{UInt8}, p::Int, s::Spec, x::Complex, (meta1, m
     end
     p = formatfield(data, p, s′, imag(x), meta2)
     p = @copy data p "im"
-    if s.width != WIDTH_UNSPECIFIED
-        align = s.align == ALIGN_UNSPECIFIED ? ALIGN_RIGHT : s.align
-        p = aligncontent(data, p, start, p - start, s.fill, align, s.width)
+    if isspecified(s.width)
+        p = aligncontent(data, p, start, p - start, s.fill, default(s.align, ALIGN_RIGHT), s.width)
     end
     return p
 end

@@ -5,7 +5,7 @@ function formatinfo(s::Spec, x::AbstractChar)
 end
 
 function formatfield(data::Vector{UInt8}, p::Int, s::Spec, ::AbstractChar, c::Char)
-    align = s.align == ALIGN_UNSPECIFIED ? ALIGN_LEFT : s.align
+    align = default(s.align, ALIGN_LEFT)
     pw = paddingwidth(s, 1)
     p = padleft(data, p, s.fill, align, pw)
     p = char(data, p, c)

@@ -6,7 +6,7 @@ end
 function formatfield(data::Vector{UInt8}, p::Int, s::Spec, x::Ptr, ::Nothing)
     w = 2sizeof(x) + 2
     pw = paddingwidth(s, w)
-    align = s.align == ALIGN_UNSPECIFIED ? ALIGN_RIGHT : s.align
+    align = default(s.align, ALIGN_RIGHT)
     p = padleft(data, p, s.fill, align, pw)
     p = @copy data p "0x"
     p = hexadecimal(data, p, reinterpret(UInt, x), w - 2, false)

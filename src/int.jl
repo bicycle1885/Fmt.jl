@@ -2,7 +2,7 @@
     if s.type == 'c'
         char = Char(x)
         size = ncodeunits(char)
-        s.width == WIDTH_UNSPECIFIED && return size, (0, 1)
+        isspecified(s.width) || return size, (0, 1)
         return paddingsize(s, 1) + size, (0, 1)
     end
     base = s.type == 'X' || s.type == 'x' ? 16 : s.type == 'o' ? 8 : s.type == 'B' || s.type == 'b' ? 2 : 10
@@ -22,11 +22,11 @@
 
     # content width (including leading zeros for sign-aware padding)
     width = l + m
-    if s.width == WIDTH_UNSPECIFIED || !s.zero
-        if s.grouping != GROUPING_UNSPECIFIED
+    if !isspecified(s.width) || !s.zero
+        if isspecified(s.grouping)
             width += div(m - 1, k)
         end
-    elseif s.grouping != GROUPING_UNSPECIFIED
+    elseif isspecified(s.grouping)
         if s.width - l ≤ m + div(m - 1, k)
             # no leading zeros
             width += div(m - 1, k)
@@ -46,7 +46,7 @@ end
 
 @inline function formatfield(data::Vector{UInt8}, p::Int, s::Spec, x::Integer, (m, width)::Tuple{Int, Int})
     base = s.type == 'X' || s.type == 'x' ? 16 : s.type == 'o' ? 8 : s.type == 'B' || s.type == 'b' ? 2 : 10
-    align = s.align == ALIGN_UNSPECIFIED ? ALIGN_RIGHT : s.align
+    align = default(s.align, ALIGN_RIGHT)
     pw = paddingwidth(s, width)
     if !s.zero
         p = padleft(data, p, s.fill, align, pw)
@@ -61,7 +61,7 @@ end
         p = pad(data, p, Char(x), 1)
     else
         u = magnitude(x)
-        if s.grouping == GROUPING_UNSPECIFIED
+        if !isspecified(s.grouping)
             p = base ==  2 ? binary(data, p, u, m) :
                 base ==  8 ? octal(data, p, u, m) :
                 base == 10 ? decimal(data, p, u, m) :

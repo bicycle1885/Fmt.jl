@@ -127,8 +127,8 @@ function parse_spec(fmt::String, i::Int, serial::Int)
     fill = FILL_DEFAULT
     align = ALIGN_UNSPECIFIED
     sign = SIGN_DEFAULT
-    altform = false
-    zero = false
+    altform = ALTFORM_DEFAULT
+    zero = ZERO_DEFAULT
     width = WIDTH_UNSPECIFIED
     grouping = GROUPING_UNSPECIFIED
     precision = PRECISION_UNSPECIFIED

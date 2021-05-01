@@ -5,11 +5,11 @@ function formatinfo(s::Spec, x::AbstractString)
 end
 
 function formatfield(data::Vector{UInt8}, p::Int, s::Spec, x::AbstractString, width::Int)
-    align = s.align == ALIGN_UNSPECIFIED ? ALIGN_LEFT : s.align
+    align = default(s.align, ALIGN_LEFT)
     pw = paddingwidth(s, width)
     p = padleft(data, p, s.fill, align, pw)
     n = ncodeunits(x)
-    if s.precision != PRECISION_UNSPECIFIED
+    if isspecified(s.precision)
         n = min(nextind(x, 1, s.precision) - 1, n)
     end
     copyto!(data, p, codeunits(x), 1, n)

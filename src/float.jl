@@ -12,11 +12,11 @@ function formatinfo(s::Spec, x::IEEEFloat)
         # sign (1) + fraction (17) + point (1) + e/E (1) + sign (1) + exponent (3)
         width = 24
     end
-    if s.precision != PRECISION_UNSPECIFIED
+    if isspecified(s.precision)
         width += s.precision
     end
     size = width
-    if s.width != PRECISION_UNSPECIFIED
+    if isspecified(s.width)
         size += paddingsize(s, width)
     end
     return size, nothing
@@ -45,10 +45,10 @@ end
             p = @copy data p "nan"
         end
     elseif s.type == 'F' || s.type == 'f'
-        precision = s.precision == PRECISION_UNSPECIFIED ? 6 : s.precision
+        precision = default(s.precision, 6)
         p = writefixed(data, p, x, precision, plus, space, hash)
     elseif s.type == 'E' || s.type == 'e'
-        precision = s.precision == PRECISION_UNSPECIFIED ? 6 : s.precision
+        precision = default(s.precision, 6)
         p = writeexp(data, p, x, precision, plus, space, hash, expchar)
     elseif s.type == 'A' || s.type == 'a'
         if uppercase
@@ -56,10 +56,10 @@ end
         else
             p = @copy data p "0x"
         end
-        precision = s.precision == PRECISION_UNSPECIFIED ? -1 : s.precision
+        precision = default(s.precision, -1)
         p = hexadecimal(data, p, x, precision, uppercase)
     elseif s.type == '%'
-        precision = s.precision == PRECISION_UNSPECIFIED ? 6 : s.precision
+        precision = default(s.precision, 6)
         p = writefixed(data, p, 100x, precision, plus, space, hash)
         data[p] = UInt8('%')
         p += 1
@@ -67,24 +67,23 @@ end
         @assert s.type == 'G' || s.type == 'g' || s.type === nothing
         hash = s.type === nothing
         precision = -1
-        if s.precision != PRECISION_UNSPECIFIED
+        if isspecified(s.precision)
             precision = max(s.precision, 1)
             x = round(x, sigdigits = precision)
         end
         p = writeshortest(data, p, x, plus, space, hash, precision, expchar)
     end
 
-    if s.grouping != GROUPING_UNSPECIFIED
-        minwidth = s.width == WIDTH_UNSPECIFIED ? 0 : s.width - signed
+    if isspecified(s.grouping)
+        minwidth = isspecified(s.width) ? s.width - signed : 0
         sep = s.grouping == GROUPING_COMMA ? UInt8(',') : UInt8('_')
         p = groupfloat(data, start + signed, p, s.zero, minwidth, sep)
-    elseif s.zero && s.width != WIDTH_UNSPECIFIED
+    elseif s.zero && isspecified(s.width)
         p = insert_zeros(data, start + signed, p, s.width - (p - start))
     end
 
-    if s.width != WIDTH_UNSPECIFIED
-        align = s.align == ALIGN_UNSPECIFIED ? ALIGN_RIGHT : s.align
-        p = aligncontent(data, p, start, p - start, s.fill, align, s.width)
+    if isspecified(s.width)
+        p = aligncontent(data, p, start, p - start, s.fill, default(s.align, ALIGN_RIGHT), s.width)
     end
     return p
 end

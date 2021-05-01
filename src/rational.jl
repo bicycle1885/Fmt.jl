@@ -2,7 +2,7 @@ function formatinfo(s::Spec, x::Rational)
     n = numerator(x)
     d = denominator(x)
     if s.type == 'f'
-        width = 1 + ndigits_decimal(n) + 1 + (s.precision == PRECISION_UNSPECIFIED ? 6 : s.precision)
+        width = 1 + ndigits_decimal(n) + 1 + default(s.precision, 6)
     else
         width = 1 + ndigits_decimal(n) + 1 + ndigits_decimal(d)
     end
@@ -13,7 +13,7 @@ function formatfield(data::Vector{UInt8}, p::Int, s::Spec, x::Rational, ::Nothin
     start = p
     p, _ = sign(data, p, x, s.sign)
     if s.type == 'f'
-        precision = s.precision == PRECISION_UNSPECIFIED ? 6 : s.precision
+        precision = default(s.precision, 6)
         p = fixedpoint(data, p, x, precision)
     else
         n = magnitude(numerator(x))
@@ -23,9 +23,8 @@ function formatfield(data::Vector{UInt8}, p::Int, s::Spec, x::Rational, ::Nothin
         d = magnitude(denominator(x))
         p = decimal(data, p, d, ndigits_decimal(d))
     end
-    if s.width != WIDTH_UNSPECIFIED
-        align = s.align == ALIGN_UNSPECIFIED ? ALIGN_RIGHT : s.align
-        p = aligncontent(data, p, start, p - start, s.fill, align, s.width)
+    if isspecified(s.width)
+        p = aligncontent(data, p, start, p - start, s.fill, default(s.align, ALIGN_RIGHT), s.width)
     end
     return p
 end

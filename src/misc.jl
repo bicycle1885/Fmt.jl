@@ -103,7 +103,7 @@ paddingsize(s::Spec, width::Int) =
     s.fill === nothing ? 0 : paddingwidth(s, width) * ncodeunits(s.fill)
 
 @inline function padleft(data::Vector{UInt8}, p::Int, fill::Char, align::Alignment, pw::Int)
-    @assert align != ALIGN_UNSPECIFIED
+    @assert isspecified(align)
     if align == ALIGN_RIGHT
         p = pad(data, p, fill, pw)
     elseif align == ALIGN_CENTER
@@ -113,7 +113,7 @@ paddingsize(s::Spec, width::Int) =
 end
 
 @inline function padright(data::Vector{UInt8}, p::Int,fill::Char, align::Alignment, pw::Int)
-    @assert align != ALIGN_UNSPECIFIED
+    @assert isspecified(align)
     if align == ALIGN_LEFT
         p = pad(data, p, fill, pw)
     elseif align == ALIGN_CENTER

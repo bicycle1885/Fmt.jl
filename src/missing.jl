@@ -4,7 +4,7 @@ function formatinfo(s::Spec, ::Missing)
 end
 
 function formatfield(data::Vector{UInt8}, p::Int, s::Spec, ::Missing, ::Nothing)
-    align = s.align == ALIGN_UNSPECIFIED ? ALIGN_RIGHT : s.align
+    align = default(s.align, ALIGN_RIGHT)
     pw = paddingwidth(s, 7)
     p = padleft(data, p, s.fill, align, pw)
     p = @copy data p "missing"

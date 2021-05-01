@@ -9,10 +9,10 @@ function formatinfo(s::Spec, x::BigFloat)
     if s.sign == SIGN_PLUS || s.sign == SIGN_SPACE || s.sign != SIGN_NONE && signbit(x)
         width += 1
     end
-    if s.grouping == GROUPING_COMMA || s.grouping == GROUPING_UNDERSCORE
+    if isspecified(s.grouping)
         width += div(m - 1, 3)  # separators
     end
-    if s.type === nothing && isinteger(x)
+    if !isspecified(s.type) && isinteger(x)
         width += 2
     end
     return width + paddingsize(s, width), str
@@ -24,38 +24,33 @@ function formatfield(data::Vector{UInt8}, p::Int, s::Spec, x::BigFloat, str::Str
     n = ncodeunits(str)
     copyto!(data, p, codeunits(str), 1, n)
     p += n
-    if s.type === nothing && isinteger(x)
+    if !isspecified(s.type) && isinteger(x)
         p = @copy data p ".0"
     end
 
-    if s.grouping != GROUPING_UNSPECIFIED
-        minwidth = s.width == WIDTH_UNSPECIFIED ? 0 : s.width - signed
+    if isspecified(s.grouping)
+        minwidth = isspecified(s.width) ? s.width - signed : 0
         sep = s.grouping == GROUPING_COMMA ? UInt8(',') : UInt8('_')
         p = groupfloat(data, start + signed, p, s.zero, minwidth, sep)
-    elseif s.zero && s.width != WIDTH_UNSPECIFIED
+    elseif s.zero && isspecified(s.width)
         p = insert_zeros(data, start + signed, p, s.width - (p - start))
     end
 
-    if s.width != WIDTH_UNSPECIFIED
-        align = s.align == ALIGN_UNSPECIFIED ? ALIGN_RIGHT : s.align
-        p = aligncontent(data, p, start, p - start, s.fill, align, s.width)
+    if isspecified(s.width)
+        p = aligncontent(data, p, start, p - start, s.fill, default(s.align, ALIGN_RIGHT), s.width)
     end
     return p
 end
 
 function makefmt(s::Spec)
-    if s.type == 'G' || s.type == 'g' || s.type === nothing
-        type = s.type === nothing ? 'g' : s.type
-        if s.precision == PRECISION_UNSPECIFIED
-            return "%R$(type)"
-        else
-            return "%.$(s.precision)R$(type)"
-        end
+    if s.type == 'G' || s.type == 'g' || !isspecified(s.type)
+        type = default(s.type, 'g')
+        return isspecified(s.precision) ? "%.$(s.precision)R$(type)" : "%R$(type)"
     elseif s.type == '%'
-        precision = s.precision == PRECISION_UNSPECIFIED ? 6 : s.precision
+        precision = default(s.precision, 6)
         return "%.$(precision)Rf"
     else
-        precision = s.precision == PRECISION_UNSPECIFIED ? 6 : s.precision
+        precision = default(s.precision, 6)
         return "%.$(precision)R$(s.type)"
     end
 end

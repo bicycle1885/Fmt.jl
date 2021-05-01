@@ -5,6 +5,8 @@
 
 const FILL_DEFAULT = ' '
 const SIGN_DEFAULT = SIGN_MINUS
+const ALTFORM_DEFAULT = false
+const ZERO_DEFAULT = false
 
 const ALIGN_UNSPECIFIED = nothing
 const WIDTH_UNSPECIFIED = nothing
@@ -46,8 +48,8 @@ const SPEC_DEFAULT = Spec(
     FILL_DEFAULT,
     ALIGN_UNSPECIFIED,
     SIGN_DEFAULT,
-    false,
-    false,
+    ALTFORM_DEFAULT,
+    ZERO_DEFAULT,
     WIDTH_UNSPECIFIED,
     GROUPING_UNSPECIFIED,
     PRECISION_UNSPECIFIED,
