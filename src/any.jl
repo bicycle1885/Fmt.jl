@@ -1,11 +1,10 @@
 # generic fallback
 function formatinfo(s::Spec, x::Any)
     str = string(x)
-    size = ncodeunits(str)
-    width = length(str)
-    return size + paddingsize(s, width), (str, width)
+    size, meta = formatinfo(s, str)
+    return size, (str, meta)
 end
 
-function formatfield(data::Vector{UInt8}, p::Int, s::Spec, ::Any, (str, width))
-    return formatfield(data, p, s, str, width)
+function formatfield(data::Vector{UInt8}, p::Int, s::Spec, ::Any, (str, meta))
+    return formatfield(data, p, s, str, meta)
 end

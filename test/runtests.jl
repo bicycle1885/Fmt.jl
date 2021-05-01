@@ -13,13 +13,15 @@ struct Foo end
     @test format(f"{:*<9}", Foo()) == "Foo()****"
 end
 
-@testset "nothing and missing" begin
+@testset "nothing" begin
     @test format(f"{}",     nothing) == "nothing"
     @test format(f"{:10}",  nothing) == "nothing   "
     @test format(f"{:<10}", nothing) == "nothing   "
     @test format(f"{:^10}", nothing) == " nothing  "
     @test format(f"{:>10}", nothing) == "   nothing"
+end
 
+@testset "missing" begin
     @test format(f"{}",     missing) == "missing"
     @test format(f"{:10}",  missing) == "   missing"
     @test format(f"{:<10}", missing) == "missing   "
