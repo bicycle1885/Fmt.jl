@@ -2,10 +2,16 @@ module Fmt
 
 export @f_str
 
+# types and utils
 include("argument.jl")
 include("spec.jl")
 include("field.jl")
+include("parser.jl")
+include("compiler.jl")
+include("interface.jl")
 include("misc.jl")
+
+# formatting functions
 include("any.jl")
 include("nothing.jl")
 include("missing.jl")
@@ -19,8 +25,5 @@ include("float.jl")
 include("bigfloat.jl")
 include("irrational.jl")
 include("complex.jl")
-include("parser.jl")
-include("compiler.jl")
-include("interface.jl")
 
 end
