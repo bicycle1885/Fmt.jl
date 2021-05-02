@@ -342,12 +342,36 @@ Fmt.format(f"{:.4f}", Float64(pi)) == "3.1416"
 | `f`  | fixed-point notation (lowercase) |
 | `E`  | scientific notation (uppercase) |
 | `e`  | scientific notation (lowercase) |
-| `G`  | general notation (uppercase) |
-| `g`  | general notation (lowercase) |
 | `A`  | hexadecimal notation (uppercase) |
 | `a`  | hexadecimal notation (lowercase) |
+| `G`  | general notation (uppercase) |
+| `g`  | general notation (lowercase) |
 | `%`  | percentage (multiplied by 100) |
 | none | general notation |
+
+There are three kinds of notations for floating-point numbers.
+Fixed-point notation refers to a notation without exponent part, such as `3.14` and `0.001`.
+Scientific notation refers to a notation with exponent part, such as `6.02e+23` and `1e-8`.
+Hexadecimal notation is similar to scientific notation, but it is prefixed by `0x` and its fractional part is denoted in hexadecimal digits.
+
+General notation may be in fixed-point notation or scientific notation, depending on the exponent part of a number.
+It chooses fixed-point notation if the exponent part of the value is within a "reasonable" range.
+Otherwise, it chooses scientific notation because denoting the value in fixed-point notation will be too long.
+
+`F` and `f` force fixed-point notation.
+The only difference between `F` and `f` is that `F` uses uppercase letters for (positive and negative) infinities and NaNs (i.e., `INF` and `NAN`, respectively) whiel `f` uses lowercase letters (i.e., `inf` and `nan`, respectively).
+
+`E` and `e` force scientific notation.
+The difference between `E` and `e` is analogous to that of `F` and `f`, but the prefix of exponent part is denoted in an uppercase letter (i.e., `E`) for `E` and in an lowercase letter (i.e., `e`) for `e`.
+
+`A` and `a` force hexadecimal notation.
+`A` uses uppercase letters and `a` uses lowercase letters.
+
+`G` uses `F` or `E`, and `g` uses `f` or `e`, depending on the value as already mentioned above.
+
+`%` multiplies a value by 100, denotes the value in fixed-point notation, and appends the `%` mark.
+
+If no type specifier is given, the notation is the same as that of `g` but at least one digit is shown past the decimal point.
 
 #### Other values
 
