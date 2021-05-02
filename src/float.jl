@@ -51,9 +51,7 @@ end
         precision = default(s.precision, 6)
         p = writeexp(data, p, x, precision, plus, space, hash, expchar)
     elseif s.type == 'G' || s.type == 'g'
-        # FIXME: calling writeexp just to get exponent seems inefficient
-        p′ = writeexp(data, p, x, -1, plus, space, hash, expchar)
-        exp = parse_exponent(data, p:p′-1)
+        exp = exponent10(x)
         prec = max(default(s.precision, 6), 1)
         if -4 ≤ exp < prec
             p = writefixed(data, p, x, prec - (exp + 1), plus, space, hash; trimtrailingzeros = true)
@@ -77,8 +75,7 @@ end
         @assert !isspecified(s.type)
         hash = true
         if isspecified(s.precision)
-            p′ = writeexp(data, p, x, -1, plus, space, hash, expchar)
-            exp = parse_exponent(data, p:p′-1)
+            exp = exponent10(x)
             prec = max(s.precision, 1)
             if -4 ≤ exp < prec
                 p = writefixed(data, p, x, prec - (exp + 1), plus, space, hash; trimtrailingzeros = true)
@@ -125,36 +122,7 @@ end
 @noinline writeshortest(data, p, x, plus, space, hash, precision, expchar) =
     Ryu.writeshortest(data, p, x, plus, space, hash, precision, expchar)
 
-function parse_exponent(data::Vector{UInt8}, range::UnitRange{Int})
-    for i in range
-        if data[i] == UInt8('e') || data[i] == UInt8('E')
-            i += 1
-            # sign
-            neg = false
-            if data[i] == UInt8('+')
-                i += 1
-            elseif data[i] == UInt8('-')
-                neg = true
-                i += 1
-            end
-            # NOTE: exponent is at most three digits
-            exp = data[i] - Z
-            i += 1
-            if i ≤ last(range)
-                exp = 10exp + (data[i] - Z)
-                i += 1
-                if i ≤ last(range)
-                    exp = 10exp + (data[i] - Z)
-                end
-            end
-            if neg
-                exp = -exp
-            end
-            return exp
-        end
-    end
-    @assert false
-end
+exponent10(x::IEEEFloat) = floor(Int, log10(x))
 
 # NOTE: the sign of `x` is ignored
 function hexadecimal(data::Vector{UInt8}, p::Int, x::IEEEFloat, precision::Int, uppercase::Bool)
