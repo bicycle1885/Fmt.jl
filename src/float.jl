@@ -51,8 +51,9 @@ end
         precision = default(s.precision, 6)
         p = writeexp(data, p, x, precision, plus, space, hash, expchar)
     elseif s.type == 'G' || s.type == 'g'
-        exp = exponent10(x)
         prec = max(default(s.precision, 6), 1)
+        p′ = writeexp(data, p, x, prec, plus, space, hash, expchar)
+        exp = parseexp(data, p, p′, expchar)
         if -4 ≤ exp < prec
             p = writefixed(data, p, x, prec - (exp + 1), plus, space, hash; trimtrailingzeros = true)
         else
@@ -75,8 +76,9 @@ end
         @assert !isspecified(s.type)
         hash = true
         if isspecified(s.precision)
-            exp = exponent10(x)
             prec = max(s.precision, 1)
+            p′ = writeexp(data, p, x, prec, plus, space, hash, expchar)
+            exp = parseexp(data, p, p′, expchar)
             if -4 ≤ exp < prec
                 p = writefixed(data, p, x, prec - (exp + 1), plus, space, hash; trimtrailingzeros = true)
                 if data[p-1] == UInt8('.')
@@ -122,7 +124,33 @@ end
 @noinline writeshortest(data, p, x, plus, space, hash, precision, expchar) =
     Ryu.writeshortest(data, p, x, plus, space, hash, precision, expchar)
 
-exponent10(x::IEEEFloat) = floor(Int, log10(x))
+# parse the exponent part
+function parseexp(data, p, p_end, expchar)
+    while p < p_end
+        if data[p] == expchar
+            p += 1
+            sign = 1
+            if data[p] == UInt8('+')
+                p += 1
+            elseif data[p] == UInt8('-')
+                sign = -1
+                p += 1
+            end
+            exp = Int(data[p] - Z)
+            p += 1
+            if p < p_end
+                exp = 10exp + (data[p] - Z)
+                p += 1
+                if p < p_end
+                    exp = 10exp + (data[p] - Z)
+                end
+            end
+            return flipsign(exp, sign)
+        end
+        p += 1
+    end
+    @assert false
+end
 
 # NOTE: the sign of `x` is ignored
 function hexadecimal(data::Vector{UInt8}, p::Int, x::IEEEFloat, precision::Int, uppercase::Bool)
