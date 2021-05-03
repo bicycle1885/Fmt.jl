@@ -401,6 +401,8 @@ end
     @test format(f"{:g}", 1.0) == "1"
     @test format(f"{:G}", 1.0) == "1"
 
+    @test format(f"{:#g}", 3.14) == "3.14000"
+
     @test format(f"{:%}",   1.0) == "100.000000%"
     @test format(f"{:.0%}", 1.0) == "100%"
     @test format(f"{:.1%}", 1.0) == "100.0%"

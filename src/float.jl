@@ -55,9 +55,9 @@ end
         p′ = writeexp(data, p, x, prec, plus, space, hash, expchar)
         exp = parseexp(data, p, p′, expchar)
         if -4 ≤ exp < prec
-            p = writefixed(data, p, x, prec - (exp + 1), plus, space, hash; trimtrailingzeros = true)
+            p = writefixed(data, p, x, prec - (exp + 1), plus, space, hash; trimtrailingzeros = !hash)
         else
-            p = writeexp(data, p, x, prec - 1, plus, space, hash, expchar; trimtrailingzeros = true)
+            p = writeexp(data, p, x, prec - 1, plus, space, hash, expchar; trimtrailingzeros = !hash)
         end
     elseif s.type == 'A' || s.type == 'a'
         if uppercase
