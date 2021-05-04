@@ -52,8 +52,7 @@ end
         p = writeexp(data, p, x, precision, plus, space, hash, expchar)
     elseif s.type == 'G' || s.type == 'g'
         prec = max(default(s.precision, 6), 1)
-        p′ = writeexp(data, p, x, prec, plus, space, hash, expchar)
-        exp = parseexp(data, p, p′, expchar)
+        exp = parseexp(data, writeexp(data, p, x, prec))
         if -4 ≤ exp < prec
             p = writefixed(data, p, x, prec - (exp + 1), plus, space, hash; trimtrailingzeros = !hash)
         else
@@ -77,8 +76,7 @@ end
         hash = true
         if isspecified(s.precision)
             prec = max(s.precision, 1)
-            p′ = writeexp(data, p, x, prec, plus, space, hash, expchar)
-            exp = parseexp(data, p, p′, expchar)
+            exp = parseexp(data, writeexp(data, p, x, prec))
             if -4 ≤ exp < prec
                 p = writefixed(data, p, x, prec - (exp + 1), plus, space, hash; trimtrailingzeros = true)
                 if data[p-1] == UInt8('.')
@@ -119,37 +117,23 @@ end
 # This is to avoid excessive inlining.
 @noinline writefixed(data, p, x, precision, plus, space, hash; trimtrailingzeros = false) =
     Ryu.writefixed(data, p, x, precision, plus, space, hash, UInt8('.'), trimtrailingzeros)
-@noinline writeexp(data, p, x, precision, plus, space, hash, expchar; trimtrailingzeros = false) =
+@noinline writeexp(data, p, x, precision, plus = false, space = false, hash = false, expchar = UInt8('e'); trimtrailingzeros = false) =
     Ryu.writeexp(data, p, x, precision, plus, space, hash, expchar, UInt8('.'), trimtrailingzeros)
 @noinline writeshortest(data, p, x, plus, space, hash, precision, expchar) =
     Ryu.writeshortest(data, p, x, plus, space, hash, precision, expchar)
 
-# parse the exponent part
-function parseexp(data, p, p_end, expchar)
-    while p < p_end
-        if data[p] == expchar
-            p += 1
-            sign = 1
-            if data[p] == UInt8('+')
-                p += 1
-            elseif data[p] == UInt8('-')
-                sign = -1
-                p += 1
-            end
-            exp = Int(data[p] - Z)
-            p += 1
-            if p < p_end
-                exp = 10exp + (data[p] - Z)
-                p += 1
-                if p < p_end
-                    exp = 10exp + (data[p] - Z)
-                end
-            end
-            return flipsign(exp, sign)
-        end
-        p += 1
+function parseexp(data, p)
+    b1, b2, b3, b4 = data[p-4], data[p-3], data[p-2], data[p-1]
+    exp = 10 * (b3 - Z) + (b4 - Z)
+    if b1 == UInt8('e')
+        # two-digit exponent
+        sign = b2
+    else
+        # three-digit exponent
+        sign = b1
+        exp += 100 * (b2 - Z)
     end
-    @assert false
+    return flipsign(exp, sign == UInt8('-') ? -1 : 1)
 end
 
 # NOTE: the sign of `x` is ignored
