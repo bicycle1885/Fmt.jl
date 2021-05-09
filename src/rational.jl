@@ -1,10 +1,17 @@
 function formatinfo(s::Spec, x::Rational)
     n = numerator(x)
     d = denominator(x)
+    width = 0
+    if x < 0 || s.sign == SIGN_PLUS || s.sign == SIGN_SPACE
+        width += 1
+    end
     if s.type == 'f'
-        width = 1 + ndigits_decimal(n) + 1 + default(s.precision, 6)
+        # integral part + decimal point + fractional part
+        width += ndigits_decimal(n) + 1 + default(s.precision, 6)
     else
-        width = 1 + ndigits_decimal(n) + 1 + ndigits_decimal(d)
+        # numerator + slash + denominator
+        s′ = Spec(s, sign = SIGN_NONE, width = nothing)
+        width += formatinfo(s′, numerator(x))[1] + 1 + formatinfo(s′, denominator(x))[1]
     end
     return paddingsize(s, width) + width, nothing
 end
@@ -16,12 +23,13 @@ function formatfield(data::Vector{UInt8}, p::Int, s::Spec, x::Rational, ::Nothin
         precision = default(s.precision, 6)
         p = fixedpoint(data, p, x, precision)
     else
-        n = magnitude(numerator(x))
-        p = decimal(data, p, n, ndigits_decimal(n))
+        n = numerator(x)
+        s′ = Spec(s, sign = SIGN_NONE, width = nothing)
+        p = formatfield(data, p, s′, n, formatinfo(s′, n)[2])
         data[p] = UInt8('/')
         p += 1
-        d = magnitude(denominator(x))
-        p = decimal(data, p, d, ndigits_decimal(d))
+        d = denominator(x)
+        p = formatfield(data, p, s′, d, formatinfo(s′, d)[2])
     end
     if isspecified(s.width)
         p = aligncontent(data, p, start, p - start, s.fill, default(s.align, ALIGN_RIGHT), s.width)
