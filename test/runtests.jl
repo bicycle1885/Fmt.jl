@@ -359,6 +359,12 @@ end
     @test format(f"{:.1f}", 7//20) == "0.4"  # 7/20 = 0.35
     @test format(f"{:.0f}", 1//2)  == "0"    # 1/2  = 0.5
     @test format(f"{:.0f}", 3//2)  == "2"    # 3/2  = 1.5
+
+    # percentage
+    @test format(f"{:%}", 1//2) == "50.000000%"
+    @test format(f"{:%}", 12//10) == "120.000000%"
+    @test format(f"{:.1%}", 1//2) == "50.0%"
+    @test format(f"{:.1%}", 12//10) == "120.0%"
 end
 
 @testset "float" begin

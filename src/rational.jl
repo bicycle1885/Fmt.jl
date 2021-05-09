@@ -5,9 +5,12 @@ function formatinfo(s::Spec, x::Rational)
     if x < 0 || s.sign == SIGN_PLUS || s.sign == SIGN_SPACE
         width += 1
     end
-    if s.type == 'F' || s.type == 'f'
-        # integral part + decimal point + fractional part
+    if s.type == 'F' || s.type == 'f' || s.type == '%'
+        # integral part (upper bound) + decimal point + fractional part
         width += ndigits_decimal(n) + 1 + default(s.precision, 6)
+        if s.type == '%'
+            width += 3
+        end
     else
         # numerator + slash + denominator
         s′ = Spec(s, sign = SIGN_NONE, width = nothing)
@@ -19,9 +22,16 @@ end
 function formatfield(data::Vector{UInt8}, p::Int, s::Spec, x::Rational, ::Nothing)
     start = p
     p, _ = sign(data, p, x, s.sign)
-    if s.type == 'F' || s.type == 'f'
+    if s.type == 'F' || s.type == 'f' || s.type == '%'
         precision = default(s.precision, 6)
-        p = fixedpoint(data, p, x, precision)
+        if s.type == '%'
+            # FIXME: 100x may overflow
+            p = fixedpoint(data, p, 100x, precision)
+            data[p] = UInt8('%')
+            p += 1
+        else
+            p = fixedpoint(data, p, x, precision)
+        end
     else
         n = numerator(x)
         s′ = Spec(s, sign = SIGN_NONE, width = nothing)
