@@ -27,19 +27,7 @@ function formatfield(data::Vector{UInt8}, p::Int, s::Spec, x::BigFloat, str::Str
     if !isspecified(s.type) && isinteger(x)
         p = @copy data p ".0"
     end
-
-    if isspecified(s.grouping)
-        minwidth = isspecified(s.width) ? s.width - signed : 0
-        sep = s.grouping == GROUPING_COMMA ? UInt8(',') : UInt8('_')
-        p = groupfloat(data, start + signed, p, s.zero, minwidth, sep)
-    elseif s.zero && isspecified(s.width)
-        p = insert_zeros(data, start + signed, p, s.width - (p - start))
-    end
-
-    if isspecified(s.width)
-        p = aligncontent(data, p, start, p - start, s.fill, default(s.align, ALIGN_RIGHT), s.width)
-    end
-    return p
+    return process_float(data, start, p, s, signed)
 end
 
 function makefmt(s::Spec)
@@ -53,9 +41,4 @@ function makefmt(s::Spec)
         precision = default(s.precision, 6)
         return "%.$(precision)R$(s.type)"
     end
-end
-
-function mpfr_snprintf(buf, fmt::String, arg::BigFloat)
-    size = length(buf)
-    return @ccall "libmpfr".mpfr_snprintf(buf::Ref{UInt8}, size::Csize_t, fmt::Cstring; arg::Ref{BigFloat})::Cint
 end

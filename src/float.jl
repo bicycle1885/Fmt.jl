@@ -100,18 +100,7 @@ end
         end
     end
 
-    if isspecified(s.grouping)
-        minwidth = isspecified(s.width) ? s.width - signed : 0
-        sep = s.grouping == GROUPING_COMMA ? UInt8(',') : UInt8('_')
-        p = groupfloat(data, start + signed, p, s.zero, minwidth, sep)
-    elseif s.zero && isspecified(s.width)
-        p = insert_zeros(data, start + signed, p, s.width - (p - start))
-    end
-
-    if isspecified(s.width)
-        p = aligncontent(data, p, start, p - start, s.fill, default(s.align, ALIGN_RIGHT), s.width)
-    end
-    return p
+    return process_float(data, start, p, s, signed)
 end
 
 # This is to avoid excessive inlining.
@@ -245,5 +234,20 @@ function groupfloat(data::Vector{UInt8}, start::Int, p::Int, zero::Bool, minwidt
     end
 
     # return the next position after the last byte
+    return p
+end
+
+function process_float(data, start, p, s, signed)
+    if isspecified(s.grouping)
+        minwidth = isspecified(s.width) ? s.width - signed : 0
+        sep = s.grouping == GROUPING_COMMA ? UInt8(',') : UInt8('_')
+        p = groupfloat(data, start + signed, p, s.zero, minwidth, sep)
+    elseif s.zero && isspecified(s.width)
+        p = insert_zeros(data, start + signed, p, s.width - (p - start))
+    end
+
+    if isspecified(s.width)
+        p = aligncontent(data, p, start, p - start, s.fill, default(s.align, ALIGN_RIGHT), s.width)
+    end
     return p
 end
