@@ -666,7 +666,6 @@ end
     @test format(f"{:%}",   big"0.25") == "25.000000"
     @test format(f"{:.1%}", big"0.25") == "25.0"
 
-    # TODO: the default precision of `g` and `G` may be too small for BigFloat
     @test format(f"{}",   x) == "3.14159"
     @test format(f"{:g}", x) == "3.14159"
     @test format(f"{:G}", x) == "3.14159"
