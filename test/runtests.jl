@@ -378,8 +378,8 @@ end
 
     @test format(f"{:.1}", 1.0) == "1.0"
     @test format(f"{:g}",  1e8) == "1e+08"
-    @test format(f"{:.1}", 1e8) == "1.0e+08"
-    @test format(f"{:.2}", 1e8) == "1.0e+08"
+    @test format(f"{:.1}", 1e8) == "1e+08"
+    @test format(f"{:.2}", 1e8) == "1e+08"
 
     x = Float64(π)
     @test format(f"{:.2}", x) == "3.1"
@@ -390,8 +390,8 @@ end
     @test format(f"{:.7}", x) == "3.141593"
     @test format(f"{:.8}", x) == "3.1415927"
 
-    @test format(f"{:.3}", 1e+4) == "1.0e+04"
-    @test format(f"{:.3}", 1e+3) == "1.0e+03"
+    @test format(f"{:.3}", 1e+4) == "1e+04"
+    @test format(f"{:.3}", 1e+3) == "1e+03"
     @test format(f"{:.3}", 1e+2) == "100.0"
     @test format(f"{:.3}", 1e+1) == "10.0"
     @test format(f"{:.3}", 1e+0) == "1.0"
@@ -399,8 +399,8 @@ end
     @test format(f"{:.3}", 1e-2) == "0.01"
     @test format(f"{:.3}", 1e-3) == "0.001"
     @test format(f"{:.3}", 1e-4) == "0.0001"
-    @test format(f"{:.3}", 1e-5) == "1.0e-05"
-    @test format(f"{:.3}", 1e-6) == "1.0e-06"
+    @test format(f"{:.3}", 1e-5) == "1e-05"
+    @test format(f"{:.3}", 1e-6) == "1e-06"
 
     @test format(f"{:-}",  0.5) == "0.5"
     @test format(f"{:+}",  0.5) == "+0.5"

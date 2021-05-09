@@ -73,34 +73,22 @@ end
         p += 1
     else
         @assert !isspecified(s.type)
-        hash = true
         if isspecified(s.precision)
             prec = max(s.precision, 1)
             exp = parseexp(data, writeexp(data, p, x, prec))
             if -4 ≤ exp < prec
+                hash = true
                 p = writefixed(data, p, x, prec - (exp + 1), plus, space, hash; trimtrailingzeros = true)
-                if data[p-1] == UInt8('.')
-                    # append '0' after the decimal point (e.g., "1." -> "1.0")
-                    data[p] = Z
-                    p += 1
-                end
             else
-                p′ = writeexp(data, p, x, prec - 1, plus, space, hash, expchar; trimtrailingzeros = true)
-                if data[p+2] == expchar
-                    # insert '0' after the decimal point (e.g., "1.e+08" -> "1.0e+08")
-                    copyto!(data, p + 3, data, p + 2, p′ - (p + 2))
-                    data[p+2] = Z
-                    p = p′ + 1
-                else
-                    p = p′
-                end
+                p = writeexp(data, p, x, prec - 1, plus, space, hash, expchar; trimtrailingzeros = true)
             end
         else
+            hash = true
             p = writeshortest(data, p, x, plus, space, hash, -1, expchar)
         end
     end
 
-    return process_float(data, start, p, s, signed)
+    return processfloat(data, start, p, s, signed)
 end
 
 # This is to avoid excessive inlining.
@@ -237,7 +225,17 @@ function groupfloat(data::Vector{UInt8}, start::Int, p::Int, zero::Bool, minwidt
     return p
 end
 
-function process_float(data, start, p, s, signed)
+isexpchar(b) = b == UInt8('e') || b == UInt8('E')
+
+# post-processing of formatted floating-point numbers
+function processfloat(data, start, p, s, signed)
+    # decimal point and fractional zero
+    if !isspecified(s.type) && data[p-1] == UInt8('.')
+        data[p] = Z
+        p += 1
+    end
+
+    # grouping and sign-aware zero padding
     if isspecified(s.grouping)
         minwidth = isspecified(s.width) ? s.width - signed : 0
         sep = s.grouping == GROUPING_COMMA ? UInt8(',') : UInt8('_')
@@ -246,6 +244,7 @@ function process_float(data, start, p, s, signed)
         p = insert_zeros(data, start + signed, p, s.width - (p - start))
     end
 
+    # alignment
     if isspecified(s.width)
         p = aligncontent(data, p, start, p - start, s.fill, default(s.align, ALIGN_RIGHT), s.width)
     end

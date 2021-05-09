@@ -24,10 +24,11 @@ function formatfield(data::Vector{UInt8}, p::Int, s::Spec, x::BigFloat, str::Str
     n = ncodeunits(str)
     copyto!(data, p, codeunits(str), 1, n)
     p += n
-    if !isspecified(s.type) && isinteger(x)
-        p = @copy data p ".0"
+    if !isspecified(s.type) && all(isdigit, str)
+        data[p] = UInt8('.')
+        p += 1
     end
-    return process_float(data, start, p, s, signed)
+    return processfloat(data, start, p, s, signed)
 end
 
 function makefmt(s::Spec)
