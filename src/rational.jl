@@ -2,7 +2,7 @@ function formatinfo(s::Spec, x::Rational)
     n = numerator(x)
     d = denominator(x)
     width = 0
-    if x < 0 || s.sign == SIGN_PLUS || s.sign == SIGN_SPACE
+    if s.sign == SIGN_PLUS || s.sign == SIGN_SPACE || s.sign != SIGN_NONE && signbit(x)
         width += 1
     end
     if s.type == 'F' || s.type == 'f' || s.type == '%'
