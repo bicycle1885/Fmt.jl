@@ -5,7 +5,7 @@ function formatinfo(s::Spec, x::Rational)
     if x < 0 || s.sign == SIGN_PLUS || s.sign == SIGN_SPACE
         width += 1
     end
-    if s.type == 'f'
+    if s.type == 'F' || s.type == 'f'
         # integral part + decimal point + fractional part
         width += ndigits_decimal(n) + 1 + default(s.precision, 6)
     else
@@ -19,7 +19,7 @@ end
 function formatfield(data::Vector{UInt8}, p::Int, s::Spec, x::Rational, ::Nothing)
     start = p
     p, _ = sign(data, p, x, s.sign)
-    if s.type == 'f'
+    if s.type == 'F' || s.type == 'f'
         precision = default(s.precision, 6)
         p = fixedpoint(data, p, x, precision)
     else
