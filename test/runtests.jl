@@ -674,6 +674,12 @@ end
     N = big"6.02214076e+23"  # Avogadro constant
     @test format(f"{:,f}",  N) == "602,214,076,000,000,000,000,000.000000"
     @test format(f"{: ,f}", N) == " 602,214,076,000,000,000,000,000.000000"
+
+    # check consistency
+    for x in parse.(Float64, string.("1.23456789e", -8:8))
+        fmt = f"{:8.3g}"
+        @test format(fmt, BigFloat(x)) == format(fmt, x)
+    end
 end
 
 @testset "irrational" begin
