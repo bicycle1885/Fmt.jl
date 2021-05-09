@@ -373,6 +373,12 @@ The difference between `E` and `e` is analogous to that of `F` and `f`, but the 
 
 If no type specifier is given, the notation is the same as that of `g` but at least one digit is shown past the decimal point.
 
+#### Rationals
+
+If `type` is `F` or `f`, it formats the number in fixed-point notation.
+If `type` is `%`, it formats the number in the same way as `f` but the number is multiplied by 100, followed by `%`.
+If no `type` is specified, it formats the number with its (reduced) numerator and denominator separated by a slash (e.g., '3/10').
+
 #### Other values
 
 `p` is for pointers and `s` for strings.
