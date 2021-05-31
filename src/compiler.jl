@@ -44,6 +44,7 @@ function compile(fstr::String)
     # function parameters and body
     poparams = [get(argparams, Positional(n), :_) for n in 1:nposargs]
     kwparams = [param for (arg, param) in argparams if arg isa Union{Keyword, Expr}]
+    # the parameters are like: function (buf, pos, a, b, c, ...; x, y, z, ...).
     params = Expr(:tuple, Expr(:parameters, esc.(kwparams)...), :buf, :pos, esc.(poparams)...)
     body = quote
         size = 0
