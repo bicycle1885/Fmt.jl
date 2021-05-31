@@ -787,6 +787,18 @@ end
     @test format(f"}}αβ") == "}αβ"
 end
 
+@testset "format!" begin
+    buf = zeros(UInt8, 128)
+    @test Fmt.format!(buf, f"{}", 42) == 2
+    @test buf[1:2] == b"42"
+
+    @test Fmt.format!(buf, f"{:8}", 42) == 8
+    @test buf[1:8] == b"      42"
+
+    @test Fmt.format!(buf, 4, f"{}", 42) == 2
+    @test buf[4:5] == b"42"
+end
+
 @testset "printf" begin
     buf = IOBuffer()
     @test Fmt.printf(buf, f"foobar") === nothing

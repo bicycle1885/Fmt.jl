@@ -18,7 +18,7 @@ function compile(fstr::String)
             info = :(size += $n)
             data = n < 8 ?
                 :(@inbounds $(genstrcopy(f)); p += $n) :
-                :(copyto!(data, p, $(codeunits(f)), 1, $n); p += $n)
+                :(copyto!(buf, p, $(codeunits(f)), 1, $n); p += $n)
         else
             @assert f isa Field
             value = esc(arg2param(f.argument))
@@ -35,7 +35,7 @@ function compile(fstr::String)
                 s, $meta = formatinfo($spec, $arg)
                 size += s
             end
-            data = :(p = formatfield(data, p, $spec, $arg, $meta))
+            data = :(p = formatfield(buf, p, $spec, $arg, $meta))
         end
         push!(code_info.args, info)
         push!(code_data.args, data)
@@ -44,31 +44,37 @@ function compile(fstr::String)
     # function parameters and body
     poparams = [get(argparams, Positional(n), :_) for n in 1:nposargs]
     kwparams = [param for (arg, param) in argparams if arg isa Union{Keyword, Expr}]
-    params = Expr(:tuple, Expr(:parameters, esc.(kwparams)...), esc.(poparams)...)
+    params = Expr(:tuple, Expr(:parameters, esc.(kwparams)...), :buf, :pos, esc.(poparams)...)
     body = quote
         size = 0
         $(code_info)
-        data = Base.StringVector(size)
-        p = 1
+        if buf === DUMMY_BUFFER
+            buf = Base.StringVector(size)
+        end
+        p::Int = pos
         $(code_data)
-        p - 1 < length(data) && resize!(data, p - 1)
-        return String(data)
+        return buf, p - Int(pos)
     end
     func = Expr(:function, params, body)
 
     makekw((arg, param)) = Expr(:kw, param, esc(arg isa Keyword ? arg.name : arg))
     if any(x -> x isa Expr, keys(argparams))
         @assert nposargs == 0
-        return Expr(:call, func, makekw.(collect(argparams))...)
+        return Expr(:call, :stringify, Expr(:call, func, :DUMMY_BUFFER, 1, makekw.(collect(argparams))...))
     else
         return Expr(:call, :Format, fstr, func)
     end
 end
 
+function stringify((buf, n))
+    n < length(buf) && resize!(buf, n)
+    return String(buf)
+end
+
 function genstrcopy(s::String)
     code = Expr(:block)
     for i in 1:ncodeunits(s)
-        push!(code.args, :(data[p+$i-1] = $(codeunit(s, i))))
+        push!(code.args, :(buf[p+$i-1] = $(codeunit(s, i))))
     end
     return code
 end
