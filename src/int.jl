@@ -5,39 +5,34 @@
         isspecified(s.width) || return size, (0, 1)
         return paddingsize(s, 1) + size, (0, 1)
     end
+
     base = s.type == 'X' || s.type == 'x' ? 16 : s.type == 'o' ? 8 : s.type == 'B' || s.type == 'b' ? 2 : 10
-    k = base == 10 ? 3 : 4  # number of digits between grouping separators
 
     # sign + prefix width
     l = 0
-    if x < 0 || s.sign != SIGN_MINUS
-        l += 1
-    end
-    if s.altform && base != 10
-        l += 2
-    end
+    l += x < 0 || s.sign == SIGN_PLUS || s.sign == SIGN_SPACE
+    l += (s.altform && base != 10) * 2
 
     # digits width (excluding leading zeros for sign-aware padding)
     m = base == 10 ? ndigits_decimal(x) : ndigits(x; base)
 
     # content width (including leading zeros for sign-aware padding)
-    width = l + m
-    if !isspecified(s.width) || !s.zero
+    k = base == 10 ? 3 : 4
+    if isspecified(s.width) && isspecified(s.grouping)
+        if s.zero
+            m += number_of_leading_zeros(m, k, s.width - l)
+        end
+        width = l + m + div(m - 1, k)
+    elseif isspecified(s.width)
+        if s.zero
+            m = max(s.width - l, m)
+        end
+        width = l + m
+    else
+        width = l + m
         if isspecified(s.grouping)
             width += div(m - 1, k)
         end
-    elseif isspecified(s.grouping)
-        if s.width - l ≤ m + div(m - 1, k)
-            # no leading zeros
-            width += div(m - 1, k)
-        else
-            # some leading zeros
-            width = l + (s.width - l) + (rem(s.width - l, k + 1) == 0)
-            m = (width - l) - div(width - l, k + 1)
-        end
-    else
-        m = max(s.width - l, m)
-        width = l + m
     end
 
     # add padding size and return
