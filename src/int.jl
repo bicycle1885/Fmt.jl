@@ -8,28 +8,23 @@
 
     base = s.type == 'X' || s.type == 'x' ? 16 : s.type == 'o' ? 8 : s.type == 'B' || s.type == 'b' ? 2 : 10
 
-    # sign + prefix width
+    # sign and prefix width
     l = 0
     l += x < 0 || s.sign == SIGN_PLUS || s.sign == SIGN_SPACE
     l += (s.altform && base != 10) * 2
 
     # number of digits (including grouping separators)
     m = base == 10 ? ndigits_decimal(x) : ndigits(x; base)
-    k = base == 10 ? 3 : 4
-    if isspecified(s.width) && isspecified(s.grouping)
-        if s.zero
+    if isspecified(s.grouping)
+        k = base == 10 ? 3 : 4
+        if isspecified(s.width) && s.zero
             m += number_of_leading_zeros(m, k, s.width - l)
         end
         m += div(m - 1, k)
-    elseif isspecified(s.width)
-        if s.zero
-            m = max(s.width - l, m)
-        end
-    elseif isspecified(s.grouping)
-        m += div(m - 1, k)
+    elseif isspecified(s.width) && s.zero
+        m = max(s.width - l, m)
     end
 
-    # add padding size and return
     width = l + m
     return width + paddingsize(s, width), (m, width)
 end
