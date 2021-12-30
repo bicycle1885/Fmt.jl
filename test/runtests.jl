@@ -621,8 +621,7 @@ end
     @test format(f"{:.3g}", x) == "1.8e+308"
     @test format(f"{:.4g}", x) == "1.798e+308"
 
-    # upstream bug: https://github.com/JuliaLang/julia/pull/40755
-    @test_broken format(f"{:g}", 1e+5) == "100000"
+    @test format(f"{:g}", 1e+5) == "100000"
 
     @test format(f"{:1000f}", 1.0) == lpad("1.000000", 1000)
     @test format(f"{:.1000f}", 1.0) == rpad("1.", 1002, '0')
@@ -867,5 +866,22 @@ end
     @test_throws FormatError("incomplete field") parse("{:d")
     @test_throws FormatError("mixing interpolated and non-interpolated fields is not allowed") parse("{\$x} {}")
     @test_throws FormatError("inconsistent interpolation of arguments") parse("{\$x:{width}}")
-    @test_throws FormatError("inconsistent interpolation of arguments") parse("{x:{\$width}}")
+end
+
+@testset "spec interpolation" begin
+    x = float(π)
+    s = ".2"
+    @test f"{$x:{$s}}" == "3.1"
+    s = ".3"
+    @test f"{$x:{$s}}" == "3.14"
+    s = ".4"
+    @test f"{$x:{$s}}" == "3.142"
+    s = ".5"
+    @test f"{$x:{$s}}" == "3.1416"
+    s = ".6"
+    @test f"{$x:{$s}}" == "3.14159"
+    s = ".7"
+    @test f"{$x:{$s}}" == "3.141593"
+    s = ".8"
+    @test f"{$x:{$s}}" == "3.1415927"
 end

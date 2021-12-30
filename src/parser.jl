@@ -76,16 +76,18 @@ function parse_field(fmt::String, i::Int, auto::Int)
     end
     fmt[i] == '}' || throw(FormatError("invalid character $(repr(fmt[i]))"))
     # check consistency of arguments
-    if arg isa Expr
-        spec.fill      isa Union{Char,         Expr} &&
-        spec.width     isa Union{Int, Nothing, Expr} &&
-        spec.precision isa Union{Int, Nothing, Expr} ||
-        throw(FormatError("inconsistent interpolation of arguments"))
-    else
-        spec.fill      isa Union{Char,         Positional, Keyword} &&
-        spec.width     isa Union{Int, Nothing, Positional, Keyword} &&
-        spec.precision isa Union{Int, Nothing, Positional, Keyword} ||
-        throw(FormatError("inconsistent interpolation of arguments"))
+    if !(spec isa String)
+        if arg isa Expr
+            spec.fill      isa Union{Char,         Expr} &&
+            spec.width     isa Union{Int, Nothing, Expr} &&
+            spec.precision isa Union{Int, Nothing, Expr} ||
+            throw(FormatError("inconsistent interpolation of arguments"))
+        else
+            spec.fill      isa Union{Char,         Positional, Keyword} &&
+            spec.width     isa Union{Int, Nothing, Positional, Keyword} &&
+            spec.precision isa Union{Int, Nothing, Positional, Keyword} ||
+            throw(FormatError("inconsistent interpolation of arguments"))
+        end
     end
     return Field(arg, conv, spec), i + 1, auto
 end
@@ -142,7 +144,7 @@ function parse_spec(fmt::String, i::Int, auto::Int)
     # align
     last = lastindex(fmt)
     if fmt[i] == '{'
-        # dynamic fill or dynamic width?
+        # dynamic fill, dynamic width, or spec string
         _arg, _i, _auto = parse_argument(fmt, i + 1, auto)
         _i ≤ last && fmt[_i] == '}' || incomplete_argument()
         if _i + 1 ≤ last && fmt[_i+1] ∈ "<^>"
@@ -152,6 +154,8 @@ function parse_spec(fmt::String, i::Int, auto::Int)
             auto = _auto
             i = _i + 2
             i ≤ last || @goto END
+        elseif _i + 1 ≤ last && fmt[i+1] == '$'  # spec interpolation
+            return fmt[nextind(fmt, i):prevind(fmt, _i)], _i + 1, auto
         end
     elseif fmt[i] != '}' && nextind(fmt, i) ≤ last && fmt[nextind(fmt, i)] ∈ "<^>"
         # fill + align

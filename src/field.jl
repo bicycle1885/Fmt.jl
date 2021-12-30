@@ -4,5 +4,5 @@
 struct Field
     argument::Argument
     conv::Conversion
-    spec::Spec
+    spec::Union{String,Spec}
 end
