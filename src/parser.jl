@@ -22,7 +22,8 @@ function parse(fmt::String)
             if i ≤ last && fmt[i] == '{'
                 i == last && throw(FormatError("single '{' is not allowed; use '{{' instead"))
                 str.size > 0 && push!(list, String(take!(str)))
-                field, i, auto = parse_field(fmt, i + 1, auto)
+                debug, field, i, auto = parse_field(fmt, i + 1, auto)
+                debug !== nothing && push!(list, debug)
                 push!(list, field)
             end
         elseif c == '}'
@@ -69,10 +70,14 @@ function parse_field(fmt::String, i::Int, auto::Int)
         i ≤ last || incomplete_field()
     end
     spec = SPEC_DEFAULT
+    debug = nothing
     if fmt[i] == ':'
         i + 1 ≤ last || incomplete_field()
         spec, i, auto = parse_spec(fmt, i + 1, auto)
         i ≤ last || incomplete_field()
+    elseif fmt[i] == '='
+        debug = "$(first(arg.args))="
+        i += 1
     end
     fmt[i] == '}' || throw(FormatError("invalid character $(repr(fmt[i]))"))
     # check consistency of arguments
@@ -87,7 +92,7 @@ function parse_field(fmt::String, i::Int, auto::Int)
         spec.precision isa Union{Int, Nothing, Positional, Keyword} ||
         throw(FormatError("inconsistent interpolation of arguments"))
     end
-    return Field(arg, conv, spec), i + 1, auto
+    return debug, Field(arg, conv, spec), i + 1, auto
 end
 
 function parse_argument(s::String, i::Int, auto::Int)
