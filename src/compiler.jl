@@ -21,19 +21,33 @@ function compile(fstr::String)
                 :(copyto!(buf, p, $(codeunits(f)), 1, $n); p += $n)
         else
             @assert f isa Field
-            value = esc(arg2param(f.argument))
-            fill = esc(arg2param(f.spec.fill))
-            width = esc(arg2param(f.spec.width))
-            precision = esc(arg2param(f.spec.precision))
             spec = Symbol(:spec, i)
             arg = Symbol(:arg, i)
             meta = Symbol(:meta, i)
             convfun = conv2func(f.conv)
-            info = quote
-                $spec = Spec($(f.spec), fill = $fill, width = $width, precision = $precision)
-                $arg = $(convfun)($value)
-                s, $meta = formatinfo($spec, $arg)
-                size += s
+            value = esc(arg2param(f.argument))
+            if f.spec isa String && f.spec[1] == '$'
+                spec_obj = esc(arg2param(Expr(:block, Symbol(f.spec[2:end]))))
+                info = quote
+                    $spec = if $spec_obj isa String
+                        parse_spec($spec_obj, 1, 0) |> first
+                    else
+                        Spec(SPEC_DEFAULT, width = $spec_obj)
+                    end
+                    $arg = $(convfun)($value)
+                    s, $meta = formatinfo($spec, $arg)
+                    size += s
+                end
+            else
+                fill = esc(arg2param(f.spec.fill))
+                width = esc(arg2param(f.spec.width))
+                precision = esc(arg2param(f.spec.precision))
+                info = quote
+                    $spec = Spec($(f.spec), fill = $fill, width = $width, precision = $precision)
+                    $arg = $(convfun)($value)
+                    s, $meta = formatinfo($spec, $arg)
+                    size += s
+                end
             end
             data = :(p = formatfield(buf, p, $spec, $arg, $meta))
         end
