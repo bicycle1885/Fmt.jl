@@ -312,13 +312,14 @@ Base.@assume_effects :foldable function parsespec(::Type{<:Any}, spec::String)
     precision = PRECISION_UNSPECIFIED
     type = TYPE_UNSPECIFIED
 
-    incomplete_argument() = throw(FormatError("incomplete argument"))
     char2align(c) = c == '<' ? ALIGN_LEFT :
                     c == '^' ? ALIGN_CENTER :
                     c == '>' ? ALIGN_RIGHT : @assert false
 
-    # align
     last = lastindex(fmt)
+    i ≤ last || @goto END
+
+    # align
     if nextind(fmt, i) ≤ last && fmt[nextind(fmt, i)] ∈ "<^>"
         # fill + align
         fill = fmt[i]
