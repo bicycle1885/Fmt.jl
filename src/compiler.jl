@@ -1,18 +1,12 @@
 function compile(fstr::String)
-    nposargs = 0
     argparams = Dict{Argument, Symbol}()
-    function arg2param(arg)
-        arg isa Union{Positional, Keyword} || return arg
+    function arg2param(arg::Argument)
         haskey(argparams, arg) && return argparams[arg]
-        if arg isa Positional
-            nposargs = max(arg.position, nposargs)
-            param = gensym()
-        else
-            param = arg.name
-        end
+        param = arg isa Positional ? gensym() : arg.name
         argparams[arg] = param
         return param
     end
+    arg2param(x::Union{String, Expr}) = x
 
     code_info = Expr(:block)
     code_data = Expr(:block)
@@ -30,7 +24,7 @@ function compile(fstr::String)
             arg = Symbol(:arg, i)
             meta = Symbol(:meta, i)
             convfun = conv2func(f.conv)
-            spectokens = [esc(arg2param(x)) for x in f.spec]
+            spectokens = esc.(arg2param.(f.spec))
             info = quote
                 $arg = $(convfun)($value)
                 $spec = parsespec(typeof($arg), string($(spectokens...)))
@@ -44,12 +38,13 @@ function compile(fstr::String)
     end
 
     # function parameters and body
-    poparams = [get(argparams, Positional(n), :_) for n in 1:nposargs]
-    kwparams = [param for (arg, param) in argparams if arg isa Union{Keyword, Expr}]
+    nposargs = maximum((arg.position for (arg, _) in argparams if arg isa Positional), init = 0)
+    posparams = [get(argparams, Positional(n), :_) for n in 1:nposargs]
+    kwdparams = [param for (arg, param) in argparams if arg isa Keyword]
     # the parameters are like: function (buf, pos, a, b, c, ...; x, y, z, ...).
-    params = Expr(:tuple, Expr(:parameters, esc.(kwparams)...), :buf, :pos, esc.(poparams)...)
+    params = Expr(:tuple, Expr(:parameters, esc.(kwdparams)...), :buf, :pos, esc.(posparams)...)
     body = quote
-        size = 0
+        size::Int = 0
         $(code_info)
         if buf === DUMMY_BUFFER
             buf = Base.StringVector(size)
@@ -60,7 +55,6 @@ function compile(fstr::String)
     end
     func = Expr(:function, params, body)
 
-    makekw((arg, param)) = Expr(:kw, param, esc(arg isa Keyword ? arg.name : arg))
     if isempty(argparams)
         return Expr(:call, :stringify, Expr(:call, func, :DUMMY_BUFFER, 1))
     else

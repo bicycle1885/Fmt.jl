@@ -1,9 +1,9 @@
-struct Positional
+abstract type Argument end
+
+struct Positional <: Argument
     position::Int
 end
 
-struct Keyword
+struct Keyword <: Argument
     name::Symbol
 end
-
-const Argument = Union{Positional, Keyword, Expr}

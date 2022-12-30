@@ -89,7 +89,7 @@ function parse_field(fmt::String, i::Int, auto::Int)
         conv, i = parse_conv(fmt, i + 1)
         i ≤ last || incomplete_field()
     end
-    spec = Union{String, Argument}[""]
+    spec = Union{String, Argument, Expr}[""]
     if fmt[i] == ':'
         i + 1 ≤ last || incomplete_field()
         spec, i, auto = parse_spec(fmt, i + 1, auto)
@@ -103,7 +103,7 @@ function parse_spec(fmt::String, i::Int, auto::Int)
     incomplete_argument() = throw(FormatError("incomplete argument"))
     last = lastindex(fmt)
     str = IOBuffer()
-    spec = Union{String, Argument}[]
+    spec = Union{String, Argument, Expr}[]
     while i ≤ last
         c = fmt[i]
         if c == '{'

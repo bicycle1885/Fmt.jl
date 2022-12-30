@@ -19,7 +19,7 @@ default(val, defval) = isspecified(val) ? val : defval
 
 # format specification
 struct Spec
-    fill::Union{Char, Argument}
+    fill::Char
     align::Union{Alignment, Nothing}
     sign::Sign
     altform::Bool
