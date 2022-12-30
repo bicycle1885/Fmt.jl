@@ -26,10 +26,10 @@ function compile(fstr::String)
             arg = Symbol(:arg, i)
             meta = Symbol(:meta, i)
             convfun = conv2func(f.conv)
+            spectokens = [esc(arg2param(x)) for x in f.spec]
             info = quote
-                #$spec = Spec($(f.spec), fill = $fill, width = $width, precision = $precision)
                 $arg = $(convfun)($value)
-                $spec = parsespec(typeof($arg), $(f.spec[1]))
+                $spec = parsespec(typeof($arg), string($(spectokens...)))
                 s, $meta = formatinfo($spec, $arg)
                 size += s
             end
