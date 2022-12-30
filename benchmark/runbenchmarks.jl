@@ -42,7 +42,7 @@ if "integer" in TARGETS
     println(f"integer (N = {$N:,})")
     Random.seed!(SEED)
     x = rand(-1000:1000, N)
-    for fmt in [f"{}", f"{:b}", f"{:o}", f"{:d}", f"{:x}"]
+    for fmt in [#=f"{}",=# f"{:b}", f"{:o}", f"{:d}", f"{:x}"]
         benchmark(fmt, x)
     end
 end
