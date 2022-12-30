@@ -40,17 +40,6 @@ function parse(fmt::String)
     end
     str.size > 0 && push!(list, String(take!(str)))
 
-    # check fields
-    interpolated = missing
-    for f in list
-        f isa Field || continue
-        if ismissing(interpolated)
-            interpolated = f.argument isa Expr
-        elseif interpolated != (f.argument isa Expr)
-            throw(FormatError("mixing interpolated and non-interpolated fields is not allowed"))
-        end
-    end
-
     if isempty(list)
         push!(list, "")
     end

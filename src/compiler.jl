@@ -2,10 +2,14 @@ function compile(fstr::String)
     nposargs = 0
     argparams = Dict{Argument, Symbol}()
     function arg2param(arg)
-        arg isa Argument || return arg  # static argument
+        arg isa Union{Positional, Keyword} || return arg
         haskey(argparams, arg) && return argparams[arg]
-        arg isa Positional && (nposargs = max(arg.position, nposargs))
-        param = arg isa Keyword ? arg.name : gensym()
+        if arg isa Positional
+            nposargs = max(arg.position, nposargs)
+            param = gensym()
+        else
+            param = arg.name
+        end
         argparams[arg] = param
         return param
     end
@@ -57,9 +61,8 @@ function compile(fstr::String)
     func = Expr(:function, params, body)
 
     makekw((arg, param)) = Expr(:kw, param, esc(arg isa Keyword ? arg.name : arg))
-    if any(x -> x isa Expr, keys(argparams))
-        @assert nposargs == 0
-        return Expr(:call, :stringify, Expr(:call, func, :DUMMY_BUFFER, 1, makekw.(collect(argparams))...))
+    if isempty(argparams)
+        return Expr(:call, :stringify, Expr(:call, func, :DUMMY_BUFFER, 1))
     else
         return Expr(:call, :Format, fstr, func)
     end

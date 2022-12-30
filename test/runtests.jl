@@ -695,12 +695,25 @@ end
     @test format(f"{}", -1 - 2im) == "-1 - 2im"
 end
 
-@testset "format" begin
-    # no arguments
-    @test format(f"") == ""
-    @test format(f"foobar") == "foobar"
-    @test format(f"\r\n") == "\r\n"
+@testset "no arguments" begin
+    @test f"" == ""
+    @test f"foobar" == "foobar"
+    @test f"\r\n" == "\r\n"
 
+    # escaping curly braces
+    @test f"{{" == "{"
+    @test f"}}" == "}"
+    @test f"{{{{" == "{{"
+    @test f"}}}}" == "}}"
+    @test f"{{}}" == "{}"
+    @test f"}}{{" == "}{"
+    @test f"{{$x}}" == "{\$x}"
+    @test f"{{{{$x}}}}" == "{{\$x}}"
+    @test f"{{αβ" == "{αβ"
+    @test f"}}αβ" == "}αβ"
+end
+
+@testset "format" begin
     # string formatting
     @test format(f"Hello, {}!", "world") == "Hello, world!"
     @test format(f"Hello, {}!", "世界") == "Hello, 世界!"
@@ -772,18 +785,6 @@ end
     @test format(f"{x:.{n}}"; x, n = 3) == format(f"{:.3}", x)
     @test format(f"{x:.{n}}"; x, n = 4) == format(f"{:.4}", x)
     @test format(f"{x:.{n}}"; x, n = 5) == format(f"{:.5}", x)
-
-    # escaping curly braces
-    @test format(f"{{") == "{"
-    @test format(f"}}") == "}"
-    @test format(f"{{{{") == "{{"
-    @test format(f"}}}}") == "}}"
-    @test format(f"{{}}") == "{}"
-    @test format(f"}}{{") == "}{"
-    @test format(f"{{$x}}") == "{\$x}"
-    @test format(f"{{{{$x}}}}") == "{{\$x}}"
-    @test format(f"{{αβ") == "{αβ"
-    @test format(f"}}αβ") == "}αβ"
 end
 
 @testset "format!" begin
@@ -799,10 +800,6 @@ end
 end
 
 @testset "printf" begin
-    buf = IOBuffer()
-    @test Fmt.printf(buf, f"foobar") === nothing
-    @test String(take!(buf)) == "foobar"
-
     buf = IOBuffer()
     s = "(x = 123, y = -999)\n"
     @test Fmt.printf(buf, f"(x = {}, y = {})\n", 123, -999) === nothing
@@ -829,10 +826,6 @@ end
     σ = 0.1
     @test f"{$μ}±{$σ}" == "3.1±0.1"
 
-    x = 42
-    n = 4
-    @test f"{$x:{$n}}" == "  42"
-
     x = 0
     @test f"{$(x+1)}" == "1"
     @test f"{$(x+1)} {$(x+2)}" == "1 2"
@@ -840,6 +833,12 @@ end
 
     @test f"{$(42)}" == "42"
     @test f"{$('a')}" == "a"
+
+    x = 42
+    n = 4
+    @test f"{$x:{$n}}" == "  42"
+    @test format(f"{x:{$n}}"; x) == "  42"
+    @test format(f"{$x:{n}}"; n) == "  42"
 end
 
 @testset "syntax error" begin
@@ -850,7 +849,6 @@ end
     @test_throws FormatError("single '}' is not allowed; use '}}' instead") parse("}")
     @test_throws FormatError("single '}' is not allowed; use '}}' instead") parse("}}}")
     @test_throws FormatError("invalid character '>'") parse("{>:}")
-    @test_throws FormatError("invalid character 'Z'") parse("{:Z}")
     @test_throws FormatError("argument 0 is not allowed; use 1 or above") parse("{0}")
     @test_throws FormatError("identifier or '(' is expected after '\$'") parse("{\$:}")
     @test_throws FormatError("invalid conversion character 'K'") parse("{/K}")
@@ -864,7 +862,4 @@ end
     @test_throws FormatError("incomplete field") parse("{:3")
     @test_throws FormatError("incomplete field") parse("{:,")
     @test_throws FormatError("incomplete field") parse("{:d")
-    @test_throws FormatError("mixing interpolated and non-interpolated fields is not allowed") parse("{\$x} {}")
-    @test_throws FormatError("inconsistent interpolation of arguments") parse("{\$x:{width}}")
-    @test_throws FormatError("inconsistent interpolation of arguments") parse("{x:{\$width}}")
 end
