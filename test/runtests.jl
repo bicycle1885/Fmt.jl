@@ -621,8 +621,7 @@ end
     @test format(f"{:.3g}", x) == "1.8e+308"
     @test format(f"{:.4g}", x) == "1.798e+308"
 
-    # upstream bug: https://github.com/JuliaLang/julia/pull/40755
-    @test_broken format(f"{:g}", 1e+5) == "100000"
+    @test format(f"{:g}", 1e+5) == "100000"
 
     @test format(f"{:1000f}", 1.0) == lpad("1.000000", 1000)
     @test format(f"{:.1000f}", 1.0) == rpad("1.", 1002, '0')

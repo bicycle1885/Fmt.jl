@@ -57,41 +57,6 @@ function parse(fmt::String)
     return list
 end
 
-#=
-function parse_field(fmt::String, i::Int, auto::Int)
-    incomplete_field() = throw(FormatError("incomplete field"))
-    last = lastindex(fmt)
-    arg, i, auto = parse_argument(fmt, i, auto)
-    i ≤ last || incomplete_field()
-    conv = CONV_UNSPECIFIED
-    if fmt[i] == '/'
-        i + 1 ≤ last || incomplete_field()
-        conv, i = parse_conv(fmt, i + 1)
-        i ≤ last || incomplete_field()
-    end
-    spec = SPEC_DEFAULT
-    if fmt[i] == ':'
-        i + 1 ≤ last || incomplete_field()
-        spec, i, auto = parse_spec(fmt, i + 1, auto)
-        i ≤ last || incomplete_field()
-    end
-    fmt[i] == '}' || throw(FormatError("invalid character $(repr(fmt[i]))"))
-    # check consistency of arguments
-    if arg isa Expr
-        spec.fill      isa Union{Char,         Expr} &&
-        spec.width     isa Union{Int, Nothing, Expr} &&
-        spec.precision isa Union{Int, Nothing, Expr} ||
-        throw(FormatError("inconsistent interpolation of arguments"))
-    else
-        spec.fill      isa Union{Char,         Positional, Keyword} &&
-        spec.width     isa Union{Int, Nothing, Positional, Keyword} &&
-        spec.precision isa Union{Int, Nothing, Positional, Keyword} ||
-        throw(FormatError("inconsistent interpolation of arguments"))
-    end
-    return Field(arg, conv, spec), i + 1, auto
-end
-=#
-
 function parse_argument(s::String, i::Int, auto::Int)
     c = s[i]  # the first character after '{'
     if c == '$'
@@ -123,122 +88,6 @@ function parse_conv(fmt::String, i::Int)
         throw(FormatError("invalid conversion character $(repr(c))"))
     end
 end
-
-#=
-function parse_spec(fmt::String, i::Int, auto::Int)
-    # default
-    fill = FILL_DEFAULT
-    align = ALIGN_UNSPECIFIED
-    sign = SIGN_DEFAULT
-    altform = ALTFORM_DEFAULT
-    zero = ZERO_DEFAULT
-    width = WIDTH_UNSPECIFIED
-    grouping = GROUPING_UNSPECIFIED
-    precision = PRECISION_UNSPECIFIED
-    type = TYPE_UNSPECIFIED
-
-    incomplete_argument() = throw(FormatError("incomplete argument"))
-    char2align(c) = c == '<' ? ALIGN_LEFT :
-                    c == '^' ? ALIGN_CENTER :
-                    c == '>' ? ALIGN_RIGHT : @assert false
-
-    # align
-    last = lastindex(fmt)
-    if fmt[i] == '{'
-        # dynamic fill or dynamic width?
-        _arg, _i, _auto = parse_argument(fmt, i + 1, auto)
-        _i ≤ last && fmt[_i] == '}' || incomplete_argument()
-        if _i + 1 ≤ last && fmt[_i+1] ∈ "<^>"
-            # it was a dynamic fill
-            fill = _arg
-            align = char2align(fmt[_i+1])
-            auto = _auto
-            i = _i + 2
-            i ≤ last || @goto END
-        end
-    elseif fmt[i] != '}' && nextind(fmt, i) ≤ last && fmt[nextind(fmt, i)] ∈ "<^>"
-        # fill + align
-        fill = fmt[i]
-        i = nextind(fmt, i)
-        align = char2align(fmt[i])
-        i += 1
-        i ≤ last || @goto END
-    elseif fmt[i] ∈ "<^>"
-        # align only
-        align = char2align(fmt[i])
-        i += 1
-        i ≤ last || @goto END
-    end
-
-    # sign
-    if fmt[i] ∈ "-+ "
-        sign = fmt[i] == '-' ? SIGN_MINUS : fmt[i] == '+' ? SIGN_PLUS : SIGN_SPACE
-        i += 1
-        i ≤ last || @goto END
-    end
-
-    # alternative form
-    if fmt[i] == '#'
-        altform = true
-        i += 1
-        i ≤ last || @goto END
-    end
-
-    # width
-    if fmt[i] == '{'
-        width, i, auto = parse_argument(fmt, i + 1, auto)
-        i ≤ last && fmt[i] == '}' || incomplete_argument()
-        i += 1
-        i ≤ last || @goto END
-    elseif isdigit(fmt[i])
-        if fmt[i] == '0' && i + 1 ≤ last && isdigit(fmt[i+1])
-            # preceded by zero
-            zero = true
-            i += 1
-        end
-        width, i = parse_digits(fmt, i)
-        i ≤ last || @goto END
-    end
-
-    # grouping
-    if fmt[i] == ','
-        grouping = GROUPING_COMMA
-        i += 1
-        i ≤ last || @goto END
-    elseif fmt[i] == '_'
-        grouping = GROUPING_UNDERSCORE
-        i += 1
-        i ≤ last || @goto END
-    end
-
-    # precision
-    if fmt[i] == '.'
-        i += 1
-        i ≤ last || @goto END
-        if fmt[i] == '{'
-            precision, i, auto = parse_argument(fmt, i + 1, auto)
-            i ≤ last && fmt[i] == '}' || incomplete_argument()
-            i += 1
-            i ≤ last || @goto END
-        elseif isdigit(fmt[i])
-            precision, i = parse_digits(fmt, i)
-            i ≤ last || @goto END
-        else
-            throw(FormatError("unexpected $(repr(fmt[i])) after '.'"))
-        end
-    end
-
-    # type
-    if fmt[i] ∈ "dXxoBbcpsFfEeGgAa%"
-        type = fmt[i]
-        i += 1
-        i ≤ last || @goto END
-    end
-
-    @label END
-    return Spec(fill, align, sign, altform, zero, width, grouping, precision, type), i, auto
-end
-=#
 
 function parse_field(fmt::String, i::Int, auto::Int)
     incomplete_field() = throw(FormatError("incomplete field"))
@@ -298,10 +147,7 @@ function parse_digits(s::String, i::Int)
 end
 
 Base.@assume_effects :foldable function parsespec(::Type{<:Any}, spec::String)
-    fmt = spec
-    i = firstindex(spec)
-
-    # default
+    # default values
     fill = FILL_DEFAULT
     align = ALIGN_UNSPECIFIED
     sign = SIGN_DEFAULT
@@ -316,78 +162,81 @@ Base.@assume_effects :foldable function parsespec(::Type{<:Any}, spec::String)
                     c == '^' ? ALIGN_CENTER :
                     c == '>' ? ALIGN_RIGHT : @assert false
 
-    last = lastindex(fmt)
+    last = lastindex(spec)
+    i = firstindex(spec)
     i ≤ last || @goto END
 
     # align
-    if nextind(fmt, i) ≤ last && fmt[nextind(fmt, i)] ∈ "<^>"
+    if nextind(spec, i) ≤ last && spec[nextind(spec, i)] ∈ "<^>"
         # fill + align
-        fill = fmt[i]
-        i = nextind(fmt, i)
-        align = char2align(fmt[i])
+        fill = spec[i]
+        i = nextind(spec, i)
+        align = char2align(spec[i])
         i += 1
         i ≤ last || @goto END
-    elseif fmt[i] ∈ "<^>"
+    elseif spec[i] ∈ "<^>"
         # align only
-        align = char2align(fmt[i])
+        align = char2align(spec[i])
         i += 1
         i ≤ last || @goto END
     end
 
     # sign
-    if fmt[i] ∈ "-+ "
-        sign = fmt[i] == '-' ? SIGN_MINUS : fmt[i] == '+' ? SIGN_PLUS : SIGN_SPACE
+    if spec[i] ∈ "-+ "
+        sign = spec[i] == '-' ? SIGN_MINUS : spec[i] == '+' ? SIGN_PLUS : SIGN_SPACE
         i += 1
         i ≤ last || @goto END
     end
 
     # alternative form
-    if fmt[i] == '#'
+    if spec[i] == '#'
         altform = true
         i += 1
         i ≤ last || @goto END
     end
 
     # width
-    if isdigit(fmt[i])
-        if fmt[i] == '0' && i + 1 ≤ last && isdigit(fmt[i+1])
+    if isdigit(spec[i])
+        if spec[i] == '0' && i + 1 ≤ last && isdigit(spec[i+1])
             # preceded by zero
             zero = true
             i += 1
         end
-        width, i = parse_digits(fmt, i)
+        width, i = parse_digits(spec, i)
         i ≤ last || @goto END
     end
 
     # grouping
-    if fmt[i] == ','
+    if spec[i] == ','
         grouping = GROUPING_COMMA
         i += 1
         i ≤ last || @goto END
-    elseif fmt[i] == '_'
+    elseif spec[i] == '_'
         grouping = GROUPING_UNDERSCORE
         i += 1
         i ≤ last || @goto END
     end
 
     # precision
-    if fmt[i] == '.'
+    if spec[i] == '.'
         i += 1
         i ≤ last || @goto END
-        if isdigit(fmt[i])
-            precision, i = parse_digits(fmt, i)
+        if isdigit(spec[i])
+            precision, i = parse_digits(spec, i)
             i ≤ last || @goto END
         else
-            throw(FormatError("unexpected $(repr(fmt[i])) after '.'"))
+            throw(FormatError("unexpected $(repr(spec[i])) after '.'"))
         end
     end
 
     # type
-    if fmt[i] ∈ "dXxoBbcpsFfEeGgAa%"
-        type = fmt[i]
+    if spec[i] ∈ "dXxoBbcpsFfEeGgAa%"
+        type = spec[i]
         i += 1
         i ≤ last || @goto END
     end
+
+    throw(FormatError("invalid character $(repr(spec[i]))"))
 
     @label END
     return Spec(fill, align, sign, altform, zero, width, grouping, precision, type)
