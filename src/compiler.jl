@@ -22,16 +22,14 @@ function compile(fstr::String)
         else
             @assert f isa Field
             value = esc(arg2param(f.argument))
-            fill = esc(arg2param(f.spec.fill))
-            width = esc(arg2param(f.spec.width))
-            precision = esc(arg2param(f.spec.precision))
             spec = Symbol(:spec, i)
             arg = Symbol(:arg, i)
             meta = Symbol(:meta, i)
             convfun = conv2func(f.conv)
             info = quote
-                $spec = Spec($(f.spec), fill = $fill, width = $width, precision = $precision)
+                #$spec = Spec($(f.spec), fill = $fill, width = $width, precision = $precision)
                 $arg = $(convfun)($value)
+                $spec = parsespec(typeof($arg), $(f.spec[1]))
                 s, $meta = formatinfo($spec, $arg)
                 size += s
             end
