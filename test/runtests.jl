@@ -863,4 +863,5 @@ end
     @test_throws FormatError("incomplete field") parse("{:,")
     @test_throws FormatError("incomplete field") parse("{:d")
     @test_throws FormatError("incomplete field") parse("{:{")
+    @test_throws FormatError("incomplete field") parse("{:{}")
 end

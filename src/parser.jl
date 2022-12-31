@@ -6,6 +6,8 @@ function Base.showerror(out::IO, e::FormatError)
     print(out, "FormatError: ", e.msg)
 end
 
+incomplete_field() = throw(FormatError("incomplete field"))
+
 function parse(fmt::String)
     list = Union{String, Field}[]
     auto = 0  # automatic numbering
@@ -46,19 +48,7 @@ function parse(fmt::String)
     return list
 end
 
-function parse_conv(fmt::String, i::Int)
-    c = fmt[i]
-    if c == 'r'
-        return CONV_REPR, i + 1
-    elseif c == 's'
-        return CONV_STRING, i + 1
-    else
-        throw(FormatError("invalid conversion character $(repr(c))"))
-    end
-end
-
 function parse_field(fmt::String, i::Int, auto::Int)
-    incomplete_field() = throw(FormatError("incomplete field"))
     last = lastindex(fmt)
     arg, i, auto = parse_argument(fmt, i, auto)
     i ≤ last || incomplete_field()
@@ -76,30 +66,6 @@ function parse_field(fmt::String, i::Int, auto::Int)
     end
     fmt[i] == '}' || throw(FormatError("invalid character $(repr(fmt[i]))"))
     return Field(arg, conv, spec), i + 1, auto
-end
-
-function parse_spec(fmt::String, i::Int, auto::Int)
-    last = lastindex(fmt)
-    str = IOBuffer()
-    spec = Union{String, Argument, Expr}[]
-    while i ≤ last
-        c = fmt[i]
-        if c == '{'
-            i == last && throw(FormatError("incomplete field"))
-            str.size > 0 && push!(spec, String(take!(str)))
-            arg, i, auto = parse_argument(fmt, i + 1, auto)
-            push!(spec, arg)
-            i ≤ last && fmt[i] == '}' || throw(FormatError("incomplete field"))
-            i += 1
-        elseif c == '}'
-            break
-        else
-            write(str, c)
-            i = nextind(fmt, i)
-        end
-    end
-    str.size > 0 && push!(spec, String(take!(str)))
-    return spec, i, auto
 end
 
 function parse_argument(s::String, i::Int, auto::Int)
@@ -121,6 +87,41 @@ function parse_argument(s::String, i::Int, auto::Int)
         arg = Positional(auto)
     end
     return arg, i, auto
+end
+
+function parse_conv(fmt::String, i::Int)
+    c = fmt[i]
+    if c == 'r'
+        return CONV_REPR, i + 1
+    elseif c == 's'
+        return CONV_STRING, i + 1
+    else
+        throw(FormatError("invalid conversion character $(repr(c))"))
+    end
+end
+
+function parse_spec(fmt::String, i::Int, auto::Int)
+    last = lastindex(fmt)
+    str = IOBuffer()
+    spec = Union{String, Argument, Expr}[]
+    while i ≤ last
+        c = fmt[i]
+        if c == '{'
+            i == last && incomplete_field()
+            str.size > 0 && push!(spec, String(take!(str)))
+            arg, i, auto = parse_argument(fmt, i + 1, auto)
+            push!(spec, arg)
+            i ≤ last && fmt[i] == '}' || incomplete_field()
+            i += 1
+        elseif c == '}'
+            break
+        else
+            write(str, c)
+            i = nextind(fmt, i)
+        end
+    end
+    str.size > 0 && push!(spec, String(take!(str)))
+    return spec, i, auto
 end
 
 function parse_digits(s::String, i::Int)
