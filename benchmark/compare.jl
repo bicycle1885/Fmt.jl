@@ -10,8 +10,7 @@ const expr = FormatExpr("({1}, {2})\n")
 formatting_print(out, x, y) = print(out, format(expr, x, y))
 
 function benchmark(printer, out, x, y)
-    @assert length(x) == length(y)
-    for i in 1:length(x)
+    for i in eachindex(x, y)
         printer(out, x[i], y[i])
     end
 end
