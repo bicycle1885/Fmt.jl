@@ -6,6 +6,8 @@ function Base.showerror(out::IO, e::FormatError)
     print(out, "FormatError: ", e.msg)
 end
 
+incomplete_field() = throw(FormatError("incomplete field"))
+
 function parse(fmt::String)
     list = Union{String, Field}[]
     auto = 0  # automatic numbering
@@ -40,17 +42,6 @@ function parse(fmt::String)
     end
     str.size > 0 && push!(list, String(take!(str)))
 
-    # check fields
-    interpolated = missing
-    for f in list
-        f isa Field || continue
-        if ismissing(interpolated)
-            interpolated = f.argument isa Expr
-        elseif interpolated != (f.argument isa Expr)
-            throw(FormatError("mixing interpolated and non-interpolated fields is not allowed"))
-        end
-    end
-
     if isempty(list)
         push!(list, "")
     end
@@ -58,7 +49,6 @@ function parse(fmt::String)
 end
 
 function parse_field(fmt::String, i::Int, auto::Int)
-    incomplete_field() = throw(FormatError("incomplete field"))
     last = lastindex(fmt)
     arg, i, auto = parse_argument(fmt, i, auto)
     i ≤ last || incomplete_field()
@@ -68,25 +58,13 @@ function parse_field(fmt::String, i::Int, auto::Int)
         conv, i = parse_conv(fmt, i + 1)
         i ≤ last || incomplete_field()
     end
-    spec = SPEC_DEFAULT
+    spec = Union{String, Argument, Expr}[]
     if fmt[i] == ':'
         i + 1 ≤ last || incomplete_field()
         spec, i, auto = parse_spec(fmt, i + 1, auto)
         i ≤ last || incomplete_field()
     end
     fmt[i] == '}' || throw(FormatError("invalid character $(repr(fmt[i]))"))
-    # check consistency of arguments
-    if arg isa Expr
-        spec.fill      isa Union{Char,         Expr} &&
-        spec.width     isa Union{Int, Nothing, Expr} &&
-        spec.precision isa Union{Int, Nothing, Expr} ||
-        throw(FormatError("inconsistent interpolation of arguments"))
-    else
-        spec.fill      isa Union{Char,         Positional, Keyword} &&
-        spec.width     isa Union{Int, Nothing, Positional, Keyword} &&
-        spec.precision isa Union{Int, Nothing, Positional, Keyword} ||
-        throw(FormatError("inconsistent interpolation of arguments"))
-    end
     return Field(arg, conv, spec), i + 1, auto
 end
 
@@ -123,117 +101,27 @@ function parse_conv(fmt::String, i::Int)
 end
 
 function parse_spec(fmt::String, i::Int, auto::Int)
-    # default
-    fill = FILL_DEFAULT
-    align = ALIGN_UNSPECIFIED
-    sign = SIGN_DEFAULT
-    altform = ALTFORM_DEFAULT
-    zero = ZERO_DEFAULT
-    width = WIDTH_UNSPECIFIED
-    grouping = GROUPING_UNSPECIFIED
-    precision = PRECISION_UNSPECIFIED
-    type = TYPE_UNSPECIFIED
-
-    incomplete_argument() = throw(FormatError("incomplete argument"))
-    char2align(c) = c == '<' ? ALIGN_LEFT :
-                    c == '^' ? ALIGN_CENTER :
-                    c == '>' ? ALIGN_RIGHT : @assert false
-
-    # align
     last = lastindex(fmt)
-    if fmt[i] == '{'
-        # dynamic fill or dynamic width?
-        _arg, _i, _auto = parse_argument(fmt, i + 1, auto)
-        _i ≤ last && fmt[_i] == '}' || incomplete_argument()
-        if _i + 1 ≤ last && fmt[_i+1] ∈ "<^>"
-            # it was a dynamic fill
-            fill = _arg
-            align = char2align(fmt[_i+1])
-            auto = _auto
-            i = _i + 2
-            i ≤ last || @goto END
-        end
-    elseif fmt[i] != '}' && nextind(fmt, i) ≤ last && fmt[nextind(fmt, i)] ∈ "<^>"
-        # fill + align
-        fill = fmt[i]
-        i = nextind(fmt, i)
-        align = char2align(fmt[i])
-        i += 1
-        i ≤ last || @goto END
-    elseif fmt[i] ∈ "<^>"
-        # align only
-        align = char2align(fmt[i])
-        i += 1
-        i ≤ last || @goto END
-    end
-
-    # sign
-    if fmt[i] ∈ "-+ "
-        sign = fmt[i] == '-' ? SIGN_MINUS : fmt[i] == '+' ? SIGN_PLUS : SIGN_SPACE
-        i += 1
-        i ≤ last || @goto END
-    end
-
-    # alternative form
-    if fmt[i] == '#'
-        altform = true
-        i += 1
-        i ≤ last || @goto END
-    end
-
-    # width
-    if fmt[i] == '{'
-        width, i, auto = parse_argument(fmt, i + 1, auto)
-        i ≤ last && fmt[i] == '}' || incomplete_argument()
-        i += 1
-        i ≤ last || @goto END
-    elseif isdigit(fmt[i])
-        if fmt[i] == '0' && i + 1 ≤ last && isdigit(fmt[i+1])
-            # preceded by zero
-            zero = true
+    str = IOBuffer()
+    spec = Union{String, Argument, Expr}[]
+    while i ≤ last
+        c = fmt[i]
+        if c == '{'
+            i == last && incomplete_field()
+            str.size > 0 && push!(spec, String(take!(str)))
+            arg, i, auto = parse_argument(fmt, i + 1, auto)
+            push!(spec, arg)
+            i ≤ last && fmt[i] == '}' || incomplete_field()
             i += 1
-        end
-        width, i = parse_digits(fmt, i)
-        i ≤ last || @goto END
-    end
-
-    # grouping
-    if fmt[i] == ','
-        grouping = GROUPING_COMMA
-        i += 1
-        i ≤ last || @goto END
-    elseif fmt[i] == '_'
-        grouping = GROUPING_UNDERSCORE
-        i += 1
-        i ≤ last || @goto END
-    end
-
-    # precision
-    if fmt[i] == '.'
-        i += 1
-        i ≤ last || @goto END
-        if fmt[i] == '{'
-            precision, i, auto = parse_argument(fmt, i + 1, auto)
-            i ≤ last && fmt[i] == '}' || incomplete_argument()
-            i += 1
-            i ≤ last || @goto END
-        elseif isdigit(fmt[i])
-            precision, i = parse_digits(fmt, i)
-            i ≤ last || @goto END
+        elseif c == '}'
+            break
         else
-            throw(FormatError("unexpected $(repr(fmt[i])) after '.'"))
+            write(str, c)
+            i = nextind(fmt, i)
         end
     end
-
-    # type
-    if fmt[i] ∈ "dXxoBbcpsFfEeGgAa%"
-        type = fmt[i]
-        i += 1
-        i ≤ last || @goto END
-    end
-
-    @label END
-    return Spec(fill, align, sign, altform, zero, width, grouping, precision, type), i, auto
+    str.size > 0 && push!(spec, String(take!(str)))
+    return spec, i, auto
 end
 
 function parse_digits(s::String, i::Int)
@@ -246,4 +134,100 @@ function parse_digits(s::String, i::Int)
         i += 1
     end
     return n, i
+end
+
+Base.@assume_effects :foldable function parsespec(::Type{<:Any}, spec::String)
+    # default values
+    fill = FILL_DEFAULT
+    align = ALIGN_UNSPECIFIED
+    sign = SIGN_DEFAULT
+    altform = ALTFORM_DEFAULT
+    zero = ZERO_DEFAULT
+    width = WIDTH_UNSPECIFIED
+    grouping = GROUPING_UNSPECIFIED
+    precision = PRECISION_UNSPECIFIED
+    type = TYPE_UNSPECIFIED
+
+    char2align(c) = c == '<' ? ALIGN_LEFT :
+                    c == '^' ? ALIGN_CENTER :
+                    c == '>' ? ALIGN_RIGHT : @assert false
+
+    last = lastindex(spec)
+    i = firstindex(spec)
+    i ≤ last || @goto END
+
+    # align
+    if nextind(spec, i) ≤ last && spec[nextind(spec, i)] ∈ "<^>"
+        # fill + align
+        fill = spec[i]
+        i = nextind(spec, i)
+        align = char2align(spec[i])
+        i += 1
+        i ≤ last || @goto END
+    elseif spec[i] ∈ "<^>"
+        # align only
+        align = char2align(spec[i])
+        i += 1
+        i ≤ last || @goto END
+    end
+
+    # sign
+    if spec[i] ∈ "-+ "
+        sign = spec[i] == '-' ? SIGN_MINUS : spec[i] == '+' ? SIGN_PLUS : SIGN_SPACE
+        i += 1
+        i ≤ last || @goto END
+    end
+
+    # alternative form
+    if spec[i] == '#'
+        altform = true
+        i += 1
+        i ≤ last || @goto END
+    end
+
+    # width
+    if isdigit(spec[i])
+        if spec[i] == '0' && i + 1 ≤ last && isdigit(spec[i+1])
+            # preceded by zero
+            zero = true
+            i += 1
+        end
+        width, i = parse_digits(spec, i)
+        i ≤ last || @goto END
+    end
+
+    # grouping
+    if spec[i] == ','
+        grouping = GROUPING_COMMA
+        i += 1
+        i ≤ last || @goto END
+    elseif spec[i] == '_'
+        grouping = GROUPING_UNDERSCORE
+        i += 1
+        i ≤ last || @goto END
+    end
+
+    # precision
+    if spec[i] == '.'
+        i += 1
+        i ≤ last || @goto END
+        if isdigit(spec[i])
+            precision, i = parse_digits(spec, i)
+            i ≤ last || @goto END
+        else
+            throw(FormatError("unexpected $(repr(spec[i])) after '.'"))
+        end
+    end
+
+    # type
+    if spec[i] ∈ "dXxoBbcpsFfEeGgAa%"
+        type = spec[i]
+        i += 1
+        i ≤ last || @goto END
+    end
+
+    throw(FormatError("invalid character $(repr(spec[i]))"))
+
+    @label END
+    return Spec(fill, align, sign, altform, zero, width, grouping, precision, type)
 end

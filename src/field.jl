@@ -2,7 +2,7 @@
 
 # replacement field
 struct Field
-    argument::Argument
+    argument::Union{Argument, Expr}
     conv::Conversion
-    spec::Spec
+    spec::Vector{Union{String, Argument, Expr}}
 end

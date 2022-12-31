@@ -3,7 +3,7 @@ using Random
 using BenchmarkTools
 
 function printfmt(out, fmt, x)
-    for i in 1:length(x)
+    for i in eachindex(x)
         print(out, Fmt.format(fmt, x[i]))
     end
 end

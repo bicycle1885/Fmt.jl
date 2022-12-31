@@ -19,14 +19,14 @@ default(val, defval) = isspecified(val) ? val : defval
 
 # format specification
 struct Spec
-    fill::Union{Char, Argument}
+    fill::Char
     align::Union{Alignment, Nothing}
     sign::Sign
     altform::Bool
     zero::Bool
-    width::Union{Int, Nothing, Argument}
+    width::Union{Int, Nothing}
     grouping::Union{Grouping, Nothing}
-    precision::Union{Int, Nothing, Argument}
+    precision::Union{Int, Nothing}
     type::Union{Char, Nothing}
 end
 
